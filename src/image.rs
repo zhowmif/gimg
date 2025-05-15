@@ -1,7 +1,7 @@
 use crate::colors::{YCbCr, RGB};
 use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Resolution {
     width: u32,
     height: u32,
@@ -43,6 +43,16 @@ impl Image {
         }
 
         Self { resolution, pixels }
+    }
+
+    pub fn crop(&mut self, new_resolution: Resolution) {
+        assert!(self.resolution.height >= new_resolution.height);
+        assert!(self.resolution.width >= new_resolution.width);
+        self.resolution = new_resolution;
+        self.pixels.truncate(new_resolution.height as usize);
+        self.pixels
+            .iter_mut()
+            .for_each(|row| row.truncate(new_resolution.width as usize));
     }
 
     pub fn draw_red_circle(&mut self) {
@@ -91,5 +101,61 @@ impl Image {
 
         println!("writing!");
         fs::write(file_name, bytes).unwrap();
+    }
+}
+
+pub struct YCbCrImage {
+    pixels: Vec<Vec<YCbCr>>,
+}
+
+pub const MACROBLOCKS_SIZE: usize = 16;
+type Macroblock<'a> = Vec<&'a [YCbCr]>;
+impl YCbCrImage {
+    pub fn get_macroblocks<'a>(&'a self, block_size: usize) -> Vec<Vec<Macroblock<'a>>> {
+        let num_rows = self.pixels.len();
+        let num_cols = self.pixels[0].len();
+
+        assert!(num_rows % block_size == 0 && num_cols % block_size == 0);
+
+        let mut macroblocks: Vec<Vec<Macroblock>> = Vec::with_capacity(num_rows / block_size);
+        for row in (0..num_rows).step_by(block_size) {
+            macroblocks.push(Vec::with_capacity(num_cols / block_size));
+            for col in (0..num_cols).step_by(block_size) {
+                macroblocks[row / block_size].push(
+                    self.pixels[row..row + block_size]
+                        .iter()
+                        .map(|row| &row[col..col + block_size])
+                        .collect(),
+                );
+            }
+        }
+
+        macroblocks
+    }
+
+    pub fn get_cb_macroblocks(macroblocks: &Vec<Vec<Macroblock>>) -> Vec<Vec<Vec<Vec<u8>>>> {
+        macroblocks
+            .iter()
+            .map(|macro_row| macro_row.iter().map(Self::get_cb_macroblock).collect())
+            .collect()
+    }
+    fn get_cb_macroblock(macroblock: &Macroblock) -> Vec<Vec<u8>> {
+        macroblock
+            .iter()
+            .map(|row| row.iter().map(|pixel| pixel.cb).collect())
+            .collect()
+    }
+}
+impl From<Image> for YCbCrImage {
+    fn from(value: Image) -> Self {
+        let mut pixels: Vec<Vec<YCbCr>> = Vec::with_capacity(value.resolution.height as usize);
+        for row in 0..value.resolution.height as usize {
+            pixels.push(Vec::with_capacity(value.resolution.width as usize));
+            for col in 0..value.resolution.width as usize {
+                let current_pixel = &value.pixels[row as usize][col as usize];
+                pixels[row].push(YCbCr::from(current_pixel));
+            }
+        }
+        Self { pixels }
     }
 }

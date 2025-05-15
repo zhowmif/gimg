@@ -35,5 +35,6 @@ pub fn convert_img_to_rgb(src: &str, dst: &str) {
 }
 
 pub fn display_image(file: &str) {
-    Command::new("feh").arg(file).status().expect("failed to run feh");
+    // Command::new("feh").arg(file).status().expect("failed to run feh");
+    Command::new("start").arg(file).status().expect("failed to run feh");
 }

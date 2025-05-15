@@ -3,13 +3,14 @@
 mod algebra;
 mod bits;
 mod colors;
+mod dct;
 mod ffmpeg;
 mod image;
 mod queue;
 mod tree;
 
 use ffmpeg::{convert_img_to_rgb, convert_rgb_to_img, display_image};
-use image::{Image, Resolution};
+use image::{Image, Resolution, YCbCrImage, MACROBLOCKS_SIZE};
 use std::fs;
 
 const INPUT_FILE: &str = "files/input.jpg";
@@ -28,12 +29,23 @@ fn main() {
     let file = fs::read(RGB_FILE).unwrap();
     let resolution = Resolution::new(750, 1125);
     let mut image = Image::from_raw_file(resolution, file);
+    ////////////////////////////////////////////
+    image.crop(Resolution::new(736, 1120));
+    let dct = dct::DiscreteCosineTransformer::new();
+    let ycbcr_image = YCbCrImage::from(image);
+    let x = YCbCrImage::get_cb_macroblocks(&ycbcr_image.get_macroblocks(MACROBLOCKS_SIZE));
+    let amplitudes = dct.dct(&x[10][10]);
+    println!("{:?}", x[10][10]);
+    println!("");
+    println!("{:?}", amplitudes);
+    ////////////////////////////////////////////
+
     //image.convert_to_grayscale();
     //image.draw_red_circle();
-    image.only_keep_blue_chroma();
-    image.write_raw_to_file(RGB_FILE);
-    convert_rgb_to_img(RGB_FILE, OUTPUT_FILE);
-    let _ = fs::remove_file(RGB_FILE);
-    display_image(OUTPUT_FILE);
-    let _ = fs::remove_file(OUTPUT_FILE);
+    // image.only_keep_blue_chroma();
+    // image.write_raw_to_file(RGB_FILE);
+    // convert_rgb_to_img(RGB_FILE, OUTPUT_FILE);
+    // let _ = fs::remove_file(RGB_FILE);
+    // display_image(OUTPUT_FILE);
+    // let _ = fs::remove_file(OUTPUT_FILE);
 }
