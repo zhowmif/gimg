@@ -1,10 +1,10 @@
 use crate::colors::{YCbCr, RGB};
-use std::fs;
+use std::{fs, time::Instant};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Resolution {
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 impl Resolution {
@@ -15,34 +15,33 @@ impl Resolution {
 
 #[derive(Debug)]
 pub struct Image {
-    resolution: Resolution,
-    pixels: Vec<Vec<RGB>>,
+    pub resolution: Resolution,
+    pub pixels: Vec<Vec<RGB>>,
 }
 
 impl Image {
     pub fn from_raw_file(resolution: Resolution, file: Vec<u8>) -> Self {
-        let mut all_pixels: Vec<RGB> = file
-            .chunks(3)
-            .map(|chunk| RGB::new(chunk[0], chunk[1], chunk[2]))
+        assert!(
+            file.len() as u32 == resolution.height * resolution.width * 3,
+            "Tried parsing {}x{} image, but input bytes were length {}",
+            resolution.width,
+            resolution.height,
+            file.len()
+        );
+
+        let pixels = file
+            .chunks(resolution.width as usize * 3)
+            .map(|row| {
+                row.chunks(3)
+                    .map(|vec| RGB::new(vec[0], vec[1], vec[2]))
+                    .collect()
+            })
             .collect();
-        let mut pixels: Vec<Vec<RGB>> = vec![];
 
-        for _line in 0..resolution.height {
-            if all_pixels.len() < resolution.width as usize {
-                panic!("input file is too short for image resolution");
-            }
-
-            let chunk = all_pixels.split_off(resolution.width as usize);
-            pixels.push(all_pixels);
-
-            all_pixels = chunk;
+        Self {
+            resolution,
+            pixels,
         }
-
-        if !all_pixels.is_empty() {
-            panic!("input file is too long for image resolution")
-        }
-
-        Self { resolution, pixels }
     }
 
     pub fn crop(&mut self, new_resolution: Resolution) {
@@ -99,7 +98,6 @@ impl Image {
             .flat_map(|line| line.iter().flat_map(|px| Vec::<u8>::from(px)))
             .collect();
 
-        println!("writing!");
         fs::write(file_name, bytes).unwrap();
     }
 }
