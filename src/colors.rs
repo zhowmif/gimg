@@ -35,7 +35,7 @@ impl From<&RGB> for Vec<u8> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct YCbCr {
     pub y: u8,
     pub cb: u8,
