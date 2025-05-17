@@ -54,24 +54,6 @@ impl Image {
             .for_each(|row| row.truncate(new_resolution.width));
     }
 
-    pub fn write_raw_to_file(&self, file_name: &str) {
-        let bytes: Vec<u8> = self
-            .pixels
-            .iter()
-            .flat_map(|line| line.iter().flat_map(|px| vec![px.y, px.cb, px.cr]))
-            .collect();
-
-        fs::write(file_name, bytes).unwrap();
-    }
-}
-
-pub struct YCbCrImage {
-    pixels: Vec<Vec<YCbCr>>,
-}
-
-pub const MACROBLOCKS_SIZE: usize = 16;
-type Macroblock<'a> = Vec<&'a [YCbCr]>;
-impl YCbCrImage {
     pub fn get_macroblocks<'a>(&'a self, block_size: usize) -> Vec<Vec<Macroblock<'a>>> {
         let num_rows = self.pixels.len();
         let num_cols = self.pixels[0].len();
@@ -93,7 +75,6 @@ impl YCbCrImage {
 
         macroblocks
     }
-
     pub fn get_cb_macroblocks(macroblocks: &Vec<Vec<Macroblock>>) -> Vec<Vec<Vec<Vec<u8>>>> {
         macroblocks
             .iter()
@@ -107,3 +88,6 @@ impl YCbCrImage {
             .collect()
     }
 }
+
+pub const MACROBLOCKS_SIZE: usize = 16;
+type Macroblock<'a> = Vec<&'a [YCbCr]>;
