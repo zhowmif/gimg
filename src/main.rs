@@ -50,7 +50,6 @@ fn main() {
     // println!("");
     // println!("{:?}", amplitudes);
     ////////////////////////////////////////////
-    println!("here!!");
     let image_demuxer = ImageDemuxer::new(INPUT_FILE, "rgb24");
     let grayscale_filter = GrayScaleFilter::filter_stream(Box::new(image_demuxer));
     let show_muxer = ShowMuxer::new("rgb24");
