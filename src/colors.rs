@@ -35,6 +35,7 @@ impl From<&RGB> for Vec<u8> {
     }
 }
 
+#[derive(Debug)]
 pub struct YCbCr {
     pub y: u8,
     pub cb: u8,
@@ -47,7 +48,7 @@ impl YCbCr {
     }
 }
 
-impl Into<Vec3> for YCbCr {
+impl Into<Vec3> for &YCbCr {
     fn into(self) -> Vec3 {
         Vec3([self.y as f32, self.cb as f32, self.cr as f32])
     }
@@ -84,8 +85,8 @@ impl From<&RGB> for YCbCr {
     }
 }
 
-impl From<YCbCr> for RGB {
-    fn from(ycbcr: YCbCr) -> Self {
+impl From<&YCbCr> for RGB {
+    fn from(ycbcr: &YCbCr) -> Self {
         let vec: Vec3 = ycbcr.into();
 
         RGB::from((vec - RGB_TO_YCBCR_CONVERION_OFFSET) * YCBCR_TO_RGB_CONVERSION_TABLE)

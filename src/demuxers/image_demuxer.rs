@@ -2,6 +2,7 @@ use std::{fs, process::Command};
 
 use crate::{
     image::{Image, Resolution},
+    pixel_formats::{get_pixel_format, PixelFormat},
     stream::Stream,
 };
 
@@ -11,16 +12,18 @@ pub(crate) struct ImageDemuxer {
     filename: String,
     is_consumed: bool,
     resolution: Resolution,
+    pixel_format: Box<dyn PixelFormat>,
 }
 
 impl ImageDemuxer {
-    pub fn new(filename: String) -> Self {
+    pub fn new(filename: &str, pixel_format: &str) -> Self {
         let resolution = ImageDemuxer::calculate_resolotion(&filename);
 
         Self {
-            filename,
+            filename: filename.to_string(),
             is_consumed: false,
             resolution,
+            pixel_format: get_pixel_format(pixel_format),
         }
     }
 
@@ -44,7 +47,9 @@ impl ImageDemuxer {
         )
         .unwrap();
 
-        let (width, height) = ffprobe_output.split_once("x").unwrap();
+        let (width, height) = ffprobe_output
+            .split_once("x")
+            .expect(&format!("Failed to read resolution for file {}", filename));
         Resolution::new(
             str::parse(width.trim()).unwrap(),
             str::parse(height.trim()).unwrap(),
@@ -60,7 +65,7 @@ impl ImageDemuxer {
                 "-vf",
                 &format!("scale={}:{}", self.resolution.width, self.resolution.height),
                 "-pix_fmt",
-                "rgb24",
+                &self.pixel_format.get_name(),
                 "-f",
                 "rawvideo",
                 output_file_name,
@@ -82,10 +87,7 @@ impl Stream for ImageDemuxer {
 
         self.is_consumed = true;
 
-        let value = Some(Image::from_bytes(
-            self.resolution,
-            self.get_image_raw_rgb(),
-        ));
+        let value = Some(Image::from_bytes(self.resolution, self.get_image_raw_rgb()));
 
         value
     }

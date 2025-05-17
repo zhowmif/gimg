@@ -9,6 +9,7 @@ mod ffmpeg;
 mod filters;
 mod image;
 mod muxers;
+mod pixel_formats;
 mod queue;
 mod stream;
 mod tree;
@@ -49,9 +50,10 @@ fn main() {
     // println!("");
     // println!("{:?}", amplitudes);
     ////////////////////////////////////////////
-    let image_demuxer = ImageDemuxer::new(INPUT_FILE.to_string());
+    println!("here!!");
+    let image_demuxer = ImageDemuxer::new(INPUT_FILE, "rgb24");
     let grayscale_filter = GrayScaleFilter::filter_stream(Box::new(image_demuxer));
-    let show_muxer = ShowMuxer;
+    let show_muxer = ShowMuxer::new("rgb24");
     show_muxer.consume_stream(grayscale_filter);
 
     //image.convert_to_grayscale();

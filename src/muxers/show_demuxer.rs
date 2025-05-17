@@ -1,13 +1,25 @@
 use std::{fs, process::Command};
 
-use crate::{image::Resolution, stream::Stream};
+use crate::{
+    image::Resolution,
+    pixel_formats::{get_pixel_format, PixelFormat},
+    stream::Stream,
+};
 
 use super::Muxer;
 
-pub struct ShowMuxer;
+pub struct ShowMuxer {
+    pixel_format: Box<dyn PixelFormat>,
+}
 
 impl ShowMuxer {
-    fn convert_rgb_to_img(resolution: Resolution, src: &str, dst: &str) {
+    pub fn new(pixel_format: &str) -> Self {
+        let pixel_format = get_pixel_format(pixel_format);
+
+        Self { pixel_format }
+    }
+
+    fn convert_rgb_to_img(&self, resolution: Resolution, src: &str, dst: &str) {
         Command::new("ffmpeg")
             .args(&[
                 "-f",
@@ -15,7 +27,7 @@ impl ShowMuxer {
                 "-video_size",
                 &format!("{}x{}", resolution.width, resolution.height),
                 "-pix_fmt",
-                "rgb24",
+                &self.pixel_format.get_name(),
                 "-i",
                 src,
                 dst,
@@ -32,11 +44,7 @@ impl Muxer for ShowMuxer {
 
         while let Some(image) = stream.get_next_image() {
             image.write_raw_to_file(tmp_filename);
-            ShowMuxer::convert_rgb_to_img(
-                stream.get_resolution(),
-                tmp_filename,
-                other_tmp_filename,
-            );
+            self.convert_rgb_to_img(stream.get_resolution(), tmp_filename, other_tmp_filename);
             fs::remove_file(tmp_filename).unwrap();
             Command::new("feh")
                 .arg(other_tmp_filename)

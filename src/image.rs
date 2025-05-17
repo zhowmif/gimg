@@ -16,11 +16,11 @@ impl Resolution {
 #[derive(Debug)]
 pub struct Image {
     pub resolution: Resolution,
-    pub pixels: Vec<Vec<RGB>>,
+    pub pixels: Vec<Vec<YCbCr>>,
 }
 
 impl Image {
-    pub fn new(resolution: Resolution, pixels: Vec<Vec<RGB>>) -> Self {
+    pub fn new(resolution: Resolution, pixels: Vec<Vec<YCbCr>>) -> Self {
         Self { resolution, pixels }
     }
     pub fn from_bytes(resolution: Resolution, file: Vec<u8>) -> Self {
@@ -36,7 +36,7 @@ impl Image {
             .chunks(resolution.width * 3)
             .map(|row| {
                 row.chunks(3)
-                    .map(|vec| RGB::new(vec[0], vec[1], vec[2]))
+                    .map(|vec| YCbCr::new(vec[0], vec[1], vec[2]))
                     .collect()
             })
             .collect();
@@ -58,7 +58,7 @@ impl Image {
         let bytes: Vec<u8> = self
             .pixels
             .iter()
-            .flat_map(|line| line.iter().flat_map(|px| Vec::<u8>::from(px)))
+            .flat_map(|line| line.iter().flat_map(|px| vec![px.y, px.cb, px.cr]))
             .collect();
 
         fs::write(file_name, bytes).unwrap();
@@ -105,18 +105,5 @@ impl YCbCrImage {
             .iter()
             .map(|row| row.iter().map(|pixel| pixel.cb).collect())
             .collect()
-    }
-}
-impl From<Image> for YCbCrImage {
-    fn from(value: Image) -> Self {
-        let mut pixels: Vec<Vec<YCbCr>> = Vec::with_capacity(value.resolution.height);
-        for row in 0..value.resolution.height {
-            pixels.push(Vec::with_capacity(value.resolution.width));
-            for col in 0..value.resolution.width {
-                let current_pixel = &value.pixels[row][col];
-                pixels[row].push(YCbCr::from(current_pixel));
-            }
-        }
-        Self { pixels }
     }
 }

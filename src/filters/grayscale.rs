@@ -1,4 +1,8 @@
-use crate::{colors::{YCbCr, RGB}, image::{Image, Resolution}, stream::Stream};
+use crate::{
+    colors::{YCbCr, RGB},
+    image::{Image, Resolution},
+    stream::Stream,
+};
 
 use super::Filter;
 
@@ -11,15 +15,12 @@ impl Stream for GrayScaleFilter {
         let image = self.previous_stream.get_next_image();
 
         image.map(|image| {
-            let grayscale_pixels: Vec<Vec<RGB>> = image
+            let grayscale_pixels: Vec<Vec<YCbCr>> = image
                 .pixels
                 .into_iter()
                 .map(|row| {
                     row.into_iter()
-                        .map(|rgb| {
-                            let luma = YCbCr::from(&rgb).y;
-                            RGB::new(luma, luma, luma)
-                        })
+                        .map(|pixel| YCbCr::new(pixel.y, 0, 0))
                         .collect()
                 })
                 .collect();
