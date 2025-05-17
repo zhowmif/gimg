@@ -26,12 +26,17 @@ impl ShowMuxer {
 }
 
 impl Muxer for ShowMuxer {
-    fn consume_stream(self, stream: Stream) {
+    fn consume_stream(self, mut stream: impl Stream) {
         let tmp_filename = "tmp/some_output_uuid";
         let other_tmp_filename = "tmp/other_output_uuid.png";
-        for image in stream.iterator {
+
+        while let Some(image) = stream.get_next_image() {
             image.write_raw_to_file(tmp_filename);
-            ShowMuxer::convert_rgb_to_img(stream.resolution, tmp_filename, other_tmp_filename);
+            ShowMuxer::convert_rgb_to_img(
+                stream.get_resolution(),
+                tmp_filename,
+                other_tmp_filename,
+            );
             fs::remove_file(tmp_filename).unwrap();
             Command::new("feh")
                 .arg(other_tmp_filename)

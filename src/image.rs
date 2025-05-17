@@ -3,12 +3,12 @@ use std::{fs, time::Instant};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Resolution {
-    pub width: u32,
-    pub height: u32,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Resolution {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: usize, height: usize) -> Self {
         Self { width, height }
     }
 }
@@ -20,9 +20,12 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn from_raw_file(resolution: Resolution, file: Vec<u8>) -> Self {
+    pub fn new(resolution: Resolution, pixels: Vec<Vec<RGB>>) -> Self {
+        Self { resolution, pixels }
+    }
+    pub fn from_bytes(resolution: Resolution, file: Vec<u8>) -> Self {
         assert!(
-            file.len() as u32 == resolution.height * resolution.width * 3,
+            file.len() == resolution.height * resolution.width * 3,
             "Tried parsing {}x{} image, but input bytes were length {}",
             resolution.width,
             resolution.height,
@@ -30,7 +33,7 @@ impl Image {
         );
 
         let pixels = file
-            .chunks(resolution.width as usize * 3)
+            .chunks(resolution.width * 3)
             .map(|row| {
                 row.chunks(3)
                     .map(|vec| RGB::new(vec[0], vec[1], vec[2]))
@@ -38,57 +41,17 @@ impl Image {
             })
             .collect();
 
-        Self {
-            resolution,
-            pixels,
-        }
+        Self { resolution, pixels }
     }
 
     pub fn crop(&mut self, new_resolution: Resolution) {
         assert!(self.resolution.height >= new_resolution.height);
         assert!(self.resolution.width >= new_resolution.width);
         self.resolution = new_resolution;
-        self.pixels.truncate(new_resolution.height as usize);
+        self.pixels.truncate(new_resolution.height);
         self.pixels
             .iter_mut()
-            .for_each(|row| row.truncate(new_resolution.width as usize));
-    }
-
-    pub fn draw_red_circle(&mut self) {
-        for row in 0..self.resolution.height {
-            for col in 0..self.resolution.width {
-                let dy = row.abs_diff(375);
-                let dx = col.abs_diff(562);
-                let sqr_distance = (dy * dy) + (dx * dx);
-
-                if sqr_distance < 50000 {
-                    self.pixels[row as usize][col as usize] = RGB::new(200, 0, 0);
-                }
-            }
-        }
-    }
-
-    pub fn convert_to_grayscale(&mut self) {
-        for row in 0..self.resolution.height {
-            for col in 0..self.resolution.width {
-                let current_pixel = &self.pixels[row as usize][col as usize];
-                let luma = YCbCr::from(current_pixel).y;
-
-                self.pixels[row as usize][col as usize] = RGB::new(luma, luma, luma);
-            }
-        }
-    }
-
-    pub fn only_keep_blue_chroma(&mut self) {
-        for row in 0..self.resolution.height {
-            for col in 0..self.resolution.width {
-                let current_pixel = &self.pixels[row as usize][col as usize];
-                let ycbcr = YCbCr::from(current_pixel);
-                let back_to_rgb = RGB::from(YCbCr::new(127, ycbcr.cb, 127));
-
-                self.pixels[row as usize][col as usize] = back_to_rgb;
-            }
-        }
+            .for_each(|row| row.truncate(new_resolution.width));
     }
 
     pub fn write_raw_to_file(&self, file_name: &str) {
@@ -146,11 +109,11 @@ impl YCbCrImage {
 }
 impl From<Image> for YCbCrImage {
     fn from(value: Image) -> Self {
-        let mut pixels: Vec<Vec<YCbCr>> = Vec::with_capacity(value.resolution.height as usize);
-        for row in 0..value.resolution.height as usize {
-            pixels.push(Vec::with_capacity(value.resolution.width as usize));
-            for col in 0..value.resolution.width as usize {
-                let current_pixel = &value.pixels[row as usize][col as usize];
+        let mut pixels: Vec<Vec<YCbCr>> = Vec::with_capacity(value.resolution.height);
+        for row in 0..value.resolution.height {
+            pixels.push(Vec::with_capacity(value.resolution.width));
+            for col in 0..value.resolution.width {
+                let current_pixel = &value.pixels[row][col];
                 pixels[row].push(YCbCr::from(current_pixel));
             }
         }

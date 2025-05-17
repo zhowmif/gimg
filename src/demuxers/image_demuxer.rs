@@ -15,7 +15,7 @@ pub(crate) struct ImageDemuxer {
 
 impl ImageDemuxer {
     pub fn new(filename: String) -> Self {
-        let resolution = ImageDemuxer::calculate_image_resolution(&filename);
+        let resolution = ImageDemuxer::calculate_resolotion(&filename);
 
         Self {
             filename,
@@ -24,7 +24,7 @@ impl ImageDemuxer {
         }
     }
 
-    fn calculate_image_resolution(filename: &str) -> Resolution {
+    fn calculate_resolotion(filename: &str) -> Resolution {
         let ffprobe_output = String::from_utf8(
             Command::new("ffprobe")
                 .args(&[
@@ -74,27 +74,25 @@ impl ImageDemuxer {
     }
 }
 
-impl Iterator for ImageDemuxer {
-    type Item = Image;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl Stream for ImageDemuxer {
+    fn get_next_image(&mut self) -> Option<Image> {
         if self.is_consumed {
             return None;
         }
 
         self.is_consumed = true;
 
-        let value = Some(Image::from_raw_file(
+        let value = Some(Image::from_bytes(
             self.resolution,
             self.get_image_raw_rgb(),
         ));
 
         value
     }
-}
 
-impl Demuxer for ImageDemuxer {
-    fn get_stream(self) -> Stream {
-        Stream::new(self.resolution, Box::new(self))
+    fn get_resolution(&self) -> Resolution {
+        self.resolution
     }
 }
+
+impl Demuxer for ImageDemuxer {}

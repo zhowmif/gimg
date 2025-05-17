@@ -13,7 +13,10 @@ mod queue;
 mod stream;
 mod tree;
 
-use demuxers::{image_demuxer::ImageDemuxer, Demuxer};
+use demuxers::{
+    image_demuxer::{self, ImageDemuxer},
+    Demuxer,
+};
 use ffmpeg::convert_img_to_rgb;
 use filters::{grayscale::GrayScaleFilter, Filter};
 use image::{Image, Resolution, YCbCrImage, MACROBLOCKS_SIZE};
@@ -47,10 +50,9 @@ fn main() {
     // println!("{:?}", amplitudes);
     ////////////////////////////////////////////
     let image_demuxer = ImageDemuxer::new(INPUT_FILE.to_string());
-    let grayscale_filter = GrayScaleFilter;
+    let grayscale_filter = GrayScaleFilter::filter_stream(Box::new(image_demuxer));
     let show_muxer = ShowMuxer;
-    let x = grayscale_filter.filter_stream(image_demuxer.get_stream());
-    show_muxer.consume_stream(x);
+    show_muxer.consume_stream(grayscale_filter);
 
     //image.convert_to_grayscale();
     //image.draw_red_circle();

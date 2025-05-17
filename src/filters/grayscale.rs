@@ -1,38 +1,41 @@
-use crate::{
-    colors::{YCbCr, RGB},
-    image::Image,
-    stream::Stream,
-};
+use crate::{colors::{YCbCr, RGB}, image::{Image, Resolution}, stream::Stream};
 
 use super::Filter;
 
-pub struct GrayScaleFilter;
+pub struct GrayScaleFilter {
+    previous_stream: Box<dyn Stream>,
+}
 
-impl GrayScaleFilter {
-    fn convert_to_grayscale(&self, mut image: Image) -> Image {
-        for row in 0..image.resolution.height {
-            for col in 0..image.resolution.width {
-                let current_pixel = &image.pixels[row as usize][col as usize];
-                let luma = YCbCr::from(current_pixel).y;
+impl Stream for GrayScaleFilter {
+    fn get_next_image(&mut self) -> Option<Image> {
+        let image = self.previous_stream.get_next_image();
 
-                image.pixels[row as usize][col as usize] = RGB::new(luma, luma, luma);
-            }
-        }
+        image.map(|image| {
+            let grayscale_pixels: Vec<Vec<RGB>> = image
+                .pixels
+                .into_iter()
+                .map(|row| {
+                    row.into_iter()
+                        .map(|rgb| {
+                            let luma = YCbCr::from(&rgb).y;
+                            RGB::new(luma, luma, luma)
+                        })
+                        .collect()
+                })
+                .collect();
+            Image::new(image.resolution, grayscale_pixels)
+        })
+    }
 
-        image
+    fn get_resolution(&self) -> Resolution {
+        self.previous_stream.get_resolution()
     }
 }
 
 impl Filter for GrayScaleFilter {
-    fn filter_stream(&self, input: Stream) -> Stream {
-        //this is so dumb...
-        let vec: Vec<Image> = input
-            .iterator
-            .map(|image| {
-                self.convert_to_grayscale(image)
-            })
-            .collect();
-
-        Stream::new(input.resolution, Box::new(vec.into_iter()))
+    fn filter_stream(stream: Box<dyn Stream>) -> Self {
+        Self {
+            previous_stream: stream,
+        }
     }
 }
