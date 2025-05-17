@@ -43,7 +43,8 @@ impl Muxer for ShowMuxer {
         let other_tmp_filename = "tmp/other_output_uuid.png";
 
         while let Some(image) = stream.get_next_image() {
-            image.write_raw_to_file(tmp_filename);
+            let bytes = self.pixel_format.to_bytestream(image.pixels);
+            fs::write(tmp_filename, bytes).unwrap();
             self.convert_rgb_to_img(stream.get_resolution(), tmp_filename, other_tmp_filename);
             fs::remove_file(tmp_filename).unwrap();
             Command::new("feh")

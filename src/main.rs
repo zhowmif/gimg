@@ -21,7 +21,7 @@ use demuxers::{
 use ffmpeg::convert_img_to_rgb;
 use filters::{grayscale::GrayScaleFilter, Filter};
 use image::{Image, Resolution, YCbCrImage, MACROBLOCKS_SIZE};
-use muxers::{show_demuxer::ShowMuxer, Muxer};
+use muxers::{show_muxer::ShowMuxer, Muxer};
 use std::fs;
 
 const INPUT_FILE: &str = "files/input.jpg";
