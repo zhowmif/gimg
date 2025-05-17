@@ -17,13 +17,17 @@ mod tree;
 use colors::{YCbCr, RGB};
 use dct::DiscreteCosineTransformer;
 use demuxers::{
+    droidcam::DroidCamDemuxer,
     image_demuxer::{self, ImageDemuxer},
     Demuxer,
 };
 use ffmpeg::convert_img_to_rgb;
 use filters::{grayscale::GrayScaleFilter, Filter};
 use image::{Image, Resolution, MACROBLOCKS_SIZE};
-use muxers::{show_muxer::{self, ShowMuxer}, Muxer};
+use muxers::{
+    show_muxer::{self, ShowMuxer},
+    Muxer,
+};
 use std::fs;
 use stream::Stream;
 
@@ -31,28 +35,7 @@ const INPUT_FILE: &str = "files/input.jpg";
 const RGB_FILE: &str = "files/raw.rgb";
 const OUTPUT_FILE: &str = "files/out.jpg";
 
-fn main() {
-    //let s = "iibbbbbbbaaaaaaaaaaacccccccccccccccccccc";
-    //let f = get_letter_frequencies(s);
-    //let pq = f.to_huffman_tree();
-    //let huffman_codes = pq.get_huffman_codes();
-    //pq.print();
-    //dbg!(huffman_codes);
-
-    // convert_img_to_rgb(INPUT_FILE, RGB_FILE);
-    // let file = fs::read(RGB_FILE).unwrap();
-    // let resolution = Resolution::new(750, 1125);
-    // let mut image = Image::from_raw_file(resolution, file);
-    // ////////////////////////////////////////////
-    // image.crop(Resolution::new(736, 1120));
-    // let dct = dct::DiscreteCosineTransformer::new();
-    // let ycbcr_image = YCbCrImage::from(image);
-    // let x = YCbCrImage::get_cb_macroblocks(&ycbcr_image.get_macroblocks(MACROBLOCKS_SIZE));
-    // let amplitudes = dct.dct(&x[10][10]);
-    // println!("{:?}", x[10][10]);
-    // println!("");
-    // println!("{:?}", amplitudes);
-    ////////////////////////////////////////////
+fn dct_test() {
     let mut image_demuxer = ImageDemuxer::new(INPUT_FILE, "rgb24");
     let first_image = image_demuxer.get_next_image().unwrap();
     let macroblocks = first_image.get_macroblocks(MACROBLOCKS_SIZE);
@@ -87,7 +70,14 @@ fn main() {
     println!("{:?}", amplitudes);
     println!("{:?}", normalized);
     println!("{:?}", inversed);
-    // let grayscale_filter = GrayScaleFilter::filter_stream(Box::new(image_demuxer));
-    // let show_muxer = ShowMuxer::new("rgb24");
-    // show_muxer.consume_stream(grayscale_filter);
+}
+
+fn main() {
+    // let g = YCbCr::new(81, 90, 239);
+    // let rgb = RGB::from(&g);
+    // let back = YCbCr::from(&rgb);
+    // println!("{:?} {:?} {:?}", g, rgb, back);
+    let droidcam = DroidCamDemuxer::new();
+    let show_muxer = ShowMuxer::new("rgb24");
+    show_muxer.consume_stream(droidcam);
 }

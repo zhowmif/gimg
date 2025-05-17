@@ -11,7 +11,7 @@ impl PixelFormat for RGB24 {
 
     fn parse_bytestream(
         &self,
-        bytes: Vec<u8>,
+        bytes: &[u8],
         resolution: crate::image::Resolution,
     ) -> Vec<Vec<YCbCr>> {
         assset_bytestream_size_fits_resolution(&bytes, resolution);

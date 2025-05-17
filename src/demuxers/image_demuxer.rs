@@ -90,7 +90,7 @@ impl Stream for ImageDemuxer {
         let value = Some(Image::new(
             self.resolution,
             self.pixel_format
-                .parse_bytestream(self.get_image_raw_rgb(), self.resolution),
+                .parse_bytestream(&self.get_image_raw_rgb(), self.resolution),
         ));
 
         value

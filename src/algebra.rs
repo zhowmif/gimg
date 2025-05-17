@@ -11,7 +11,7 @@ impl Matrix3 {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Vec3(pub [f32; 3]);
 
 impl Vec3 {
