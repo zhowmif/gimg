@@ -56,7 +56,7 @@ impl ImageDemuxer {
         )
     }
 
-    fn get_image_raw_rgb(&self) -> Vec<u8> {
+    fn get_image_raw_pixels(&self) -> Vec<u8> {
         let output_file_name = "tmp/some_random_uuid";
         Command::new("ffmpeg")
             .args(&[
@@ -90,7 +90,7 @@ impl Stream for ImageDemuxer {
         let value = Some(Image::new(
             self.resolution,
             self.pixel_format
-                .parse_bytestream(&self.get_image_raw_rgb(), self.resolution),
+                .parse_bytestream(&self.get_image_raw_pixels(), self.resolution),
         ));
 
         value

@@ -28,6 +28,7 @@ use muxers::{
     show_muxer::{self, ShowMuxer},
     Muxer,
 };
+use pixel_formats::{yuv420p::YUV420p, PixelFormat};
 use std::fs;
 use stream::Stream;
 
@@ -73,11 +74,9 @@ fn dct_test() {
 }
 
 fn main() {
-    // let g = YCbCr::new(81, 90, 239);
-    // let rgb = RGB::from(&g);
-    // let back = YCbCr::from(&rgb);
-    // println!("{:?} {:?} {:?}", g, rgb, back);
-    let droidcam = DroidCamDemuxer::new();
+    let mut dx = ImageDemuxer::new("files/mountain.jpg", "yuv420p");
+    // let img = dx.get_next_image().unwrap();
+    // println!("First pixels: {:?}", &img.pixels[0][0..50]);
     let show_muxer = ShowMuxer::new("rgb24");
-    show_muxer.consume_stream(droidcam);
+    show_muxer.consume_stream(dx);
 }

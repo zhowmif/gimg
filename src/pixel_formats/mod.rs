@@ -1,4 +1,5 @@
 use rgb24::RGB24;
+use yuv420p::YUV420p;
 
 use crate::{colors::YCbCr, image::Resolution};
 
@@ -13,7 +14,7 @@ pub trait PixelFormat {
 }
 
 pub fn get_pixel_format(name: &str) -> Box<dyn PixelFormat> {
-    let pixels_formats: Vec<Box<dyn PixelFormat>> = vec![Box::new(RGB24)];
+    let pixels_formats: Vec<Box<dyn PixelFormat>> = vec![Box::new(RGB24), Box::new(YUV420p)];
 
     pixels_formats
         .into_iter()

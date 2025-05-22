@@ -27,7 +27,7 @@ impl PixelFormat for YUV420p {
             .map(|row| {
                 (0..resolution.width)
                     .map(|col| {
-                        let pixel_number = row * col;
+                        let pixel_number = row * resolution.width + col;
                         let luma = luma_bytes[pixel_number];
                         let drow = (row / 2) * resolution.width / 2;
                         let dcol = col / 2;
