@@ -74,9 +74,9 @@ fn dct_test() {
 }
 
 fn main() {
-    let mut dx = ImageDemuxer::new("files/mountain.jpg", "yuv420p");
+    let dx = ImageDemuxer::new("files/mountain.png", "yuv420p");
     // let img = dx.get_next_image().unwrap();
     // println!("First pixels: {:?}", &img.pixels[0][0..50]);
-    let show_muxer = ShowMuxer::new("rgb24");
+    let show_muxer = ShowMuxer::new("yuv420p");
     show_muxer.consume_stream(dx);
 }

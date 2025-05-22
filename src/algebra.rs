@@ -3,6 +3,16 @@ use std::{
     ops::{Add, Mul, Sub},
 };
 
+pub fn align_up(n: usize, alignment: usize) -> usize {
+    let remainder = n % alignment;
+
+    if remainder == 0 {
+        n
+    } else {
+        n + alignment - remainder
+    }
+}
+
 pub struct Matrix3(pub [Vec3; 3]);
 
 impl Matrix3 {
