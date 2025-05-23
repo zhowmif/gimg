@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use crate::image::MACROBLOCKS_SIZE;
 
-const NUM_DCT_SIGNALS: usize = MACROBLOCKS_SIZE;
+pub const NUM_DCT_SIGNALS: usize = MACROBLOCKS_SIZE;
 pub struct DiscreteCosineTransformer {
     dct_signals: [[[[f32; MACROBLOCKS_SIZE]; MACROBLOCKS_SIZE]; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS],
 }
@@ -61,7 +61,10 @@ impl DiscreteCosineTransformer {
         amplitudes
     }
 
-    pub fn idct(&self, amplitudes: [[f32; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS]) -> Vec<Vec<u8>> {
+    pub fn idct(&self, amplitudes: &Vec<Vec<f32>>) -> Vec<Vec<u8>> {
+        assert_eq!(amplitudes.len(), NUM_DCT_SIGNALS);
+        assert_eq!(amplitudes[0].len(), NUM_DCT_SIGNALS);
+
         let mut result = vec![vec![0.; MACROBLOCKS_SIZE]; MACROBLOCKS_SIZE];
 
         for p in 0..NUM_DCT_SIGNALS {
@@ -108,9 +111,16 @@ impl DiscreteCosineTransformer {
     }
 
     pub fn inverse_normalization(
-        normalized_amplitudes: [[i8; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS],
+        normalized_amplitudes: &Vec<Vec<i8>>,
         normalization_factor: f32,
-    ) -> [[f32; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS] {
-        normalized_amplitudes.map(|row| row.map(|amp| amp as f32 * normalization_factor))
+    ) -> Vec<Vec<f32>> {
+        normalized_amplitudes
+            .into_iter()
+            .map(|row| {
+                row.into_iter()
+                    .map(|amp| *amp as f32 * normalization_factor)
+                    .collect()
+            })
+            .collect()
     }
 }

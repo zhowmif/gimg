@@ -19,7 +19,7 @@ impl ShowMuxer {
         Self { pixel_format }
     }
 
-    fn convert_rgb_to_img(&self, resolution: Resolution, src: &str, dst: &str) {
+    fn convert_raw_to_img(&self, resolution: Resolution, src: &str, dst: &str) {
         Command::new("ffmpeg")
             .args(&[
                 "-f",
@@ -45,7 +45,7 @@ impl Muxer for ShowMuxer {
         while let Some(image) = stream.get_next_image() {
             let bytes = self.pixel_format.to_bytestream(image.pixels);
             fs::write(tmp_filename, bytes).unwrap();
-            self.convert_rgb_to_img(stream.get_resolution(), tmp_filename, other_tmp_filename);
+            self.convert_raw_to_img(stream.get_resolution(), tmp_filename, other_tmp_filename);
             fs::remove_file(tmp_filename).unwrap();
             Command::new("feh")
                 .arg(other_tmp_filename)

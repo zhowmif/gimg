@@ -5,11 +5,9 @@ use std::{
 
 use v4l::{
     buffer::Type,
-    format::FieldOrder,
     io::{mmap, traits::OutputStream},
-    prelude::MmapStream,
     video::Output,
-    Device, Format, FourCC,
+    Device, Format,
 };
 
 use crate::{
