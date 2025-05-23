@@ -39,13 +39,6 @@ pub fn decode_image(bytes: &[u8], dct: &DiscreteCosineTransformer) -> Image {
             let mc = col / MACROBLOCKS_SIZE;
             let row_in_mb = row % MACROBLOCKS_SIZE;
             let col_in_mb = col % MACROBLOCKS_SIZE;
-            // println!(
-            //     "macroblock_height {}, macroblock_width {}",
-            //     luma_channel.len(),
-            //     luma_channel[0].len()
-            // );
-            // println!("row {row} col {col}");
-            // println!("{} {} {} {}", mr, mc, row_in_mb, col_in_mb);
 
             let y = luma_channel[mr][mc][row_in_mb][col_in_mb];
             let cb = cb_channel[mr][mc][row_in_mb][col_in_mb];

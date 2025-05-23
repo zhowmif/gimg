@@ -57,23 +57,32 @@ impl Image {
         let num_rows = self.pixels.len();
         let num_cols = self.pixels[0].len();
 
-        assert!(num_rows % block_size == 0 && num_cols % block_size == 0);
-
         let mut macroblocks: Vec<Vec<Vec<Vec<YCbCr>>>> = Vec::with_capacity(num_rows / block_size);
-        for row in (0..num_rows).step_by(block_size) {
+        for row_nr in (0..num_rows).step_by(block_size) {
             macroblocks.push(Vec::with_capacity(num_cols / block_size));
-            for col in (0..num_cols).step_by(block_size) {
-                macroblocks[row / block_size].push(
-                    self.pixels[row..row + block_size]
+            for col_nr in (0..num_cols).step_by(block_size) {
+                macroblocks[row_nr / block_size].push({
+                    let mut macroblock: Vec<Vec<YCbCr>> = self.pixels
+                        [row_nr..(row_nr + block_size).min(self.pixels.len())]
                         .iter()
                         .map(|row| {
-                            return row[col..col + block_size]
+                            let mut macroblock_row = row
+                                [col_nr..(col_nr + block_size).min(self.pixels[row_nr].len())]
                                 .iter()
                                 .map(|p| p.clone())
                                 .collect::<Vec<YCbCr>>();
+                            macroblock_row.resize(MACROBLOCKS_SIZE, YCbCr::new(0, 0, 0));
+
+                            macroblock_row
                         })
-                        .collect(),
-                );
+                        .collect();
+                    macroblock.resize(
+                        MACROBLOCKS_SIZE,
+                        std::iter::repeat_n(YCbCr::new(0, 0, 0), MACROBLOCKS_SIZE).collect(),
+                    );
+
+                    macroblock
+                });
             }
         }
 
