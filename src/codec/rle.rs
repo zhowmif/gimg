@@ -1,0 +1,328 @@
+use crate::dct::NUM_DCT_SIGNALS;
+
+//if value is zero, a byte (u8) will follow to indicate how many
+//any other value is encoded as is
+
+pub fn encode_rle(values: &Vec<Vec<i8>>) -> Vec<u8> {
+    let mut result: Vec<u8> = Vec::new();
+    let mut current_number_of_zeros: u8 = 0;
+    for (y, x) in MACROBLOCK_DIAGONAL_INDEXES {
+        let value = values[y][x];
+        if value != 0 {
+            if current_number_of_zeros > 0 {
+                result.push(0);
+                result.push(current_number_of_zeros);
+                current_number_of_zeros = 0;
+            }
+
+            result.push(value as u8);
+        } else {
+            current_number_of_zeros += 1;
+        }
+    }
+
+    if current_number_of_zeros > 0 {
+        result.push(0);
+        result.push(current_number_of_zeros);
+    }
+
+    result
+}
+
+pub fn diagonal_indexes(length: usize) -> Vec<(usize, usize)> {
+    let mut indexes: Vec<(usize, usize)> = Vec::with_capacity(length * length);
+
+    for diagonal_index in 0..length {
+        for cell_index in 0..=diagonal_index {
+            indexes.push((cell_index, diagonal_index - cell_index))
+        }
+    }
+
+    for diagonal_index in 1..length {
+        for cell_index in 0..length - diagonal_index {
+            indexes.push((diagonal_index + cell_index, length - 1 - cell_index))
+        }
+    }
+
+    indexes
+}
+
+pub fn decode_rle(bytes: &[u8]) -> Vec<Vec<i8>> {
+    let mut values: Vec<Vec<i8>> = vec![vec![0; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
+    let mut bytes_counter = 0;
+    let mut diagonal_index_counter = 0;
+
+    while bytes_counter < bytes.len() {
+        if bytes[bytes_counter] != 0 {
+            let (y, x) = MACROBLOCK_DIAGONAL_INDEXES[diagonal_index_counter];
+            diagonal_index_counter += 1;
+            values[y][x] = bytes[bytes_counter] as i8;
+        } else {
+            bytes_counter += 1;
+            diagonal_index_counter += bytes[bytes_counter] as usize;
+        }
+
+        bytes_counter += 1;
+    }
+
+    values.into_iter().map(|r| r.to_vec()).collect()
+}
+
+const MACROBLOCK_DIAGONAL_INDEXES: [(usize, usize); NUM_DCT_SIGNALS * NUM_DCT_SIGNALS] = [
+    (0, 0),
+    (0, 1),
+    (1, 0),
+    (0, 2),
+    (1, 1),
+    (2, 0),
+    (0, 3),
+    (1, 2),
+    (2, 1),
+    (3, 0),
+    (0, 4),
+    (1, 3),
+    (2, 2),
+    (3, 1),
+    (4, 0),
+    (0, 5),
+    (1, 4),
+    (2, 3),
+    (3, 2),
+    (4, 1),
+    (5, 0),
+    (0, 6),
+    (1, 5),
+    (2, 4),
+    (3, 3),
+    (4, 2),
+    (5, 1),
+    (6, 0),
+    (0, 7),
+    (1, 6),
+    (2, 5),
+    (3, 4),
+    (4, 3),
+    (5, 2),
+    (6, 1),
+    (7, 0),
+    (0, 8),
+    (1, 7),
+    (2, 6),
+    (3, 5),
+    (4, 4),
+    (5, 3),
+    (6, 2),
+    (7, 1),
+    (8, 0),
+    (0, 9),
+    (1, 8),
+    (2, 7),
+    (3, 6),
+    (4, 5),
+    (5, 4),
+    (6, 3),
+    (7, 2),
+    (8, 1),
+    (9, 0),
+    (0, 10),
+    (1, 9),
+    (2, 8),
+    (3, 7),
+    (4, 6),
+    (5, 5),
+    (6, 4),
+    (7, 3),
+    (8, 2),
+    (9, 1),
+    (10, 0),
+    (0, 11),
+    (1, 10),
+    (2, 9),
+    (3, 8),
+    (4, 7),
+    (5, 6),
+    (6, 5),
+    (7, 4),
+    (8, 3),
+    (9, 2),
+    (10, 1),
+    (11, 0),
+    (0, 12),
+    (1, 11),
+    (2, 10),
+    (3, 9),
+    (4, 8),
+    (5, 7),
+    (6, 6),
+    (7, 5),
+    (8, 4),
+    (9, 3),
+    (10, 2),
+    (11, 1),
+    (12, 0),
+    (0, 13),
+    (1, 12),
+    (2, 11),
+    (3, 10),
+    (4, 9),
+    (5, 8),
+    (6, 7),
+    (7, 6),
+    (8, 5),
+    (9, 4),
+    (10, 3),
+    (11, 2),
+    (12, 1),
+    (13, 0),
+    (0, 14),
+    (1, 13),
+    (2, 12),
+    (3, 11),
+    (4, 10),
+    (5, 9),
+    (6, 8),
+    (7, 7),
+    (8, 6),
+    (9, 5),
+    (10, 4),
+    (11, 3),
+    (12, 2),
+    (13, 1),
+    (14, 0),
+    (0, 15),
+    (1, 14),
+    (2, 13),
+    (3, 12),
+    (4, 11),
+    (5, 10),
+    (6, 9),
+    (7, 8),
+    (8, 7),
+    (9, 6),
+    (10, 5),
+    (11, 4),
+    (12, 3),
+    (13, 2),
+    (14, 1),
+    (15, 0),
+    (1, 15),
+    (2, 14),
+    (3, 13),
+    (4, 12),
+    (5, 11),
+    (6, 10),
+    (7, 9),
+    (8, 8),
+    (9, 7),
+    (10, 6),
+    (11, 5),
+    (12, 4),
+    (13, 3),
+    (14, 2),
+    (15, 1),
+    (2, 15),
+    (3, 14),
+    (4, 13),
+    (5, 12),
+    (6, 11),
+    (7, 10),
+    (8, 9),
+    (9, 8),
+    (10, 7),
+    (11, 6),
+    (12, 5),
+    (13, 4),
+    (14, 3),
+    (15, 2),
+    (3, 15),
+    (4, 14),
+    (5, 13),
+    (6, 12),
+    (7, 11),
+    (8, 10),
+    (9, 9),
+    (10, 8),
+    (11, 7),
+    (12, 6),
+    (13, 5),
+    (14, 4),
+    (15, 3),
+    (4, 15),
+    (5, 14),
+    (6, 13),
+    (7, 12),
+    (8, 11),
+    (9, 10),
+    (10, 9),
+    (11, 8),
+    (12, 7),
+    (13, 6),
+    (14, 5),
+    (15, 4),
+    (5, 15),
+    (6, 14),
+    (7, 13),
+    (8, 12),
+    (9, 11),
+    (10, 10),
+    (11, 9),
+    (12, 8),
+    (13, 7),
+    (14, 6),
+    (15, 5),
+    (6, 15),
+    (7, 14),
+    (8, 13),
+    (9, 12),
+    (10, 11),
+    (11, 10),
+    (12, 9),
+    (13, 8),
+    (14, 7),
+    (15, 6),
+    (7, 15),
+    (8, 14),
+    (9, 13),
+    (10, 12),
+    (11, 11),
+    (12, 10),
+    (13, 9),
+    (14, 8),
+    (15, 7),
+    (8, 15),
+    (9, 14),
+    (10, 13),
+    (11, 12),
+    (12, 11),
+    (13, 10),
+    (14, 9),
+    (15, 8),
+    (9, 15),
+    (10, 14),
+    (11, 13),
+    (12, 12),
+    (13, 11),
+    (14, 10),
+    (15, 9),
+    (10, 15),
+    (11, 14),
+    (12, 13),
+    (13, 12),
+    (14, 11),
+    (15, 10),
+    (11, 15),
+    (12, 14),
+    (13, 13),
+    (14, 12),
+    (15, 11),
+    (12, 15),
+    (13, 14),
+    (14, 13),
+    (15, 12),
+    (13, 15),
+    (14, 14),
+    (15, 13),
+    (14, 15),
+    (15, 14),
+    (15, 15),
+];

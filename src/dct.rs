@@ -44,8 +44,8 @@ impl DiscreteCosineTransformer {
         Self { dct_signals }
     }
 
-    pub fn dct(&self, signal: &Vec<Vec<u8>>) -> [[f32; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS] {
-        let mut amplitudes = [[0.; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
+    pub fn dct(&self, signal: &Vec<Vec<u8>>) -> Vec<Vec<f32>> {
+        let mut amplitudes = vec![vec![0.; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
         for p in 0..NUM_DCT_SIGNALS {
             for q in 0..NUM_DCT_SIGNALS {
                 let curr_dct_signal = self.dct_signals[p][q];
@@ -90,11 +90,9 @@ impl DiscreteCosineTransformer {
             .collect()
     }
 
-    pub fn normalize_amplitudes(
-        amplitudes: [[f32; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS],
-    ) -> ([[i8; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS], f32) {
+    pub fn normalize_amplitudes(amplitudes: &Vec<Vec<f32>>) -> (Vec<Vec<i8>>, f32) {
         let normalization_factor = (amplitudes
-            .into_iter()
+            .iter()
             .map(|row| {
                 row.into_iter()
                     .max_by(|x, y| x.abs().total_cmp(&y.abs()))
@@ -105,7 +103,14 @@ impl DiscreteCosineTransformer {
             / 127.;
 
         (
-            amplitudes.map(|row| row.map(|amplitude| (amplitude / normalization_factor) as i8)),
+            amplitudes
+                .into_iter()
+                .map(|row| {
+                    row.into_iter()
+                        .map(|amplitude| (amplitude / normalization_factor) as i8)
+                        .collect()
+                })
+                .collect(),
             normalization_factor,
         )
     }
