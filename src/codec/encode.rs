@@ -27,14 +27,17 @@ pub fn encode_image(img: Image, dct: &DiscreteCosineTransformer) -> Vec<u8> {
     [metadata, luma_channel, cb_channel, cr_channel].concat()
 }
 
-fn encode_channel(macroblocks: &Vec4<u8>, dct: &DiscreteCosineTransformer) -> Vec<u8> {
+fn encode_channel(
+    macroblocks: &Vec4<u8>,
+    dct: &DiscreteCosineTransformer,
+) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::new();
 
     for row in macroblocks {
         for macroblock in row {
             let mut amplitudes = dct.dct(macroblock);
             let dc = amplitudes[0][0];
-            amplitudes[0][0] = 1.;
+            amplitudes[0][0] = 0.;
             let (normalized_amplitudes, normilization) =
                 DiscreteCosineTransformer::normalize_amplitudes(&amplitudes);
             let rle_encoded_macroblock = encode_rle(&normalized_amplitudes);

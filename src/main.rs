@@ -26,7 +26,7 @@ const RGB_FILE: &str = "files/raw.rgb";
 const OUTPUT_FILE: &str = "files/out.jpg";
 
 fn main() {
-    // encode_test();
+    encode_test();
     decode_test();
 }
 
@@ -35,7 +35,7 @@ fn encode_test() {
     let mut image_demuxer = ImageDemuxer::new("files/mountain.png", "rgb24");
     let img = image_demuxer.get_next_image().unwrap();
     let encoded = encode_image(img, &dct);
-    fs::write("files/encoded.guy", encoded).expect("Failde writing guy");
+    fs::write("files/encoded.guy", encoded).expect("Failed writing guy");
 }
 
 fn decode_test() {

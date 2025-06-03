@@ -48,7 +48,7 @@ impl Muxer for ShowMuxer {
             self.convert_raw_to_img(stream.get_resolution(), tmp_filename, other_tmp_filename);
             fs::remove_file(tmp_filename).unwrap();
             Command::new("feh")
-                .arg(other_tmp_filename)
+                .args(&["--force-aliasing", other_tmp_filename])
                 .status()
                 .expect("failed to run feh");
             fs::remove_file(other_tmp_filename).unwrap();

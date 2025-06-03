@@ -79,5 +79,9 @@ fn decode_channel(
         }
     }
 
+    // if *offset == METADATA_LENGTH {
+    //     println!("luma macroblock: {:?}", result[20][20]);
+    // }
+
     result
 }

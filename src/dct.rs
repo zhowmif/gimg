@@ -98,7 +98,7 @@ impl DiscreteCosineTransformer {
                     .max_by(|x, y| x.abs().total_cmp(&y.abs()))
                     .unwrap()
             })
-            .max_by(|x, y| x.total_cmp(&y))
+            .max_by(|x, y| x.abs().total_cmp(&y.abs()))
             .unwrap())
             / 127.;
 
