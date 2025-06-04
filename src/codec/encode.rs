@@ -2,6 +2,12 @@ use crate::{
     colors::YCbCr,
     dct::DiscreteCosineTransformer,
     image::{Image, MACROBLOCKS_SIZE},
+    quantization::{
+        apply_quantization,
+        tables::{
+            QuantizationTable, DEFAULT_CHROMA_QUANTIZATION_TABLE, DEFAULT_LUMA_QUANTIZATION_TABLE,
+        },
+    },
 };
 
 use super::{rle::encode_rle, Vec4, METADATA_LENGTH};
@@ -16,13 +22,13 @@ pub fn encode_image(img: Image, dct: &DiscreteCosineTransformer) -> Vec<u8> {
     metadata.extend_from_slice(&(macroblocks.len() as u32).to_be_bytes());
 
     let luma_macroblocks = get_channel_macroblocks(&macroblocks, |y| y.y);
-    let luma_channel = encode_channel(&luma_macroblocks, dct);
+    let luma_channel = encode_channel(&luma_macroblocks, dct, DEFAULT_LUMA_QUANTIZATION_TABLE);
 
     let cb_macroblocks = get_channel_macroblocks(&macroblocks, |y| y.cb);
-    let cb_channel = encode_channel(&cb_macroblocks, dct);
+    let cb_channel = encode_channel(&cb_macroblocks, dct, DEFAULT_CHROMA_QUANTIZATION_TABLE);
 
     let cr_macroblocks = get_channel_macroblocks(&macroblocks, |y| y.cr);
-    let cr_channel = encode_channel(&cr_macroblocks, dct);
+    let cr_channel = encode_channel(&cr_macroblocks, dct, DEFAULT_CHROMA_QUANTIZATION_TABLE);
 
     [metadata, luma_channel, cb_channel, cr_channel].concat()
 }
@@ -30,16 +36,18 @@ pub fn encode_image(img: Image, dct: &DiscreteCosineTransformer) -> Vec<u8> {
 fn encode_channel(
     macroblocks: &Vec4<u8>,
     dct: &DiscreteCosineTransformer,
+    quantization_table: QuantizationTable,
 ) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::new();
 
     for row in macroblocks {
         for macroblock in row {
-            let mut amplitudes = dct.dct(macroblock);
+            let amplitudes = dct.dct(macroblock);
             let dc = amplitudes[0][0];
-            amplitudes[0][0] = 0.;
+            let mut quantized_amplitudes = apply_quantization(&amplitudes, quantization_table);
+            quantized_amplitudes[0][0] = 0.;
             let (normalized_amplitudes, normilization) =
-                DiscreteCosineTransformer::normalize_amplitudes(&amplitudes);
+                DiscreteCosineTransformer::normalize_amplitudes(&quantized_amplitudes);
             let rle_encoded_macroblock = encode_rle(&normalized_amplitudes);
 
             result.extend_from_slice(&normilization.to_be_bytes());

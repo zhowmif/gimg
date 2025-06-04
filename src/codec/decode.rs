@@ -5,6 +5,12 @@ use crate::{
     colors::YCbCr,
     dct::DiscreteCosineTransformer,
     image::{Image, Resolution, MACROBLOCKS_SIZE},
+    quantization::{
+        apply_dequantization,
+        tables::{
+            QuantizationTable, DEFAULT_CHROMA_QUANTIZATION_TABLE, DEFAULT_LUMA_QUANTIZATION_TABLE,
+        },
+    },
 };
 
 use super::{rle::decode_rle, Vec4};
@@ -19,9 +25,30 @@ pub fn decode_image(bytes: &[u8], dct: &DiscreteCosineTransformer) -> Image {
         u32::from_be_bytes(bytes[MACROBLOCK_HEIGHT_RANGE].try_into().unwrap()) as usize;
     let mut offset = METADATA_LENGTH;
 
-    let luma_channel = decode_channel(bytes, &mut offset, dct, macroblock_width, macroblock_height);
-    let cb_channel = decode_channel(bytes, &mut offset, dct, macroblock_width, macroblock_height);
-    let cr_channel = decode_channel(bytes, &mut offset, dct, macroblock_width, macroblock_height);
+    let luma_channel = decode_channel(
+        bytes,
+        &mut offset,
+        dct,
+        macroblock_width,
+        macroblock_height,
+        DEFAULT_LUMA_QUANTIZATION_TABLE,
+    );
+    let cb_channel = decode_channel(
+        bytes,
+        &mut offset,
+        dct,
+        macroblock_width,
+        macroblock_height,
+        DEFAULT_CHROMA_QUANTIZATION_TABLE,
+    );
+    let cr_channel = decode_channel(
+        bytes,
+        &mut offset,
+        dct,
+        macroblock_width,
+        macroblock_height,
+        DEFAULT_CHROMA_QUANTIZATION_TABLE,
+    );
 
     for row in 0..height {
         pixels.push(Vec::with_capacity(width));
@@ -40,7 +67,6 @@ pub fn decode_image(bytes: &[u8], dct: &DiscreteCosineTransformer) -> Image {
         }
     }
 
-    println!("image creation done!");
     Image::new(Resolution { width, height }, pixels)
 }
 
@@ -50,6 +76,7 @@ fn decode_channel(
     dct: &DiscreteCosineTransformer,
     macroblock_width: usize,
     macroblock_height: usize,
+    quantization_table: QuantizationTable,
 ) -> Vec4<u8> {
     let mut result: Vec4<u8> = Vec::with_capacity(macroblock_height);
 
@@ -69,19 +96,16 @@ fn decode_channel(
             let macroblock_bytes = &bytes[*offset..*offset + macroblock_size];
             *offset += macroblock_size;
             let normalized_amplitudes: Vec<Vec<i8>> = decode_rle(macroblock_bytes);
-            let mut amplitudes = DiscreteCosineTransformer::inverse_normalization(
+            let amplitudes = DiscreteCosineTransformer::inverse_normalization(
                 &normalized_amplitudes,
                 normalization_factor,
             );
-            amplitudes[0][0] = dc;
-            let pixel_values = dct.idct(&amplitudes);
+            let mut dequntized_amplitudes = apply_dequantization(&amplitudes, quantization_table);
+            dequntized_amplitudes[0][0] = dc;
+            let pixel_values = dct.idct(&dequntized_amplitudes);
             result[mr].push(pixel_values);
         }
     }
-
-    // if *offset == METADATA_LENGTH {
-    //     println!("luma macroblock: {:?}", result[20][20]);
-    // }
 
     result
 }

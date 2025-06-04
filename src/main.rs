@@ -11,6 +11,7 @@ mod filters;
 mod image;
 mod muxers;
 mod pixel_formats;
+mod quantization;
 mod queue;
 mod stream;
 mod tree;

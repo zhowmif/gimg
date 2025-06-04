@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use crate::image::MACROBLOCKS_SIZE;
 
-pub const NUM_DCT_SIGNALS: usize = MACROBLOCKS_SIZE;
+pub const NUM_DCT_SIGNALS: usize = 8;
 pub struct DiscreteCosineTransformer {
     dct_signals: [[[[f32; MACROBLOCKS_SIZE]; MACROBLOCKS_SIZE]; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS],
 }
@@ -100,6 +100,7 @@ impl DiscreteCosineTransformer {
             })
             .max_by(|x, y| x.abs().total_cmp(&y.abs()))
             .unwrap())
+        .abs()
             / 127.;
 
         (
