@@ -2,6 +2,8 @@ use crate::dct::NUM_DCT_SIGNALS;
 
 pub type QuantizationTable = [[f32; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
 
+const Q_FACTOR: f32 = 1.;
+
 pub const DEFAULT_LUMA_QUANTIZATION_TABLE: QuantizationTable = [
     [16., 11., 10., 16., 24., 40., 51., 61.],
     [12., 12., 14., 19., 26., 58., 60., 55.],
@@ -23,3 +25,27 @@ pub const DEFAULT_CHROMA_QUANTIZATION_TABLE: QuantizationTable = [
     [99., 99., 99., 99., 99., 99., 99., 99.],
     [99., 99., 99., 99., 99., 99., 99., 99.],
 ];
+
+// struct Quantizer {
+//     q_factor: f32,
+//     luma_table: 
+// }
+//
+// impl Quantizer {
+//     fn new(q_factor: f32) -> Self {
+//         Self { q_factor }
+//     }
+//
+//     fn apply_q_factor(q_factor: f32, table: QuantizationTable) -> QuantizationTable {
+//         let mut result = [[0.; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
+//
+//         for row in 0..NUM_DCT_SIGNALS {
+//             for col in 0..NUM_DCT_SIGNALS {
+//                 result[row][col] = table[row][col] * q_factor;
+//             }
+//         }
+//
+//         result
+//     }
+// }
+//

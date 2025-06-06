@@ -1,5 +1,13 @@
 #![allow(dead_code)]
 
+use std::fs;
+
+use colors::RGBA;
+use demuxers::{image_demuxer::ImageDemuxer, Demuxer};
+use muxers::Muxer;
+use png::{decode_png, encode_png};
+use stream::Stream;
+
 mod algebra;
 mod bits;
 mod codec;
@@ -8,42 +16,31 @@ mod dct;
 mod demuxers;
 mod ffmpeg;
 mod filters;
+mod guy_format;
 mod image;
 mod muxers;
 mod pixel_formats;
+mod png;
 mod quantization;
 mod queue;
 mod stream;
 mod tree;
 
-use codec::{decode::decode_image, encode::encode_image};
-use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
-use muxers::{show_muxer::ShowMuxer, Muxer};
-use std::fs;
-use stream::Stream;
-
-const INPUT_FILE: &str = "files/input.jpg";
-const RGB_FILE: &str = "files/raw.rgb";
-const OUTPUT_FILE: &str = "files/out.jpg";
-
 fn main() {
-    encode_test();
-    decode_test();
-}
+    let mut dx = ImageDemuxer::new("files/mountain.png", "rgb24");
+    let img = dx.get_next_image().unwrap();
 
-fn encode_test() {
-    let dct = dct::DiscreteCosineTransformer::new();
-    let mut image_demuxer = ImageDemuxer::new("files/mountain.png", "rgb24");
-    let img = image_demuxer.get_next_image().unwrap();
-    let encoded = encode_image(img, &dct);
-    fs::write("files/encoded.guy", encoded).expect("Failed writing guy");
-}
+    let mut rgba_pixels: Vec<Vec<RGBA>> = Vec::with_capacity(img.resolution.height);
+    for row in img.pixels {
+        let mut pixel_row: Vec<RGBA> = Vec::with_capacity(img.resolution.width);
 
-fn decode_test() {
-    let dct = dct::DiscreteCosineTransformer::new();
-    let bytes = fs::read("files/encoded.guy").unwrap();
-    let img = decode_image(&bytes, &dct);
-    let dx = RawImageDemuxer::new(img);
-    let mx = ShowMuxer::new("rgb24");
-    mx.consume_stream(dx);
+        for pixel in row {
+            pixel_row.push(pixel.into());
+        }
+
+        rgba_pixels.push(pixel_row);
+    }
+
+    let png_bytes = encode_png(rgba_pixels);
+    fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
