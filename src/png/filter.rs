@@ -69,9 +69,9 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
             for col in 0..scanlines[row].len() {
                 let x = scanlines[row][col];
                 let (row, col) = (row as i16, col as i16);
-                let a = get_byte(&scanlines, row, col - 1);
+                let a = get_byte(&scanlines, row, col - 4);
                 let b = get_byte(&scanlines, row - 1, col);
-                let c = get_byte(&scanlines, row - 1, col - 1);
+                let c = get_byte(&scanlines, row - 1, col - 4);
 
                 current_filter_result.push(filter.apply_filter(x, a, b, c));
             }
@@ -91,9 +91,13 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
 }
 
 fn get_byte(scanlines: &Vec<Vec<u8>>, row: i16, col: i16) -> u8 {
+    if row < 0 || col < 0 {
+        return 0;
+    }
+
     scanlines
-        .get(row.max(0) as usize)
-        .map(|scanline| scanline.get(col.max(0) as usize).map(|val| val.clone()))
+        .get(row as usize)
+        .map(|scanline| scanline.get(col as usize).map(|val| val.clone()))
         .flatten()
         .unwrap_or(0)
 }
