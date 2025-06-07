@@ -9,7 +9,7 @@ pub fn align_up(n: usize, alignment: usize) -> usize {
     if remainder == 0 {
         n
     } else {
-        n + alignment - remainder
+        n - remainder + alignment
     }
 }
 

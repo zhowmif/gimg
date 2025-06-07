@@ -5,11 +5,11 @@ use std::{fs, io::Read};
 use colors::RGBA;
 use demuxers::{image_demuxer::ImageDemuxer, Demuxer};
 use flate2::{
-    read::{DeflateDecoder, DeflateEncoder},
+    read::{DeflateDecoder, DeflateEncoder, ZlibEncoder},
     Compression,
 };
 use muxers::Muxer;
-use png::{deflate, encode_png};
+use png::{deflate::{self, zlib::zlib_encode}, encode_png};
 use stream::Stream;
 
 mod algebra;
@@ -62,16 +62,18 @@ fn encode_test() {
     println!("{:#018b}", data_length);
     println!("{data_length}");
     let data: Vec<u8> = (0..=data_length).map(|_i| b'a' as u8).collect();
-    let mut deflater = DeflateEncoder::new(&data[..], Compression::none());
+    let mut deflater = ZlibEncoder::new(&data[..], Compression::none());
     deflater.read_to_end(&mut ret_vec).unwrap();
 
     my_encoder.write_bytes(&data[0..10]);
     my_encoder.write_bytes(&data[10..]);
     let encoded = my_encoder.finish();
+    let zlib_encoded = zlib_encode(my_encoder).to_bytes();
     fs::write("deflate.bin", ret_vec).unwrap();
-    fs::write("mydeflate.bin", encoded.clone()).unwrap();
+    fs::write("mydeflate.bin", zlib_encoded.clone()).unwrap();
 
-    let mut decode = DeflateDecoder::new(&encoded[..]);
+    let encoded_bytes = encoded.to_bytes().clone();
+    let mut decode = DeflateDecoder::new(&encoded_bytes[..]);
     let mut res = Vec::new();
     decode.read_to_end(&mut res).unwrap();
 

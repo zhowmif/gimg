@@ -1,7 +1,7 @@
 use crate::bits::Bit;
 
 pub struct BitStream {
-    pub bits: Vec<Bit>,
+    bits: Vec<Bit>,
 }
 
 impl BitStream {
@@ -33,6 +33,16 @@ impl BitStream {
 
     pub fn push_byte(&mut self, byte: u8) {
         self.push_number(byte as u16, 8);
+    }
+
+    pub fn push_bytes(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.push_byte(*byte);
+        }
+    }
+
+    pub fn extend(&mut self, other: &Self) {
+        self.bits.extend_from_slice(&other.bits);
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

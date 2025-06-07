@@ -9,10 +9,11 @@ use serialization::create_scanlines;
 
 use crate::colors::{RGB, RGBA};
 
+mod adler32;
 mod binary_utils;
 mod chunks;
 mod consts;
-pub mod crc;
+mod crc;
 pub mod deflate;
 mod filter;
 mod serialization;

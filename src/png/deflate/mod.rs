@@ -1,32 +1,21 @@
 mod bitstream;
 mod consts;
 mod lz77;
-
-use std::io::Read;
+pub mod zlib;
 
 use bitstream::BitStream;
 use consts::MAX_UNCOMPRESSED_BLOCK_SIZE;
-use flate2::bufread::DeflateDecoder;
+use zlib::zlib_encode;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(BlockType::None);
 
-    let mut i = 0;
     for scanline in scanlines {
         encoder.write_bytes(&scanline);
-
-        if i == 0 {
-            let cur = encoder.finish();
-            let mut decode = DeflateDecoder::new(&cur[..]);
-            let mut res = Vec::new();
-            decode.read_to_end(&mut res).unwrap();
-            println!("here");
-            println!("{}", res == *scanline);
-        }
-        i += 1;
     }
 
-    let compressed = encoder.finish();
+    let zlib_encoded = zlib_encode(encoder);
+    let compressed = zlib_encoded.to_bytes();
 
     compressed
 }
@@ -80,7 +69,11 @@ impl DeflateEncoder {
         self.bytes.extend_from_slice(bytes);
     }
 
-    pub fn finish(&mut self) -> Vec<u8> {
+    pub fn uncompreseed(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn finish(&mut self) -> BitStream {
         let mut bitstream = BitStream::new();
 
         for (block_index, block_bytes) in self
@@ -108,6 +101,6 @@ impl DeflateEncoder {
             }
         }
 
-        bitstream.to_bytes()
+        bitstream
     }
 }
