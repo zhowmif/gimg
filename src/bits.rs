@@ -15,6 +15,10 @@ impl Bits {
         Bits { bits }
     }
 
+    pub fn empty() -> Bits {
+        Bits { bits: vec![] }
+    }
+
     pub fn push_zero(&self) -> Bits {
         let mut new_bits = self.bits.clone();
         new_bits.push(Bit::Zero);

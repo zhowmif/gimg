@@ -13,7 +13,7 @@ mod binary_utils;
 mod chunks;
 mod consts;
 pub mod crc;
-mod deflate;
+pub mod deflate;
 mod filter;
 mod serialization;
 
