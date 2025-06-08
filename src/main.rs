@@ -9,7 +9,14 @@ use flate2::{
     Compression,
 };
 use muxers::Muxer;
-use png::{deflate::{self, zlib::zlib_encode}, encode_png};
+use png::{
+    deflate::{
+        self,
+        lzss::{self, decode_lzss, encode_lzss, encode_lzss_table},
+        zlib::zlib_encode,
+    },
+    encode_png,
+};
 use stream::Stream;
 
 mod algebra;
@@ -32,7 +39,15 @@ mod tree;
 
 fn main() {
     // encode_test();
-    png_test();
+    // png_test();
+    let input = fs::read("bee_movie.txt").expect("Failed to read input file");
+    let encoded_data = encode_lzss_table(&input, (2 as usize).pow(15));
+
+    let decoded = decode_lzss(&encoded_data);
+    let decoded_str = String::from_utf8(decoded).expect("Did not get valid utf-8");
+    println!("{decoded_str}");
+    println!("Original length: {}", input.len() * 8);
+    println!("data length: {}", encoded_data.len());
 }
 
 fn png_test() {

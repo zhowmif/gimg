@@ -1,6 +1,6 @@
 mod bitstream;
 mod consts;
-mod lz77;
+pub mod lzss;
 pub mod zlib;
 
 use bitstream::BitStream;

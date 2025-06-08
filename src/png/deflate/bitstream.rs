@@ -1,5 +1,6 @@
 use crate::bits::Bit;
 
+#[derive(Debug)]
 pub struct BitStream {
     bits: Vec<Bit>,
 }
@@ -51,6 +52,7 @@ impl BitStream {
         }
         let mut bytes = Vec::with_capacity(self.bits.len() / 8);
 
+        //TODO: use read_byte instead
         for byte_bits in self.bits.chunks(8) {
             let mut current_byte = 0;
 
@@ -69,5 +71,35 @@ impl BitStream {
         }
 
         bytes
+    }
+
+    pub fn read_bit(&self, index: &mut usize) -> Bit {
+        let bit = self.bits[*index].clone();
+        *index += 1;
+
+        bit
+    }
+
+    pub fn read_byte(&self, index: &mut usize) -> u8 {
+        let byte_bits = &self.bits[*index..*index + 8];
+        *index += 8;
+        let mut current_byte = 0;
+
+        for i in (0..byte_bits.len()).rev() {
+            current_byte <<= 1;
+
+            let bit = &byte_bits[i];
+
+            current_byte |= match bit {
+                Bit::Zero => 0,
+                Bit::One => 1,
+            };
+        }
+
+        current_byte
+    }
+
+    pub fn len(&self) -> usize {
+        self.bits.len()
     }
 }
