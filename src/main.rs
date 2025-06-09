@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
-use std::{fs, io::Read};
+use std::{
+    fs,
+    io::Read,
+    time::{self, Instant},
+};
 
 use colors::RGBA;
 use demuxers::{image_demuxer::ImageDemuxer, Demuxer};
@@ -12,7 +16,7 @@ use muxers::Muxer;
 use png::{
     deflate::{
         self,
-        lzss::{self, decode_lzss, encode_lzss, encode_lzss_table},
+        lzss::{backreference::generate, decode_lzss, encode_lzss},
         zlib::zlib_encode,
     },
     encode_png,
@@ -38,16 +42,20 @@ mod stream;
 mod tree;
 
 fn main() {
+    generate();
     // encode_test();
     // png_test();
-    let input = fs::read("bee_movie.txt").expect("Failed to read input file");
-    let encoded_data = encode_lzss_table(&input, (2 as usize).pow(15));
+    // let input = fs::read("bee_movie.txt").expect("Failed to read input file");
+    // let start = Instant::now();
+    // let encoded_data = encode_lzss(&input, (2 as usize).pow(15));
+    // let end = Instant::now();
+    // println!("{:?}", end - start);
 
-    let decoded = decode_lzss(&encoded_data);
-    let decoded_str = String::from_utf8(decoded).expect("Did not get valid utf-8");
-    println!("{decoded_str}");
-    println!("Original length: {}", input.len() * 8);
-    println!("data length: {}", encoded_data.len());
+    // let decoded = decode_lzss(&encoded_data);
+    // let decoded_str = String::from_utf8(decoded).expect("Did not get valid utf-8");
+    // println!("{decoded_str}");
+    // println!("Original length: {}", input.len() * 8);
+    // println!("data length: {}", encoded_data.len());
 }
 
 fn png_test() {

@@ -4,6 +4,7 @@ use crate::{bits::Bit, png::deflate::bitstream::BitStream};
 use std::collections::HashMap;
 
 mod hash;
+pub mod backreference;
 
 struct Backreference(u16, u8);
 
@@ -17,7 +18,7 @@ impl Backreference {
     }
 }
 
-pub fn encode_lzss_table(bytes: &[u8], window_size: usize) -> BitStream {
+pub fn encode_lzss(bytes: &[u8], window_size: usize) -> BitStream {
     let mut cursor = 0;
     let mut bitstream = BitStream::new();
     let mut table = LzssHashTable::new();
@@ -41,28 +42,6 @@ pub fn encode_lzss_table(bytes: &[u8], window_size: usize) -> BitStream {
     bitstream
 }
 
-pub fn encode_lzss(bytes: &[u8], window_size: usize) -> BitStream {
-    let mut cursor = 0;
-    let mut bitstream = BitStream::new();
-
-    while cursor < bytes.len() {
-        let reference = find_backrefrence(bytes, cursor, window_size);
-
-        if reference.length() > 3 {
-            bitstream.push_one();
-            bitstream.push_byte(reference.length());
-            bitstream.push_bytes(&reference.distance().to_be_bytes());
-            cursor += reference.length() as usize;
-        } else {
-            bitstream.push_zero();
-            bitstream.push_byte(bytes[cursor]);
-            cursor += 1;
-        }
-    }
-
-    bitstream
-}
-
 fn find_backreference_with_table(
     bytes: &[u8],
     cursor: usize,
@@ -77,36 +56,6 @@ fn find_backreference_with_table(
     }
 
     best_match
-}
-
-fn find_backrefrence(bytes: &[u8], cursor: usize, window_size: usize) -> Backreference {
-    let window_start = cursor.max(window_size) - window_size;
-    let window = &bytes[window_start..];
-    let mut longset_sequence = Backreference(0, 0);
-
-    let mut index = 0;
-    while window_start + index < cursor {
-        let mut current_match_length: usize = 0;
-
-        while current_match_length + 1 < u8::MAX.into()
-            && cursor + current_match_length < bytes.len()
-            && index + current_match_length < window.len()
-            && window[index + current_match_length] == bytes[cursor + current_match_length]
-        {
-            current_match_length += 1;
-        }
-
-        if current_match_length > longset_sequence.length() as usize {
-            longset_sequence = Backreference(
-                (cursor - (window_start + index)) as u16,
-                current_match_length as u8,
-            );
-        }
-
-        index += 1;
-    }
-
-    longset_sequence
 }
 
 pub fn decode_lzss(bitstream: &BitStream) -> Vec<u8> {

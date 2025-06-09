@@ -46,6 +46,21 @@ impl BitStream {
         self.bits.extend_from_slice(&other.bits);
     }
 
+    pub fn from_symbol(symbol: u32, length: usize) -> Self {
+        let mut bitsream = BitStream::new();
+
+        for i in (0..length).rev() {
+            let bit = symbol & (1 << i);
+
+            match bit {
+                0 => bitsream.push_zero(),
+                _ => bitsream.push_one(),
+            }
+        }
+
+        bitsream
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         if self.bits.len() % 8 != 0 {
             panic!("Can't convert non aligned bits to bytes");
