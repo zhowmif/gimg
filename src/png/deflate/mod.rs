@@ -1,4 +1,5 @@
 mod bitstream;
+pub mod new_bitsream;
 mod consts;
 pub mod lzss;
 pub mod zlib;
