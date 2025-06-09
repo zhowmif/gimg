@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 #[derive(Debug)]
 
-pub struct BitStream {
+pub struct NewBitStream {
     stream: Vec<u8>,
     working_byte: u8,
     current_bit_number: u8,
 }
 
-impl BitStream {
+impl NewBitStream {
     pub fn new() -> Self {
         Self {
             stream: Vec::new(),
@@ -45,11 +45,6 @@ impl BitStream {
             self.current_bit_number += bitsize;
         } else {
             let bits_to_add_from_n = u8::reverse_bits(n) >> (8 - g);
-            println!("wb {}", self.working_byte);
-            println!(
-                "pushing {:08b}",
-                (self.working_byte.wrapping_shl(g as u32)) + bits_to_add_from_n
-            );
             self.stream
                 .push(saturating_shr(self.working_byte, g) + bits_to_add_from_n);
             let bits_left = bitsize - g;
@@ -100,9 +95,18 @@ impl BitStream {
     pub fn len(&self) -> usize {
         self.stream.len() * 8 + (self.current_bit_number as usize)
     }
+
+    //TODO: this should probably transfer ownership instead of cloning
+    pub fn to_bytes(&self) -> Vec<u8> {
+        if self.current_bit_number != 0 {
+            panic!("Can't convert to bytes if it's not good");
+        }
+
+        self.stream.clone()
+    }
 }
 
-impl Display for BitStream {
+impl Display for NewBitStream {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for byte in self.stream.iter() {
             write!(f, "{:08b}", byte)?

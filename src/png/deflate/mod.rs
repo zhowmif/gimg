@@ -1,11 +1,11 @@
 mod bitstream;
-pub mod new_bitsream;
 mod consts;
 pub mod lzss;
+pub mod new_bitsream;
 pub mod zlib;
 
-use bitstream::BitStream;
 use consts::MAX_UNCOMPRESSED_BLOCK_SIZE;
+use new_bitsream::NewBitStream;
 use zlib::zlib_encode;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
@@ -74,8 +74,8 @@ impl DeflateEncoder {
         &self.bytes
     }
 
-    pub fn finish(&mut self) -> BitStream {
-        let mut bitstream = BitStream::new();
+    pub fn finish(&mut self) -> NewBitStream {
+        let mut bitstream = NewBitStream::new();
 
         for (block_index, block_bytes) in self
             .bytes
@@ -89,16 +89,16 @@ impl DeflateEncoder {
             } else {
                 bitstream.push_zero();
             }
-            bitstream.push_number(BlockType::None.to_number().into(), 2);
+            bitstream.push_u8_lsb(BlockType::None.to_number().into(), 2);
             //padding
-            bitstream.push_number(0, 5);
+            bitstream.push_u8_lsb(0, 5);
 
             let len = block_bytes.len() as u16;
-            bitstream.push_number(len, 16);
-            bitstream.push_number(!len, 16);
+            bitstream.push_u16_lsb(len);
+            bitstream.push_u16_lsb(!len);
 
             for byte in block_bytes {
-                bitstream.push_byte(*byte);
+                bitstream.push_byte_lsb(*byte);
             }
         }
 

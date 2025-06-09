@@ -17,7 +17,7 @@ use png::{
     deflate::{
         self,
         lzss::{backreference::generate, decode_lzss, encode_lzss},
-        new_bitsream::BitStream,
+        new_bitsream::NewBitStream,
         zlib::zlib_encode,
     },
     encode_png,
@@ -43,21 +43,8 @@ mod stream;
 mod tree;
 
 fn main() {
-    let mut stream = BitStream::new();
-    stream.push_byte_lsb(0b00110100);
-    stream.push_byte_lsb(0b00110100);
-    let mut offset = 0;
-    let byte = stream.read_byte_lsb(&mut offset);
-    println!("{stream}");
-    println!("{:08b}", byte);
-    // let num = 0b00010111;
-    // let n = 5;
-    // let mask = (1 << n) - 1;
-    //
-    // println!("{:0width$b}", num & mask, width = n);
-
     // generate();
-    // encode_test();
+    encode_test();
     // png_test();
     // let input = fs::read("save.txt").expect("Failed to read input file");
     // let start = Instant::now();
