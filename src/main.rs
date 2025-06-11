@@ -16,6 +16,7 @@ use muxers::Muxer;
 use png::{
     deflate::{
         self,
+        huffman::HuffmanEncoder,
         lzss::{backreference::generate, decode_lzss, encode_lzss},
         new_bitsream::NewBitStream,
         zlib::zlib_encode,
@@ -43,20 +44,21 @@ mod stream;
 mod tree;
 
 fn main() {
-    // generate();
-    encode_test();
-    // png_test();
-    // let input = fs::read("save.txt").expect("Failed to read input file");
-    // let start = Instant::now();
-    // let encoded_data = encode_lzss(&input, (2 as usize).pow(15));
-    // let end = Instant::now();
-    // println!("{:?}", end - start);
+    huffman_test();
+}
 
-    // let decoded = decode_lzss(&encoded_data);
-    // let decoded_str = String::from_utf8(decoded).expect("Did not get valid utf-8");
-    // println!("{decoded_str}");
-    // println!("Original length: {}", input.len() * 8);
-    // println!("data length: {}", encoded_data.len());
+fn huffman_test() {
+    let input_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabccceffdgfdgrethadzxcvfkdgldffdsfdsfdsfdfdfdfd";
+    let mut huffman_encoder = HuffmanEncoder::new();
+    for chr in input_string.chars() {
+        huffman_encoder.add_symbol(&chr);
+    }
+    let huffman_length_values = huffman_encoder.get_symbol_lengths();
+    println!("{:?}", huffman_length_values);
+    let huffman_tree = HuffmanEncoder::construct_canonical_tree_from_lengths(huffman_length_values);
+    for (chr, code) in huffman_tree.into_iter() {
+        println!("{} {}", chr, code);
+    }
 }
 
 fn png_test() {

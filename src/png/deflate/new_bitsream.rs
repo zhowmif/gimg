@@ -17,6 +17,14 @@ impl NewBitStream {
         }
     }
 
+    pub fn from_byte_msb(byte: u8, len: u8) -> Self {
+        Self {
+            stream: Vec::new(),
+            working_byte: byte,
+            current_bit_number: len,
+        }
+    }
+
     fn flush_working_byte(&mut self) {
         if self.current_bit_number == 8 {
             self.stream.push(self.working_byte);
@@ -69,7 +77,7 @@ impl NewBitStream {
         self.push_byte_lsb((n >> 8) as u8);
     }
 
-    pub fn extend(&mut self, other: &Self) {
+    pub fn extend_aligned(&mut self, other: &Self) {
         if self.current_bit_number == 0 {
             self.stream.extend_from_slice(&other.stream);
         } else {
@@ -114,7 +122,7 @@ impl Display for NewBitStream {
         write!(
             f,
             "{:0width$b}",
-            self.working_byte & ((1 << self.current_bit_number) - 1),
+            self.working_byte >> (8 - self.current_bit_number),
             width = self.current_bit_number as usize
         )?;
 
@@ -124,4 +132,8 @@ impl Display for NewBitStream {
 
 fn saturating_shr(lhs: u8, rhs: u8) -> u8 {
     lhs.checked_shr(rhs as u32).unwrap_or(0)
+}
+
+fn saturating_shl(lhs: u8, rhs: u8) -> u8 {
+    lhs.checked_shl(rhs as u32).unwrap_or(0)
 }

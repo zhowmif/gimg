@@ -46,7 +46,7 @@ impl BitStream {
         self.bits.extend_from_slice(&other.bits);
     }
 
-    pub fn from_symbol(symbol: u32, length: usize) -> Self {
+    pub fn from_symbol_lsb(symbol: u32, length: usize) -> Self {
         let mut bitsream = BitStream::new();
 
         for i in (0..length).rev() {

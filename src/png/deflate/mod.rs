@@ -3,6 +3,7 @@ mod consts;
 pub mod lzss;
 pub mod new_bitsream;
 pub mod zlib;
+pub mod huffman;
 
 use consts::MAX_UNCOMPRESSED_BLOCK_SIZE;
 use new_bitsream::NewBitStream;

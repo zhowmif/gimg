@@ -23,7 +23,7 @@ pub fn zlib_encode(mut deflate_encoder: DeflateEncoder) -> NewBitStream {
     encoded.push_u8_lsb(fcheck, 5);
     encoded.push_u8_lsb(fdict, 1);
     encoded.push_u8_lsb(flevel, 2);
-    encoded.extend(&deflate_encoder.finish());
+    encoded.extend_aligned(&deflate_encoder.finish());
     encoded.push_bytes_lsb(&adler32.to_be_bytes());
 
     encoded

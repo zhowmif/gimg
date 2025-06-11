@@ -3,17 +3,23 @@ use std::collections::{HashMap, VecDeque};
 use crate::tree::BinaryTree;
 
 pub struct PriorityQueue<T> {
-    queue: VecDeque<(T, u8)>,
+    queue: VecDeque<(T, u32)>,
 }
 
 impl<T> PriorityQueue<T> {
-    fn from_vec(mut vec: Vec<(T, u8)>) -> PriorityQueue<T> {
+    fn from_vec(mut vec: Vec<(T, u32)>) -> PriorityQueue<T> {
         vec.sort_by_key(|(_, p)| *p);
 
         PriorityQueue { queue: vec.into() }
     }
 
-    fn enqueue(&mut self, new_value: T, new_value_priority: u8) {
+    pub fn new() -> PriorityQueue<T> {
+        PriorityQueue {
+            queue: VecDeque::new(),
+        }
+    }
+
+    pub fn enqueue(&mut self, new_value: T, new_value_priority: u32) {
         let mut index = self.queue.len();
 
         for (i, (_, priority)) in self.queue.iter().enumerate() {
@@ -26,12 +32,16 @@ impl<T> PriorityQueue<T> {
         self.queue.insert(index, (new_value, new_value_priority));
     }
 
-    fn dequeue(&mut self) -> Option<(T, u8)> {
+    pub fn dequeue(&mut self) -> Option<(T, u32)> {
         self.queue.pop_back()
     }
 
-    fn dequeue_front(&mut self) -> Option<(T, u8)> {
+    pub fn dequeue_front(&mut self) -> Option<(T, u32)> {
         self.queue.pop_front()
+    }
+
+    pub fn len(&self) -> usize {
+        self.queue.len()
     }
 
     pub fn to_huffman_tree(self) -> BinaryTree<Option<T>> {
@@ -71,7 +81,7 @@ impl<T: ToString> PriorityQueue<T> {
 }
 
 pub fn get_letter_frequencies(s: &str) -> PriorityQueue<char> {
-    let mut frequencies: HashMap<char, u8> = HashMap::new();
+    let mut frequencies: HashMap<char, u32> = HashMap::new();
 
     for c in s.chars() {
         match frequencies.get_mut(&c) {
