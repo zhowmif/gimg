@@ -1,10 +1,13 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::mem;
 
 use crate::queue::PriorityQueue;
 
 use super::new_bitsream::NewBitStream;
+
+pub mod package_merge;
 
 pub struct HuffmanEncoder<T: Eq + Hash + Clone> {
     symbol_frequencies: HashMap<T, u32>,
@@ -56,20 +59,24 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
 
         symbol_lengths
     }
+}
 
-    pub fn construct_canonical_tree_from_lengths(
-        symbol_lengths: Vec<(T, u32)>,
-    ) -> Vec<(T, NewBitStream)> {
-        let mut symbol_codes = Vec::new();
-        let h = symbol_lengths.last().unwrap().1;
-        let mut b = 0;
-        for (symbol, length) in symbol_lengths.into_iter() {
-            let m = b << (8 - h);
-            let p = NewBitStream::from_byte_msb(m, length as u8);
-            symbol_codes.push((symbol, p));
-            b += 1 << (h - length);
-        }
-
-        symbol_codes
+pub fn construct_canonical_tree_from_lengths<T: Display>(
+    symbol_lengths: Vec<(T, u32)>,
+) -> Vec<(T, NewBitStream)> {
+    let mut symbol_codes = Vec::new();
+    let h = symbol_lengths.last().unwrap().1;
+    let mut b = 0;
+    for (symbol, length) in symbol_lengths.into_iter() {
+        let m = saturating_shl(b, (8 as u32).saturating_sub(h));
+        let p = NewBitStream::from_u32_msb(m, length as u8);
+        symbol_codes.push((symbol, p));
+        b += 1 << (h - length);
     }
+
+    symbol_codes
+}
+
+fn saturating_shl(lhs: u32, rhs: u32) -> u32 {
+    lhs.checked_shl(rhs as u32).unwrap_or(0)
 }

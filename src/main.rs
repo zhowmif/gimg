@@ -3,6 +3,7 @@
 use std::{
     fs,
     io::Read,
+    sync::BarrierWaitResult,
     time::{self, Instant},
 };
 
@@ -16,7 +17,7 @@ use muxers::Muxer;
 use png::{
     deflate::{
         self,
-        huffman::HuffmanEncoder,
+        huffman::{construct_canonical_tree_from_lengths, package_merge::{self, PackageMergeEncoder}, HuffmanEncoder},
         lzss::{backreference::generate, decode_lzss, encode_lzss},
         new_bitsream::NewBitStream,
         zlib::zlib_encode,
@@ -44,21 +45,59 @@ mod stream;
 mod tree;
 
 fn main() {
-    huffman_test();
+    // let b = NewBitStream::from_u32_msb(0b11101010000000000000000000000000, 8);
+    // println!("{b}");
+    // huffman_test();
+    package_merge_test();
 }
 
-fn huffman_test() {
-    let input_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabccceffdgfdgrethadzxcvfkdgldffdsfdsfdsfdfdfdfd";
-    let mut huffman_encoder = HuffmanEncoder::new();
-    for chr in input_string.chars() {
-        huffman_encoder.add_symbol(&chr);
+fn package_merge_test() {
+    let bee_movie_script = fs::read_to_string("save.txt").expect("Failed to read input file");
+    let mut encoder = PackageMergeEncoder::new();
+    for chr in bee_movie_script.chars() {
+        encoder.add_symbol(&chr);
     }
-    let huffman_length_values = huffman_encoder.get_symbol_lengths();
-    println!("{:?}", huffman_length_values);
-    let huffman_tree = HuffmanEncoder::construct_canonical_tree_from_lengths(huffman_length_values);
+    let huffman_length_values = encoder.get_symbol_lengths(7);
+    let g = huffman_length_values.clone();
+    let huffman_tree = construct_canonical_tree_from_lengths(huffman_length_values);
     for (chr, code) in huffman_tree.into_iter() {
         println!("{} {}", chr, code);
     }
+    let mut total_size = 0;
+    for chr in bee_movie_script.chars() {
+        total_size += g.iter().find(|(x, _l)| *x == chr).unwrap().1;
+    }
+
+    println!(
+        "Original length {}, reduced: {}",
+        bee_movie_script.len() * 8,
+        total_size
+    );
+}
+
+fn huffman_test() {
+    let bee_movie_script = fs::read_to_string("save.txt").expect("Failed to read input file");
+    // let input_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabccceffdgfdgrethadzxcvfkdgldffdsfdsfdsfdfdfdfdt";
+    let mut huffman_encoder = HuffmanEncoder::new();
+    for chr in bee_movie_script.chars() {
+        huffman_encoder.add_symbol(&chr);
+    }
+    let huffman_length_values = huffman_encoder.get_symbol_lengths();
+    let g = huffman_length_values.clone();
+    let huffman_tree = construct_canonical_tree_from_lengths(huffman_length_values);
+    for (chr, code) in huffman_tree.into_iter() {
+        println!("{} {}", chr, code);
+    }
+    let mut total_size = 0;
+    for chr in bee_movie_script.chars() {
+        total_size += g.iter().find(|(x, _l)| *x == chr).unwrap().1;
+    }
+
+    println!(
+        "Original length {}, reduced: {}",
+        bee_movie_script.len() * 8,
+        total_size
+    );
 }
 
 fn png_test() {

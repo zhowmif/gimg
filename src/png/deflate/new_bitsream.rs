@@ -25,6 +25,22 @@ impl NewBitStream {
         }
     }
 
+    pub fn from_u32_msb(num: u32, offset: u8) -> Self {
+        let mut bitstream = NewBitStream::new();
+        let mut mask = (1 as u32) << (offset - 1);
+
+        while mask > 0 {
+            match num & mask {
+                0 => bitstream.push_zero(),
+                _ => bitstream.push_one(),
+            };
+
+            mask >>= 1;
+        }
+
+        bitstream
+    }
+
     fn flush_working_byte(&mut self) {
         if self.current_bit_number == 8 {
             self.stream.push(self.working_byte);
@@ -119,12 +135,15 @@ impl Display for NewBitStream {
         for byte in self.stream.iter() {
             write!(f, "{:08b}", byte)?
         }
-        write!(
-            f,
-            "{:0width$b}",
-            self.working_byte >> (8 - self.current_bit_number),
-            width = self.current_bit_number as usize
-        )?;
+
+        if self.current_bit_number != 0 {
+            write!(
+                f,
+                "{:0width$b}",
+                self.working_byte >> (8 - self.current_bit_number),
+                width = self.current_bit_number as usize
+            )?;
+        }
 
         Ok(())
     }
