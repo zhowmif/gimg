@@ -1,45 +1,42 @@
-use hash::LzssHashTable;
+pub mod backreference;
+mod bitstream_lzss;
+mod hash;
 
 use crate::{bits::Bit, png::deflate::bitstream::BitStream};
+use hash::LzssHashTable;
 use std::collections::HashMap;
 
-mod hash;
-pub mod backreference;
-
-struct Backreference(u16, u8);
-
-impl Backreference {
-    fn distance(&self) -> u16 {
-        self.0
-    }
-
-    fn length(&self) -> u8 {
-        self.1
-    }
+#[derive(Debug)]
+pub enum LzssSymbol {
+    Literal(u8),
+    Backreference(u16, u8),
 }
 
-pub fn encode_lzss(bytes: &[u8], window_size: usize) -> BitStream {
+pub fn encode_lzss(bytes: &[u8], window_size: usize) -> Vec<LzssSymbol> {
     let mut cursor = 0;
-    let mut bitstream = BitStream::new();
+    let mut stream = Vec::with_capacity(bytes.len() / 2);
     let mut table = LzssHashTable::new();
 
     while cursor < bytes.len() {
-        match find_backreference_with_table(bytes, cursor, window_size, &mut table) {
-            Some(backreference) => {
-                bitstream.push_one();
-                bitstream.push_byte(backreference.length());
-                bitstream.push_bytes(&backreference.distance().to_be_bytes());
-                cursor += backreference.length() as usize;
-            }
-            None => {
-                bitstream.push_zero();
-                bitstream.push_byte(bytes[cursor]);
-                cursor += 1;
-            }
-        }
+        stream.push(
+            match find_backreference_with_table(bytes, cursor, window_size, &mut table) {
+                Some(backreference) => {
+                    let symbol = LzssSymbol::Backreference(backreference.0, backreference.1);
+                    cursor += backreference.1 as usize;
+
+                    symbol
+                }
+                None => {
+                    let symbol = LzssSymbol::Literal(bytes[cursor]);
+                    cursor += 1;
+
+                    symbol
+                }
+            },
+        );
     }
 
-    bitstream
+    stream
 }
 
 fn find_backreference_with_table(
@@ -47,7 +44,7 @@ fn find_backreference_with_table(
     cursor: usize,
     window_size: usize,
     table: &mut LzssHashTable,
-) -> Option<Backreference> {
+) -> Option<(u16, u8)> {
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {
@@ -58,27 +55,19 @@ fn find_backreference_with_table(
     best_match
 }
 
-pub fn decode_lzss(bitstream: &BitStream) -> Vec<u8> {
+pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::new();
-    let mut idx = 0;
-    let mut table: HashMap<(u8, u8, u8), u8> = HashMap::new();
-    table.insert((7, 5, 3), 34);
 
-    while idx < bitstream.len() {
-        let is_literal = matches!(bitstream.read_bit(&mut idx), Bit::Zero);
+    for symbol in lzss_symbols {
+        match symbol {
+            LzssSymbol::Literal(literal) => result.push(*literal),
+            LzssSymbol::Backreference(distance, length) => {
+                let backreference_data_start = result.len() - *distance as usize;
 
-        if is_literal {
-            let byte = bitstream.read_byte(&mut idx);
-            result.push(byte);
-        } else {
-            let length = bitstream.read_byte(&mut idx) as usize;
-            let d1 = bitstream.read_byte(&mut idx) as u16;
-            let d2 = bitstream.read_byte(&mut idx) as u16;
-            let distance = (d1 << 8) + d2;
-            let backrefrence_data_start = result.len() - distance as usize;
-
-            for i in backrefrence_data_start..backrefrence_data_start + length {
-                result.push(result[i]);
+                //we must do this byte by byte in case there are repetitions
+                for i in backreference_data_start..backreference_data_start + *length as usize {
+                    result.push(result[i]);
+                }
             }
         }
     }

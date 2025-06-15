@@ -25,6 +25,14 @@ impl NewBitStream {
         }
     }
 
+    pub fn from_bytes(bytes: &[u8]) -> Self {
+        Self {
+            stream: Vec::from(bytes),
+            working_byte: 0,
+            current_bit_number: 0
+        }
+    }
+
     pub fn from_u32_msb(num: u32, offset: u8) -> Self {
         let mut bitstream = NewBitStream::new();
         let mut mask = (1 as u32) << (offset - 1);

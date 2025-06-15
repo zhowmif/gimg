@@ -1,7 +1,5 @@
 use std::collections::{HashMap, VecDeque};
 
-use super::Backreference;
-
 pub struct LzssHashTable {
     map: HashMap<(u8, u8, u8), VecDeque<usize>>,
 }
@@ -20,7 +18,7 @@ impl LzssHashTable {
         whole_input: &[u8],
         cursor: usize,
         window_start_index: usize,
-    ) -> Option<Backreference> {
+    ) -> Option<(u16, u8)> {
         let chain = self.get_chain(&whole_input[cursor..])?;
         let (index, length) = chain
             .iter()
@@ -32,13 +30,17 @@ impl LzssHashTable {
                 )
             })
             .max_by_key(|(_idx, length)| *length)?;
-        let backreference = Backreference((cursor - index) as u16, length as u8);
+        let backreference = ((cursor - index) as u16, length as u8);
 
         Some(backreference)
     }
 
     fn get_chain(&self, byte_sequence: &[u8]) -> Option<&VecDeque<usize>> {
-        let byte_prefix = (byte_sequence[0], byte_sequence[1], byte_sequence[2]);
+        let byte_prefix = (
+            *byte_sequence.get(0)?,
+            *byte_sequence.get(1)?,
+            *byte_sequence.get(2)?,
+        );
 
         self.map.get(&byte_prefix)
     }

@@ -1,11 +1,13 @@
 mod bitstream;
 mod consts;
+pub mod huffman;
 pub mod lzss;
 pub mod new_bitsream;
 pub mod zlib;
-pub mod huffman;
 
-use consts::MAX_UNCOMPRESSED_BLOCK_SIZE;
+use bitstream::BitStream;
+use consts::{LZSS_WINDOW_SIZE, MAX_UNCOMPRESSED_BLOCK_SIZE};
+use lzss::encode_lzss;
 use new_bitsream::NewBitStream;
 use zlib::zlib_encode;
 
@@ -57,8 +59,8 @@ pub struct DeflateEncoder {
 
 impl DeflateEncoder {
     pub fn new(block_type: BlockType) -> Self {
-        if !matches!(block_type, BlockType::None) {
-            println!("Actual compression is not supported yet :)");
+        if matches!(block_type, BlockType::DynamicHuffman) {
+            println!("Dynamic huffman trees are not supported yet :)");
         }
 
         Self {
@@ -76,6 +78,14 @@ impl DeflateEncoder {
     }
 
     pub fn finish(&mut self) -> NewBitStream {
+        match self.block_type {
+            BlockType::None => self.encode_block_type_zero(),
+            BlockType::FixedHuffman => self.encode_block_type_one(),
+            BlockType::DynamicHuffman => todo!(),
+        }
+    }
+
+    fn encode_block_type_zero(&mut self) -> NewBitStream {
         let mut bitstream = NewBitStream::new();
 
         for (block_index, block_bytes) in self
@@ -104,5 +114,11 @@ impl DeflateEncoder {
         }
 
         bitstream
+    }
+
+    fn encode_block_type_one(&mut self) -> NewBitStream {
+        let lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
+
+        todo!()
     }
 }

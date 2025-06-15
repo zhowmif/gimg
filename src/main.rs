@@ -17,7 +17,11 @@ use muxers::Muxer;
 use png::{
     deflate::{
         self,
-        huffman::{construct_canonical_tree_from_lengths, package_merge::{self, PackageMergeEncoder}, HuffmanEncoder},
+        huffman::{
+            construct_canonical_tree_from_lengths,
+            package_merge::{self, PackageMergeEncoder},
+            HuffmanEncoder,
+        },
         lzss::{backreference::generate, decode_lzss, encode_lzss},
         new_bitsream::NewBitStream,
         zlib::zlib_encode,
@@ -48,7 +52,8 @@ fn main() {
     // let b = NewBitStream::from_u32_msb(0b11101010000000000000000000000000, 8);
     // println!("{b}");
     // huffman_test();
-    package_merge_test();
+    // package_merge_test();
+    lzss_test();
 }
 
 fn package_merge_test() {
@@ -144,4 +149,13 @@ fn encode_test() {
 
     println!("equal? {:?}", res == data);
     // println!("res {:?}", res);
+}
+
+fn lzss_test() {
+    // let input = "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way—in short, the period was so far like the present period, that some of its noisiest authorities insisted on its being received, for good or for evil, in the superlative degree of comparison only.".as_bytes();
+    let input = fs::read("save.txt").expect("failed to read input file");
+    let lzss_encoded = encode_lzss(&input, 1000);
+    let decoded_bytes = decode_lzss(&lzss_encoded);
+    let decoded = str::from_utf8(&decoded_bytes).expect("Lzss decode produced invalid utf8");
+    println!("is good {}", input == decoded_bytes);
 }
