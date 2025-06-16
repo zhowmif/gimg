@@ -29,7 +29,7 @@ impl NewBitStream {
         Self {
             stream: Vec::from(bytes),
             working_byte: 0,
-            current_bit_number: 0
+            current_bit_number: 0,
         }
     }
 
@@ -101,11 +101,40 @@ impl NewBitStream {
         self.push_byte_lsb((n >> 8) as u8);
     }
 
-    pub fn extend_aligned(&mut self, other: &Self) {
+    pub fn extend(&mut self, other: &Self) {
         if self.current_bit_number == 0 {
             self.stream.extend_from_slice(&other.stream);
+            return;
+        }
+
+        for byte in other.stream.iter() {
+            self.push_u8_msb(*byte, 8);
+        }
+
+        if other.current_bit_number != 0 {
+            self.push_u8_msb(other.working_byte, other.current_bit_number);
+        }
+    }
+
+    fn push_u8_msb(&mut self, num: u8, len: u8) {
+        let mut mask = 1 << (len - 1);
+
+        while mask > 0 {
+            match num & mask {
+                0 => self.push_zero(),
+                _ => self.push_one(),
+            };
+
+            mask >>= 1;
+        }
+    }
+
+    pub fn push_u16_msb(&mut self, num: u16, len: u8) {
+        if len > 8 {
+            self.push_u8_msb((num >> 8) as u8, 8);
+            self.push_u8_msb(num as u8, len - 8);
         } else {
-            panic!("Can't extend when current bitstream is not aligned");
+            self.push_u8_msb(num as u8, len);
         }
     }
 
@@ -129,9 +158,11 @@ impl NewBitStream {
     }
 
     //TODO: this should probably transfer ownership instead of cloning
-    pub fn to_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&mut self) -> Vec<u8> {
         if self.current_bit_number != 0 {
-            panic!("Can't convert to bytes if it's not good");
+            self.push_u8_msb(0, 8 - self.current_bit_number);
+
+            debug_assert_eq!(self.current_bit_number, 0);
         }
 
         self.stream.clone()
@@ -148,7 +179,7 @@ impl Display for NewBitStream {
             write!(
                 f,
                 "{:0width$b}",
-                self.working_byte >> (8 - self.current_bit_number),
+                self.working_byte,
                 width = self.current_bit_number as usize
             )?;
         }

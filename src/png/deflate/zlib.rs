@@ -1,6 +1,6 @@
 use crate::{algebra::align_up, png::adler32::Adler32Calculator};
 
-use super::{bitstream::BitStream, new_bitsream::NewBitStream, DeflateEncoder};
+use super::{new_bitsream::NewBitStream, DeflateEncoder};
 
 const DEFLATE_CM: u16 = 8;
 
@@ -23,7 +23,7 @@ pub fn zlib_encode(mut deflate_encoder: DeflateEncoder) -> NewBitStream {
     encoded.push_u8_lsb(fcheck, 5);
     encoded.push_u8_lsb(fdict, 1);
     encoded.push_u8_lsb(flevel, 2);
-    encoded.extend_aligned(&deflate_encoder.finish());
+    encoded.extend(&deflate_encoder.finish());
     encoded.push_bytes_lsb(&adler32.to_be_bytes());
 
     encoded

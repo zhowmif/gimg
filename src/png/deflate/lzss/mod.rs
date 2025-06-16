@@ -2,14 +2,13 @@ pub mod backreference;
 mod bitstream_lzss;
 mod hash;
 
-use crate::{bits::Bit, png::deflate::bitstream::BitStream};
 use hash::LzssHashTable;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum LzssSymbol {
     Literal(u8),
     Backreference(u16, u8),
+    EndOfBlock
 }
 
 pub fn encode_lzss(bytes: &[u8], window_size: usize) -> Vec<LzssSymbol> {
@@ -45,6 +44,7 @@ fn find_backreference_with_table(
     window_size: usize,
     table: &mut LzssHashTable,
 ) -> Option<(u16, u8)> {
+    //TODO: this should only look ahead 258 bytes
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {
@@ -69,6 +69,7 @@ pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Vec<u8> {
                     result.push(result[i]);
                 }
             }
+            LzssSymbol::EndOfBlock => todo!("What to do what to do"),
         }
     }
 

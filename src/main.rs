@@ -1,19 +1,17 @@
 #![allow(dead_code)]
 
+use core::str;
 use std::{
     fs,
-    io::Read,
-    sync::BarrierWaitResult,
-    time::{self, Instant},
+    io::{self, Read},
 };
 
 use colors::RGBA;
-use demuxers::{image_demuxer::ImageDemuxer, Demuxer};
+use demuxers::image_demuxer::ImageDemuxer;
 use flate2::{
-    read::{DeflateDecoder, DeflateEncoder, ZlibEncoder},
+    read::{DeflateDecoder, DeflateEncoder},
     Compression,
 };
-use muxers::Muxer;
 use png::{
     deflate::{
         self,
@@ -49,60 +47,18 @@ mod stream;
 mod tree;
 
 fn main() {
-    // let b = NewBitStream::from_u32_msb(0b11101010000000000000000000000000, 8);
-    // println!("{b}");
+    // let mut a = NewBitStream::from_u32_msb(0b010, 3);
+    // let b = NewBitStream::from_u32_msb(0b11110001, 8);
+    // let c = NewBitStream::from_u32_msb(0b001011, 6);
+    // a.extend(&b);
+    // a.extend(&c);
+    // println!("{}", a);
+
     // huffman_test();
     // package_merge_test();
-    lzss_test();
-}
-
-fn package_merge_test() {
-    let bee_movie_script = fs::read_to_string("save.txt").expect("Failed to read input file");
-    let mut encoder = PackageMergeEncoder::new();
-    for chr in bee_movie_script.chars() {
-        encoder.add_symbol(&chr);
-    }
-    let huffman_length_values = encoder.get_symbol_lengths(7);
-    let g = huffman_length_values.clone();
-    let huffman_tree = construct_canonical_tree_from_lengths(huffman_length_values);
-    for (chr, code) in huffman_tree.into_iter() {
-        println!("{} {}", chr, code);
-    }
-    let mut total_size = 0;
-    for chr in bee_movie_script.chars() {
-        total_size += g.iter().find(|(x, _l)| *x == chr).unwrap().1;
-    }
-
-    println!(
-        "Original length {}, reduced: {}",
-        bee_movie_script.len() * 8,
-        total_size
-    );
-}
-
-fn huffman_test() {
-    let bee_movie_script = fs::read_to_string("save.txt").expect("Failed to read input file");
-    // let input_string = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabccceffdgfdgrethadzxcvfkdgldffdsfdsfdsfdfdfdfdt";
-    let mut huffman_encoder = HuffmanEncoder::new();
-    for chr in bee_movie_script.chars() {
-        huffman_encoder.add_symbol(&chr);
-    }
-    let huffman_length_values = huffman_encoder.get_symbol_lengths();
-    let g = huffman_length_values.clone();
-    let huffman_tree = construct_canonical_tree_from_lengths(huffman_length_values);
-    for (chr, code) in huffman_tree.into_iter() {
-        println!("{} {}", chr, code);
-    }
-    let mut total_size = 0;
-    for chr in bee_movie_script.chars() {
-        total_size += g.iter().find(|(x, _l)| *x == chr).unwrap().1;
-    }
-
-    println!(
-        "Original length {}, reduced: {}",
-        bee_movie_script.len() * 8,
-        total_size
-    );
+    // lzss_test();
+    // generate();
+    encode_test();
 }
 
 fn png_test() {
@@ -125,30 +81,38 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::None);
-    let mut ret_vec: Vec<u8> = Vec::new();
-    let data_length: u32 = u16::MAX as u32 + 43243;
-    // let data_length: u32 = 0b0000000110000111;
-    println!("{:#018b}", data_length);
-    println!("{data_length}");
-    let data: Vec<u8> = (0..=data_length).map(|_i| b'a' as u8).collect();
-    let mut deflater = ZlibEncoder::new(&data[..], Compression::none());
+    let input = [97u8; 1];
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
+    my_encoder.write_bytes(&input);
+    let mut out = my_encoder.finish();
+    // println!("out {}", out);
+    let out_bytes = out.to_bytes();
+
+    // let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    // let mut res = Vec::new();
+    // decode.read(&mut res).unwrap();
+    //
+    // println!("Res {:?}", res);
+
+    deflateencoder_read_hello_world(&[97]);
+
+    // println!("{:?}", flate_out);
+}
+
+fn deflateencoder_read_hello_world(input: &[u8]) {
+    let mut ret_vec = Vec::new();
+    let mut deflater = DeflateEncoder::new(input, Compression::best());
     deflater.read_to_end(&mut ret_vec).unwrap();
 
-    my_encoder.write_bytes(&data[0..10]);
-    my_encoder.write_bytes(&data[10..]);
-    let encoded = my_encoder.finish();
-    let zlib_encoded = zlib_encode(my_encoder).to_bytes();
-    fs::write("deflate.bin", ret_vec).unwrap();
-    fs::write("mydeflate.bin", zlib_encoded.clone()).unwrap();
+    for b in ret_vec.iter() {
+        print!("{:08b}", b);
+    }
+    println!();
 
-    let encoded_bytes = encoded.to_bytes().clone();
-    let mut decode = DeflateDecoder::new(&encoded_bytes[..]);
-    let mut res = Vec::new();
-    decode.read_to_end(&mut res).unwrap();
-
-    println!("equal? {:?}", res == data);
-    // println!("res {:?}", res);
+    let mut inflater = DeflateDecoder::new(&ret_vec[..]);
+    let mut b = Vec::new();
+    inflater.read_to_end(&mut b).unwrap();
+    println!("Got {:?}", b);
 }
 
 fn lzss_test() {
