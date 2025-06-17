@@ -25,7 +25,7 @@ pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     }
 
     let mut zlib_encoded = zlib_encode(encoder);
-    let compressed = zlib_encoded.to_bytes();
+    let compressed = zlib_encoded.flush_to_bytes();
 
     compressed
 }
@@ -125,7 +125,6 @@ impl DeflateEncoder {
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
-        println!("lzss stream {:?}", lzss);
         let literal_length_table = self.generate_static_lit_len_table();
         let distance_table = self.generate_static_distance_table();
 

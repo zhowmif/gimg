@@ -4,12 +4,13 @@ use core::str;
 use std::{
     fs,
     io::{self, Read},
+    iter::repeat,
 };
 
 use colors::RGBA;
 use demuxers::image_demuxer::ImageDemuxer;
 use flate2::{
-    read::{DeflateDecoder, DeflateEncoder},
+    read::{DeflateDecoder, DeflateEncoder, ZlibEncoder},
     Compression,
 };
 use png::{
@@ -81,12 +82,12 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = [97u8; 1];
+    let input = [255; 1];
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
-    // println!("out {}", out);
-    let out_bytes = out.to_bytes();
+    let out_bytes = out.flush_to_bytes();
+    print_bytes(&out_bytes);
 
     // let mut decode = DeflateDecoder::new(&out_bytes[..]);
     // let mut res = Vec::new();
@@ -94,7 +95,10 @@ fn encode_test() {
     //
     // println!("Res {:?}", res);
 
-    deflateencoder_read_hello_world(&[97]);
+    deflateencoder_read_hello_world(&input);
+    // deflateencoder_read_hello_world(&[0, 1]);
+    // // deflateencoder_read_hello_world(&[0, 255]);
+    // deflateencoder_read_hello_world(&[239]);
 
     // println!("{:?}", flate_out);
 }
@@ -103,16 +107,14 @@ fn deflateencoder_read_hello_world(input: &[u8]) {
     let mut ret_vec = Vec::new();
     let mut deflater = DeflateEncoder::new(input, Compression::best());
     deflater.read_to_end(&mut ret_vec).unwrap();
+    print_bytes(&ret_vec);
+}
 
-    for b in ret_vec.iter() {
-        print!("{:08b}", b);
+fn print_bytes(bytes: &[u8]) {
+    for b in bytes {
+        print!("{:08b} ", b);
     }
     println!();
-
-    let mut inflater = DeflateDecoder::new(&ret_vec[..]);
-    let mut b = Vec::new();
-    inflater.read_to_end(&mut b).unwrap();
-    println!("Got {:?}", b);
 }
 
 fn lzss_test() {

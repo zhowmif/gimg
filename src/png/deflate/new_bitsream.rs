@@ -17,22 +17,6 @@ impl NewBitStream {
         }
     }
 
-    pub fn from_byte_msb(byte: u8, len: u8) -> Self {
-        Self {
-            stream: Vec::new(),
-            working_byte: byte,
-            current_bit_number: len,
-        }
-    }
-
-    pub fn from_bytes(bytes: &[u8]) -> Self {
-        Self {
-            stream: Vec::from(bytes),
-            working_byte: 0,
-            current_bit_number: 0,
-        }
-    }
-
     pub fn from_u32_msb(num: u32, offset: u8) -> Self {
         let mut bitstream = NewBitStream::new();
         let mut mask = (1 as u32) << (offset - 1);
@@ -58,32 +42,15 @@ impl NewBitStream {
     }
 
     pub fn push_zero(&mut self) {
-        self.working_byte <<= 1;
+        self.working_byte >>= 1;
         self.current_bit_number += 1;
         self.flush_working_byte();
     }
 
     pub fn push_one(&mut self) {
-        self.working_byte = self.working_byte << 1 | 1;
+        self.working_byte = (self.working_byte >> 1) | 0b10000000;
         self.current_bit_number += 1;
         self.flush_working_byte();
-    }
-
-    pub fn push_u8_lsb(&mut self, n: u8, bitsize: u8) {
-        let g = 8 - self.current_bit_number;
-        if g > bitsize {
-            let bits_to_add_from_n = u8::reverse_bits(n) >> (8 - bitsize);
-            self.working_byte = (self.working_byte << bitsize) + bits_to_add_from_n;
-            self.current_bit_number += bitsize;
-        } else {
-            let bits_to_add_from_n = u8::reverse_bits(n) >> (8 - g);
-            self.stream
-                .push(saturating_shr(self.working_byte, g) + bits_to_add_from_n);
-            let bits_left = bitsize - g;
-            self.current_bit_number = bits_left;
-            self.working_byte =
-                saturating_shr(u8::reverse_bits(saturating_shr(n, g)), 8 - bits_left);
-        }
     }
 
     pub fn push_byte_lsb(&mut self, byte: u8) {
@@ -108,18 +75,44 @@ impl NewBitStream {
         }
 
         for byte in other.stream.iter() {
-            self.push_u8_msb(*byte, 8);
+            self.push_u8_lsb_ltr(*byte, 8);
         }
 
         if other.current_bit_number != 0 {
-            self.push_u8_msb(other.working_byte, other.current_bit_number);
+            self.push_u8_lsb_ltr(other.working_byte, other.current_bit_number);
         }
     }
 
-    fn push_u8_msb(&mut self, num: u8, len: u8) {
-        let mut mask = 1 << (len - 1);
+    pub fn push_u8_msb(&mut self, num: u8, length: u8) {
+        let mut mask = 1 << (length - 1);
 
         while mask > 0 {
+            match num & mask {
+                0 => self.push_zero(),
+                _ => self.push_one(),
+            };
+
+            mask >>= 1;
+        }
+    }
+
+    pub fn push_u8_lsb(&mut self, num: u8, length: u8) {
+        let mut mask = 1u16;
+
+        while mask <= 1 << (length - 1) {
+            match num as u16 & mask {
+                0 => self.push_zero(),
+                _ => self.push_one(),
+            };
+
+            mask <<= 1;
+        }
+    }
+
+    pub fn push_u8_lsb_ltr(&mut self, num: u8, length: u8) {
+        let mut mask = 1 << 7;
+
+        for _i in 0..length {
             match num & mask {
                 0 => self.push_zero(),
                 _ => self.push_one(),
@@ -157,15 +150,17 @@ impl NewBitStream {
         self.stream.len() * 8 + (self.current_bit_number as usize)
     }
 
-    //TODO: this should probably transfer ownership instead of cloning
-    pub fn to_bytes(&mut self) -> Vec<u8> {
-        if self.current_bit_number != 0 {
-            self.push_u8_msb(0, 8 - self.current_bit_number);
+    pub fn flush_to_bytes(&mut self) -> Vec<u8> {
+        let mut bytes = std::mem::replace(&mut self.stream, Vec::new());
 
-            debug_assert_eq!(self.current_bit_number, 0);
+        if self.current_bit_number != 0 {
+            bytes.push(self.working_byte >> (8 - self.current_bit_number));
+
+            self.current_bit_number = 0;
+            self.working_byte = 0;
         }
 
-        self.stream.clone()
+        bytes
     }
 }
 
@@ -179,7 +174,7 @@ impl Display for NewBitStream {
             write!(
                 f,
                 "{:0width$b}",
-                self.working_byte,
+                self.working_byte >> (8 - self.current_bit_number),
                 width = self.current_bit_number as usize
             )?;
         }

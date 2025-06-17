@@ -64,6 +64,8 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
 pub fn construct_canonical_tree_from_lengths<T: Display>(
     symbol_lengths: Vec<(T, u32)>,
 ) -> Vec<(T, NewBitStream)> {
+    debug_assert!(symbol_lengths.is_sorted_by_key(|(_val, freq)| *freq));
+
     let mut symbol_codes = Vec::new();
     let h = symbol_lengths.last().unwrap().1;
     let mut b = 0;
