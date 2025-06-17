@@ -82,7 +82,7 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = [255; 1];
+    let input = [255, 0, 100, 101];
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();

@@ -71,7 +71,7 @@ pub fn construct_canonical_tree_from_lengths<T: Display>(
     let mut b = 0;
     for (symbol, length) in symbol_lengths.into_iter() {
         let m = saturating_shl(b, (8 as u32).saturating_sub(h));
-        let p = NewBitStream::from_u32_msb(m, length as u8);
+        let p = NewBitStream::from_u32_lsb(m, length as u8);
         symbol_codes.push((symbol, p));
         b += 1 << (h - length);
     }

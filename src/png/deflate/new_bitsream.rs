@@ -17,17 +17,17 @@ impl NewBitStream {
         }
     }
 
-    pub fn from_u32_msb(num: u32, offset: u8) -> Self {
+    pub fn from_u32_lsb(num: u32, length: u8) -> Self {
         let mut bitstream = NewBitStream::new();
-        let mut mask = (1 as u32) << (offset - 1);
+        let mut mask = 1;
 
-        while mask > 0 {
+        for _i in 0..length {
             match num & mask {
                 0 => bitstream.push_zero(),
                 _ => bitstream.push_one(),
             };
 
-            mask >>= 1;
+            mask <<= 1;
         }
 
         bitstream
