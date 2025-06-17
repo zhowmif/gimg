@@ -122,7 +122,7 @@ impl NewBitStream {
         }
     }
 
-    pub fn push_u16_msb(&mut self, num: u16, len: u8) {
+    pub fn push_u16_msb_le(&mut self, num: u16, len: u8) {
         if len > 8 {
             self.push_u8_msb((num >> 8) as u8, 8);
             self.push_u8_msb(num as u8, len - 8);

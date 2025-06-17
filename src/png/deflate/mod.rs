@@ -139,7 +139,9 @@ impl DeflateEncoder {
                     result.extend(encoded_length_code);
 
                     let (len_extra_bits, len_num_extra_bits) = LENGTH_TO_EXTRA_BITS[len as usize];
-                    result.push_u16_msb(len_extra_bits, len_num_extra_bits);
+                    if len_num_extra_bits > 0 {
+                        result.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
+                    }
 
                     let distance_code = DISTANCE_TO_CODE[dist as usize];
                     let encoded_distance_code = distance_table.get(&distance_code).unwrap();
@@ -147,7 +149,9 @@ impl DeflateEncoder {
 
                     let (dist_extra_bits, dist_num_extra_bits) =
                         DISTANCE_TO_EXTRA_BITS[dist as usize];
-                    result.push_u16_msb(dist_extra_bits, dist_num_extra_bits);
+                    if dist_num_extra_bits > 0 {
+                        result.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
+                    }
                 }
                 lzss::LzssSymbol::EndOfBlock => {
                     result.extend(literal_length_table.get(&256).unwrap())

@@ -82,20 +82,20 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = [255, 0, 100, 101];
+    let input = [100, 101, 102, 103, 100, 101, 102, 103, 255, 255, 255];
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
-    print_bytes(&out_bytes);
+    // print_bytes(&out_bytes);
 
-    // let mut decode = DeflateDecoder::new(&out_bytes[..]);
-    // let mut res = Vec::new();
-    // decode.read(&mut res).unwrap();
-    //
-    // println!("Res {:?}", res);
+    let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    let mut res = Vec::new();
+    decode.read_to_end(&mut res).unwrap();
 
-    deflateencoder_read_hello_world(&input);
+    println!("Res {:?}", res);
+
+    // deflateencoder_read_hello_world(&input);
     // deflateencoder_read_hello_world(&[0, 1]);
     // // deflateencoder_read_hello_world(&[0, 255]);
     // deflateencoder_read_hello_world(&[239]);
