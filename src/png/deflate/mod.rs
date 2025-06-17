@@ -17,6 +17,8 @@ use lzss::{
 use new_bitsream::NewBitStream;
 use zlib::zlib_encode;
 
+use crate::print_bytes;
+
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(BlockType::None);
 

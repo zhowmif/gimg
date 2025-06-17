@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
-
+#[derive(Debug, Clone)]
 pub struct NewBitStream {
     stream: Vec<u8>,
     working_byte: u8,
@@ -69,10 +68,6 @@ impl NewBitStream {
     }
 
     pub fn extend(&mut self, other: &Self) {
-        if self.current_bit_number == 0 {
-            self.stream.extend_from_slice(&other.stream);
-            return;
-        }
 
         for byte in other.stream.iter() {
             self.push_u8_lsb_ltr(*byte, 8);
@@ -124,10 +119,10 @@ impl NewBitStream {
 
     pub fn push_u16_msb_le(&mut self, num: u16, len: u8) {
         if len > 8 {
-            self.push_u8_msb((num >> 8) as u8, 8);
-            self.push_u8_msb(num as u8, len - 8);
+            self.push_u8_lsb((num >> 8) as u8, 8);
+            self.push_u8_lsb(num as u8, len - 8);
         } else if len > 0 {
-            self.push_u8_msb(num as u8, len);
+            self.push_u8_lsb(num as u8, len);
         }
     }
 
