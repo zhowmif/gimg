@@ -8,7 +8,7 @@ use hash::LzssHashTable;
 pub enum LzssSymbol {
     Literal(u8),
     Backreference(u16, u8),
-    EndOfBlock
+    EndOfBlock,
 }
 
 pub fn encode_lzss(bytes: &[u8], window_size: usize) -> Vec<LzssSymbol> {

@@ -1,5 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
+use super::backreference;
+
 pub struct LzssHashTable {
     map: HashMap<(u8, u8, u8), VecDeque<usize>>,
 }

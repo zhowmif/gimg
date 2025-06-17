@@ -82,7 +82,7 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = [100, 101, 102, 103, 100, 101, 102, 103, 255, 255, 255];
+    let input = fs::read("save.txt").unwrap();
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
