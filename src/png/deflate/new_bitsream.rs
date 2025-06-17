@@ -126,7 +126,7 @@ impl NewBitStream {
         if len > 8 {
             self.push_u8_msb((num >> 8) as u8, 8);
             self.push_u8_msb(num as u8, len - 8);
-        } else {
+        } else if len > 0 {
             self.push_u8_msb(num as u8, len);
         }
     }
