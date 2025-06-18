@@ -28,7 +28,10 @@ impl LzssHashTable {
             .map(|idx| {
                 (
                     idx,
-                    number_of_matching_bytes(&whole_input[cursor..], &whole_input[*idx..]),
+                    number_of_matching_bytes(
+                        &whole_input[cursor..(cursor + 258).min(whole_input.len())],
+                        &whole_input[*idx..(cursor + 258).min(whole_input.len())],
+                    ),
                 )
             })
             .max_by_key(|(_idx, length)| *length)?;

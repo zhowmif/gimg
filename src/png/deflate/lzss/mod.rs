@@ -4,7 +4,7 @@ mod hash;
 
 use hash::LzssHashTable;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LzssSymbol {
     Literal(u8),
     Backreference(u16, u8),
@@ -44,7 +44,6 @@ fn find_backreference_with_table(
     window_size: usize,
     table: &mut LzssHashTable,
 ) -> Option<(u16, u8)> {
-    //TODO: this should only look ahead 258 bytes
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {

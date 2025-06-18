@@ -5,14 +5,14 @@ pub mod lzss;
 pub mod new_bitsream;
 pub mod zlib;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Read};
 
 use consts::{LZSS_WINDOW_SIZE, MAX_UNCOMPRESSED_BLOCK_SIZE};
 use lzss::{
     backreference::{
         DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
     },
-    encode_lzss,
+    encode_lzss, LzssSymbol,
 };
 use new_bitsream::NewBitStream;
 use zlib::zlib_encode;
@@ -127,6 +127,7 @@ impl DeflateEncoder {
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
+
         let literal_length_table = self.generate_static_lit_len_table();
         let distance_table = self.generate_static_distance_table();
 

@@ -4,7 +4,7 @@ use std::fmt::Display;
 pub struct NewBitStream {
     stream: Vec<u8>,
     working_byte: u8,
-    current_bit_number: u8,
+    pub current_bit_number: u8,
 }
 
 impl NewBitStream {
@@ -68,7 +68,6 @@ impl NewBitStream {
     }
 
     pub fn extend(&mut self, other: &Self) {
-
         for byte in other.stream.iter() {
             self.push_u8_lsb_ltr(*byte, 8);
         }
@@ -118,11 +117,42 @@ impl NewBitStream {
     }
 
     pub fn push_u16_msb_le(&mut self, num: u16, len: u8) {
-        if len > 8 {
-            self.push_u8_lsb((num >> 8) as u8, 8);
-            self.push_u8_lsb(num as u8, len - 8);
-        } else if len > 0 {
-            self.push_u8_lsb(num as u8, len);
+        if len == 0 {
+            return;
+        }
+
+        let mut mask = 1u16;
+
+        for _i in 0..len {
+            match num & mask {
+                0 => self.push_zero(),
+                _ => self.push_one(),
+            };
+
+            mask <<= 1;
+        }
+        // if len > 8 {
+        //     self.push_u8_lsb((num >> 8) as u8, 8);
+        //     self.push_u8_lsb(num as u8, len - 8);
+        // } else if len > 0 {
+        //     self.push_u8_lsb(num as u8, len);
+        // }
+    }
+
+    pub fn test_me(&mut self, num: u16, len: u8) {
+        if len == 0 {
+            return;
+        }
+
+        let mut mask = 1 << (len - 1);
+
+        for _i in 0..len {
+            match num & mask {
+                0 => self.push_zero(),
+                _ => self.push_one(),
+            };
+
+            mask >>= 1;
         }
     }
 

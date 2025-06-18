@@ -82,26 +82,25 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = &fs::read("save.txt").unwrap();
-    // let input = vec![
-    //     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 255, 255, 255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-    // ];
+    let input = fs::read("save.txt").unwrap();
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
-    // print_bytes(&out_bytes);
-
-    let mut decode = DeflateDecoder::new(&out_bytes[..]);
-    // let mut out = Vec::new();
-    // decode.read_to_end(&mut out).unwrap();
+    // // print_bytes(&out_bytes);
     //
-    // println!("Res {:?}", &out);
+    let mut decode = DeflateDecoder::new(&out_bytes[..]);
 
-    let mut s = String::new();
-    decode.read_to_string(&mut s).unwrap();
+    let mut out = Vec::new();
+    decode.read_to_end(&mut out).unwrap();
+    // println!("Last decoded {:?}", &out[out.len() - 5..]);
 
-    println!("Res {:?}", &s);
+    // let mut s = String::new();
+    // decode.read_to_string(&mut s).unwrap();
+    // println!("Res {:?}", &s);
+    // println!("printed {:?}", &s[1080..1095]);
+    // println!("at the start it is {:?}", &input[44..47]);
+    // println!("at the end it is {:?}", &input[1088..1091]);
 
     // deflateencoder_read_hello_world(&input);
     // deflateencoder_read_hello_world(&[0, 1]);
