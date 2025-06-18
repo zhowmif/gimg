@@ -3,16 +3,16 @@ mod consts;
 pub mod huffman;
 pub mod lzss;
 pub mod new_bitsream;
-pub mod zlib;
 pub mod prefix_table;
+pub mod zlib;
 
 use std::{collections::HashMap, io::Read};
 
 use consts::{
-    END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_SYMBOL_CODE_LENGTH,
+    END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH, MAX_SYMBOL_CODE_LENGTH,
     MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
-use huffman::package_merge::PackageMergeEncoder;
+use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{
         DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
@@ -20,6 +20,7 @@ use lzss::{
     encode_lzss, LzssSymbol,
 };
 use new_bitsream::NewBitStream;
+use prefix_table::{get_cl_codes_for_code_lengths, number_of_zero_symbols_at_end};
 use zlib::zlib_encode;
 
 use crate::print_bytes;
@@ -72,10 +73,6 @@ pub struct DeflateEncoder {
 
 impl DeflateEncoder {
     pub fn new(block_type: BlockType) -> Self {
-        if matches!(block_type, BlockType::DynamicHuffman) {
-            println!("Dynamic huffman trees are not supported yet :)");
-        }
-
         Self {
             block_type,
             bytes: vec![],
@@ -94,7 +91,7 @@ impl DeflateEncoder {
         match self.block_type {
             BlockType::None => self.encode_block_type_zero(),
             BlockType::FixedHuffman => self.encode_block_type_one(true),
-            BlockType::DynamicHuffman => todo!(),
+            BlockType::DynamicHuffman => self.encode_block_type_two(true),
         }
     }
 
@@ -136,34 +133,11 @@ impl DeflateEncoder {
         let literal_length_table = self.generate_static_lit_len_table();
         let distance_table = self.generate_static_distance_table();
 
-        for lzss_symbol in lzss {
-            match lzss_symbol {
-                lzss::LzssSymbol::Literal(lit) => {
-                    result.extend(literal_length_table.get(&lit.into()).unwrap())
-                }
-                lzss::LzssSymbol::Backreference(dist, len) => {
-                    let length_code = LENGTH_TO_CODE[len as usize];
-                    let encoded_length_code = literal_length_table.get(&length_code).unwrap();
-                    result.extend(encoded_length_code);
-
-                    let (len_extra_bits, len_num_extra_bits) = LENGTH_TO_EXTRA_BITS[len as usize];
-                    result.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
-
-                    let distance_code = DISTANCE_TO_CODE[dist as usize];
-                    let encoded_distance_code = distance_table.get(&distance_code).unwrap();
-                    result.extend(&encoded_distance_code);
-
-                    let (dist_extra_bits, dist_num_extra_bits) =
-                        DISTANCE_TO_EXTRA_BITS[dist as usize];
-                    result.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
-                }
-                lzss::LzssSymbol::EndOfBlock => result.extend(
-                    literal_length_table
-                        .get(&END_OF_BLOCK_MARKER_VALUE)
-                        .unwrap(),
-                ),
-            }
-        }
+        result.extend(&Self::encode_lzss_stream(
+            &lzss,
+            &literal_length_table,
+            &distance_table,
+        ));
 
         result
     }
@@ -177,13 +151,104 @@ impl DeflateEncoder {
         lzss.push(lzss::LzssSymbol::EndOfBlock);
         let (ll_code_lengths, distance_code_lengths) =
             Self::generate_prefix_codes_from_lzss_stream(&lzss);
+        let ll_codes = construct_canonical_tree_from_lengths(&ll_code_lengths);
+        let distance_codes = construct_canonical_tree_from_lengths(&distance_code_lengths);
+
+        let ll_alphabet: Vec<_> = (0..=285).collect();
+        let ll_table_length =
+            ll_alphabet.len() - number_of_zero_symbols_at_end(&ll_alphabet, &ll_code_lengths);
+        let ll_table_cl_codes =
+            get_cl_codes_for_code_lengths(&ll_alphabet[..ll_table_length], &ll_code_lengths);
+        let hlit = ll_table_length - 257;
+        result.push_u8_lsb(hlit as u8, 5);
+
+        //TODO: should this be 31?
+        let distance_alphabet: Vec<_> = (0..=31).collect();
+        let distance_table_length = distance_alphabet.len()
+            - number_of_zero_symbols_at_end(&distance_alphabet, &distance_code_lengths);
+        let distance_table_cl_codes = get_cl_codes_for_code_lengths(
+            &distance_alphabet[..distance_table_length],
+            &distance_code_lengths,
+        );
+        let hdist = distance_table_length - 1;
+        result.push_u8_lsb(hdist as u8, 5);
+        let mut cl_codes_encoder = PackageMergeEncoder::new();
+        for cl_code in ll_table_cl_codes
+            .iter()
+            .chain(distance_table_cl_codes.iter())
+        {
+            cl_codes_encoder.add_symbol(&cl_code.to_number());
+        }
+        let cl_codes_lengths = cl_codes_encoder.get_symbol_lengths(MAX_CL_CODE_LENGTH);
+        let cl_codes = construct_canonical_tree_from_lengths(&cl_codes_lengths);
+        let cl_alphabet: Vec<_> = vec![
+            16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
+        ];
+        let cl_table_length =
+            cl_alphabet.len() - number_of_zero_symbols_at_end(&cl_alphabet, &cl_codes_lengths);
+        let hclen = cl_table_length - 4;
+        result.push_u8_lsb(hclen as u8, 4);
+
+        for i in 0..cl_table_length {
+            let cl_code_length = cl_codes_lengths
+                .get(&cl_alphabet[i])
+                .map(|x| *x)
+                .unwrap_or(0);
+
+            result.push_u8_lsb(cl_code_length as u8, 3);
+        }
+        for cl_code in ll_table_cl_codes {
+            result.extend(&cl_code.encode(&cl_codes))
+        }
+        for cl_code in distance_table_cl_codes {
+            result.extend(&cl_code.encode(&cl_codes))
+        }
+
+        result.extend(&Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes));
+
+        result
+    }
+
+    fn encode_lzss_stream(
+        lzss_stream: &[LzssSymbol],
+        ll_table: &HashMap<u16, NewBitStream>,
+        distance_table: &HashMap<u16, NewBitStream>,
+    ) -> NewBitStream {
+        let mut result = NewBitStream::new();
+
+        for lzss_symbol in lzss_stream {
+            match lzss_symbol {
+                lzss::LzssSymbol::Literal(lit) => {
+                    result.extend(ll_table.get(&(*lit as u16)).unwrap())
+                }
+                lzss::LzssSymbol::Backreference(dist, len) => {
+                    let length_code = LENGTH_TO_CODE[*len as usize];
+                    let encoded_length_code = ll_table.get(&length_code).unwrap();
+                    result.extend(encoded_length_code);
+
+                    let (len_extra_bits, len_num_extra_bits) = LENGTH_TO_EXTRA_BITS[*len as usize];
+                    result.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
+
+                    let distance_code = DISTANCE_TO_CODE[*dist as usize];
+                    let encoded_distance_code = distance_table.get(&distance_code).unwrap();
+                    result.extend(&encoded_distance_code);
+
+                    let (dist_extra_bits, dist_num_extra_bits) =
+                        DISTANCE_TO_EXTRA_BITS[*dist as usize];
+                    result.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
+                }
+                lzss::LzssSymbol::EndOfBlock => {
+                    result.extend(ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap())
+                }
+            }
+        }
 
         result
     }
 
     fn generate_prefix_codes_from_lzss_stream(
         lzss_stream: &[LzssSymbol],
-    ) -> (Vec<(u16, u32)>, Vec<(u16, u32)>) {
+    ) -> (HashMap<u16, u32>, HashMap<u16, u32>) {
         let mut ll_encoder = PackageMergeEncoder::new();
         let mut distance_encoder = PackageMergeEncoder::new();
 

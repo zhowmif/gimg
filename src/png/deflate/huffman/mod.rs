@@ -61,18 +61,19 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
     }
 }
 
-pub fn construct_canonical_tree_from_lengths<T: Display>(
-    symbol_lengths: Vec<(T, u32)>,
-) -> Vec<(T, NewBitStream)> {
-    debug_assert!(symbol_lengths.is_sorted_by_key(|(_val, freq)| *freq));
+pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone>(
+    symbol_lengths: &HashMap<T, u32>,
+) -> HashMap<T, NewBitStream> {
+    let mut symbol_lengths: Vec<_> = symbol_lengths.into_iter().collect();
+    symbol_lengths.sort_by_key(|(_symbol, len)| **len);
 
-    let mut symbol_codes = Vec::new();
-    let h = symbol_lengths.last().unwrap().1;
+    let mut symbol_codes = HashMap::new();
+    let h = *symbol_lengths.last().unwrap().1;
     let mut b = 0;
     for (symbol, length) in symbol_lengths.into_iter() {
         let m = saturating_shl(b, (8 as u32).saturating_sub(h));
-        let p = NewBitStream::from_u32_lsb(m, length as u8);
-        symbol_codes.push((symbol, p));
+        let p = NewBitStream::from_u32_lsb(m, *length as u8);
+        symbol_codes.insert(symbol.clone(), p);
         b += 1 << (h - length);
     }
 

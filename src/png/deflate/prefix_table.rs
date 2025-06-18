@@ -1,6 +1,8 @@
 use std::{collections::HashMap, hash::Hash};
 
-#[derive(Debug)]
+use super::new_bitsream::NewBitStream;
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CLCode {
     SingleLength(u32),
     Sixteen { repeat_count: usize },
@@ -8,9 +10,34 @@ pub enum CLCode {
     Eighteen { repeat_count: usize },
 }
 
+impl CLCode {
+    pub fn to_number(&self) -> u32 {
+        match self {
+            CLCode::SingleLength(length) => *length,
+            CLCode::Sixteen { repeat_count: _ } => 16,
+            CLCode::Seventeen { repeat_count: _ } => 17,
+            CLCode::Eighteen { repeat_count: _ } => 18,
+        }
+    }
+
+    pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>) -> NewBitStream {
+        let mut result = NewBitStream::new();
+        result.extend(cl_codes.get(&self.to_number()).unwrap());
+
+        match self {
+            CLCode::SingleLength(_) => {}
+            CLCode::Sixteen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 2),
+            CLCode::Seventeen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 3),
+            CLCode::Eighteen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 7),
+        }
+
+        result
+    }
+}
+
 pub fn get_cl_codes_for_code_lengths<T: Eq + Hash>(
     sorted_alphabet: &[T],
-    symbol_code_lengths: HashMap<T, u32>,
+    symbol_code_lengths: &HashMap<T, u32>,
 ) -> Vec<CLCode> {
     let all_symbol_lengths: Vec<_> = sorted_alphabet
         .into_iter()
@@ -54,4 +81,22 @@ pub fn get_cl_codes_for_code_lengths<T: Eq + Hash>(
     }
 
     cl_codes
+}
+
+pub fn number_of_zero_symbols_at_end<T: Eq + Hash>(
+    sorted_alphabet: &[T],
+    symbol_code_lengths: &HashMap<T, u32>,
+) -> usize {
+    let mut result = 0;
+
+    for symbol in sorted_alphabet.iter().rev() {
+        match symbol_code_lengths.get(symbol) {
+            Some(_) => result += 1,
+            None => {
+                break;
+            }
+        }
+    }
+
+    return result;
 }

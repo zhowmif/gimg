@@ -20,9 +20,12 @@ impl<T: Eq + Hash + Clone + Debug> PackageMergeEncoder<T> {
         };
     }
 
-    pub fn get_symbol_lengths(&mut self, max_code_length: usize) -> Vec<(T, u32)> {
+    pub fn get_symbol_lengths(&mut self, max_code_length: usize) -> HashMap<T, u32> {
         if self.symbol_frequencies.len() > (1 << max_code_length) {
-            panic!("Cannot produce {max_code_length} for {} different values", self.symbol_frequencies.len())
+            panic!(
+                "Cannot produce {max_code_length} for {} different values",
+                self.symbol_frequencies.len()
+            )
         }
         let symbol_frequencies: Vec<(T, u32)> =
             mem::replace(&mut self.symbol_frequencies, HashMap::new())
@@ -52,7 +55,7 @@ impl<T: Eq + Hash + Clone + Debug> PackageMergeEncoder<T> {
             .map(|queue| queue.0)
             .flatten()
             .collect();
-        let mut symbol_lengths: Vec<_> = symbol_frequencies
+        let symbol_lengths = symbol_frequencies
             .into_iter()
             .map(|(symbol, _f)| {
                 let count = all_used_coins
@@ -63,7 +66,6 @@ impl<T: Eq + Hash + Clone + Debug> PackageMergeEncoder<T> {
                 (symbol, count)
             })
             .collect();
-        symbol_lengths.sort_by_key(|(s, length)| *length);
 
         symbol_lengths
     }

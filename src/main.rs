@@ -2,7 +2,10 @@
 
 use core::str;
 use std::{
-    collections::HashMap, fs, io::{self, Read}, iter::repeat
+    collections::HashMap,
+    fs,
+    io::{self, Read},
+    iter::repeat,
 };
 
 use colors::RGBA;
@@ -13,11 +16,16 @@ use flate2::{
 };
 use png::{
     deflate::{
-        self, huffman::{
+        self,
+        huffman::{
             construct_canonical_tree_from_lengths,
             package_merge::{self, PackageMergeEncoder},
             HuffmanEncoder,
-        }, lzss::{backreference::generate, decode_lzss, encode_lzss}, new_bitsream::NewBitStream, prefix_table::get_cl_codes_for_code_lengths, zlib::zlib_encode
+        },
+        lzss::{backreference::generate, decode_lzss, encode_lzss},
+        new_bitsream::NewBitStream,
+        prefix_table::get_cl_codes_for_code_lengths,
+        zlib::zlib_encode,
     },
     encode_png,
 };
@@ -54,7 +62,6 @@ fn main() {
     // lzss_test();
     // generate();
     // encode_test();
-    cl_code_test();
 }
 
 fn png_test() {
@@ -103,25 +110,6 @@ fn encode_test() {
     // deflateencoder_read_hello_world(&[239]);
 
     // println!("{:?}", flate_out);
-}
-
-fn cl_code_test() {
-    let mut symbol_code_lengths = HashMap::new();
-    symbol_code_lengths.insert(0, 3);
-    symbol_code_lengths.insert(1, 3);
-    symbol_code_lengths.insert(65, 6);
-    symbol_code_lengths.insert(66, 5);
-    symbol_code_lengths.insert(67, 5);
-    symbol_code_lengths.insert(68, 5);
-    symbol_code_lengths.insert(69, 5);
-    symbol_code_lengths.insert(70, 5);
-    symbol_code_lengths.insert(71, 8);
-    symbol_code_lengths.insert(256, 10);
-    symbol_code_lengths.insert(257, 3);
-
-    let ll_symbols: Vec<_> = (0..=285).collect();
-    let cl_codes = get_cl_codes_for_code_lengths(&ll_symbols, symbol_code_lengths);
-    println!("{:?}", cl_codes);
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {
