@@ -4,10 +4,15 @@ pub mod huffman;
 pub mod lzss;
 pub mod new_bitsream;
 pub mod zlib;
+pub mod prefix_table;
 
 use std::{collections::HashMap, io::Read};
 
-use consts::{LZSS_WINDOW_SIZE, MAX_UNCOMPRESSED_BLOCK_SIZE};
+use consts::{
+    END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_SYMBOL_CODE_LENGTH,
+    MAX_UNCOMPRESSED_BLOCK_SIZE,
+};
+use huffman::package_merge::PackageMergeEncoder;
 use lzss::{
     backreference::{
         DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
@@ -152,13 +157,54 @@ impl DeflateEncoder {
                         DISTANCE_TO_EXTRA_BITS[dist as usize];
                     result.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
                 }
-                lzss::LzssSymbol::EndOfBlock => {
-                    result.extend(literal_length_table.get(&256).unwrap())
-                }
+                lzss::LzssSymbol::EndOfBlock => result.extend(
+                    literal_length_table
+                        .get(&END_OF_BLOCK_MARKER_VALUE)
+                        .unwrap(),
+                ),
             }
         }
 
         result
+    }
+
+    fn encode_block_type_two(&mut self, is_last: bool) -> NewBitStream {
+        let mut result = NewBitStream::new();
+        Self::push_is_last(&mut result, is_last);
+        result.push_u8_lsb(BlockType::DynamicHuffman.to_number().into(), 2);
+
+        let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
+        lzss.push(lzss::LzssSymbol::EndOfBlock);
+        let (ll_code_lengths, distance_code_lengths) =
+            Self::generate_prefix_codes_from_lzss_stream(&lzss);
+
+        result
+    }
+
+    fn generate_prefix_codes_from_lzss_stream(
+        lzss_stream: &[LzssSymbol],
+    ) -> (Vec<(u16, u32)>, Vec<(u16, u32)>) {
+        let mut ll_encoder = PackageMergeEncoder::new();
+        let mut distance_encoder = PackageMergeEncoder::new();
+
+        for lzss_symbol in lzss_stream {
+            match lzss_symbol {
+                LzssSymbol::Literal(value) => {
+                    ll_encoder.add_symbol(&(*value as u16));
+                }
+                LzssSymbol::Backreference(distance, length) => {
+                    ll_encoder.add_symbol(&LENGTH_TO_CODE[*length as usize]);
+                    distance_encoder.add_symbol(&DISTANCE_TO_CODE[*distance as usize]);
+                }
+                LzssSymbol::EndOfBlock => {
+                    ll_encoder.add_symbol(&END_OF_BLOCK_MARKER_VALUE);
+                }
+            }
+        }
+        let ll_code_lengths = ll_encoder.get_symbol_lengths(MAX_SYMBOL_CODE_LENGTH);
+        let distance_code_length = distance_encoder.get_symbol_lengths(MAX_SYMBOL_CODE_LENGTH);
+
+        (ll_code_lengths, distance_code_length)
     }
 
     fn generate_static_lit_len_table(&self) -> HashMap<u16, NewBitStream> {
