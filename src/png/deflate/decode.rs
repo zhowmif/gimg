@@ -93,7 +93,6 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
         }
     }
 
-    println!("{:?}", lzss_stream);
     let data = decode_lzss(&lzss_stream);
     target.extend_from_slice(&data);
 }

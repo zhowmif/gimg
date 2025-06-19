@@ -5,7 +5,8 @@ use std::{
     collections::HashMap,
     fs,
     io::{self, Read},
-    iter::repeat, u16,
+    iter::repeat,
+    u16,
 };
 
 use colors::RGBA;
@@ -16,11 +17,17 @@ use flate2::{
 };
 use png::{
     deflate::{
-        self, decode::decode_deflate, huffman::{
+        self,
+        decode::decode_deflate,
+        huffman::{
             construct_canonical_tree_from_lengths,
             package_merge::{self, PackageMergeEncoder},
             HuffmanEncoder,
-        }, lzss::{backreference::generate, decode_lzss, encode_lzss}, new_bitsream::{BitStreamReader, NewBitStream}, prefix_table::get_cl_codes_for_code_lengths, zlib::zlib_encode
+        },
+        lzss::{backreference::generate, decode_lzss, encode_lzss},
+        new_bitsream::{BitStreamReader, NewBitStream},
+        prefix_table::get_cl_codes_for_code_lengths,
+        zlib::zlib_encode,
     },
     encode_png,
 };
@@ -97,7 +104,7 @@ fn encode_test() {
     let mut s = String::new();
     decode.read_to_string(&mut s).unwrap();
     println!("Res {:?}", &s);
-    
+
     // println!("printed {:?}", &s[1080..1095]);
     // println!("at the start it is {:?}", &input[44..47]);
     // println!("at the end it is {:?}", &input[1088..1091]);
@@ -117,6 +124,11 @@ fn decode_test() {
     my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
+
+    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    // let mut out_bytes = Vec::new();
+    // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
+
     // print!("bytes ");
     // print_bytes(&out_bytes);
 
@@ -127,6 +139,7 @@ fn decode_test() {
 
     let decoded = decode_deflate(&out_bytes);
     println!("my out {:?}", String::from_utf8(decoded).unwrap());
+
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {

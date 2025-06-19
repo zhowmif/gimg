@@ -223,7 +223,6 @@ impl DeflateEncoder {
         for lzss_symbol in lzss_stream {
             match lzss_symbol {
                 lzss::LzssSymbol::Literal(lit) => {
-                    let code = ll_table.get(&(*lit as u16)).unwrap();
                     target.extend(ll_table.get(&(*lit as u16)).unwrap())
                 }
                 lzss::LzssSymbol::Backreference(dist, len) => {
