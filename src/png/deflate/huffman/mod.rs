@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::mem;
 
@@ -61,11 +61,12 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
     }
 }
 
-pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone>(
+pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone + Debug>(
     symbol_lengths: &HashMap<T, u32>,
 ) -> HashMap<T, NewBitStream> {
     let mut symbol_lengths: Vec<_> = symbol_lengths.into_iter().collect();
     symbol_lengths.sort_by_key(|(_symbol, len)| **len);
+    println!("sorted symbol lengths {:?}", symbol_lengths);
 
     let mut symbol_codes = HashMap::new();
     let h = *symbol_lengths.last().map(|(_, len)| *len).unwrap_or(&0);

@@ -1,11 +1,15 @@
 use std::collections::HashMap;
 
-use crate::png::deflate::lzss::backreference::{
-    DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS, LENGTH_CODE_TO_BASE_LENGTH, LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_EXTRA_BITS
+use crate::png::deflate::{
+    huffman::construct_canonical_tree_from_lengths,
+    lzss::backreference::{
+        DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS, LENGTH_CODE_TO_BASE_LENGTH,
+        LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_EXTRA_BITS,
+    },
 };
 
 use super::{
-    consts::END_OF_BLOCK_MARKER_VALUE,
+    consts::{CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE},
     lzss::{decode_lzss, LzssSymbol},
     new_bitsream::{BitStreamReader, NewBitStream},
     prefix_table::{
@@ -70,7 +74,10 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
                 let base_distance = DISTANCE_CODE_TO_BASE_DISTANCE[*distance_code as usize];
                 let num_extra_bits = DISTANCE_CODE_TO_EXTRA_BITS[*distance_code as usize];
                 let extra_bits = reader.read_number_lsb(num_extra_bits);
-                lzss_stream.push(LzssSymbol::Backreference(base_distance + extra_bits, current_length));
+                lzss_stream.push(LzssSymbol::Backreference(
+                    base_distance + extra_bits,
+                    current_length,
+                ));
                 read_distance = false;
             }
         } else {
@@ -97,4 +104,27 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     target.extend_from_slice(&data);
 }
 
-fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {}
+fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
+    let hlit = reader.read_number_lsb(5);
+    let ll_table_length = hlit + 257;
+
+    let hdist = reader.read_number_lsb(5);
+    let distance_table_length = hdist + 1;
+    let hclen = reader.read_number_lsb(4);
+    let cl_table_length = hclen + 4;
+
+    let mut cl_codes_lengths: HashMap<u32, u32> = HashMap::new();
+    for i in 0..cl_table_length {
+        let current_cl_length = reader.read_number_lsb(3);
+
+        cl_codes_lengths.insert(CL_ALPHABET[i as usize], current_cl_length as u32);
+    }
+
+    let cl_codes = construct_canonical_tree_from_lengths(&cl_codes_lengths);
+
+    print!("Decode ");
+    for (cl_code, code) in cl_codes.iter() {
+        print!("({cl_code},{code}), ");
+    }
+    println!();
+}

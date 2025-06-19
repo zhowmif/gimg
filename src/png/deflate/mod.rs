@@ -1,17 +1,17 @@
 mod bitstream;
 mod consts;
+pub mod decode;
 pub mod huffman;
 pub mod lzss;
 pub mod new_bitsream;
 pub mod prefix_table;
 pub mod zlib;
-pub mod decode;
 
 use std::collections::HashMap;
 
 use consts::{
-    END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH, MAX_SYMBOL_CODE_LENGTH,
-    MAX_UNCOMPRESSED_BLOCK_SIZE,
+    CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
+    MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
@@ -21,7 +21,10 @@ use lzss::{
     encode_lzss, LzssSymbol,
 };
 use new_bitsream::NewBitStream;
-use prefix_table::{generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths, number_of_zero_symbols_at_end};
+use prefix_table::{
+    generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
+    number_of_zero_symbols_at_end,
+};
 use zlib::zlib_encode;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
@@ -186,17 +189,19 @@ impl DeflateEncoder {
         }
         let cl_codes_lengths = cl_codes_encoder.get_symbol_lengths(MAX_CL_CODE_LENGTH);
         let cl_codes = construct_canonical_tree_from_lengths(&cl_codes_lengths);
-        let cl_alphabet: Vec<_> = vec![
-            16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15,
-        ];
         let cl_table_length =
-            cl_alphabet.len() - number_of_zero_symbols_at_end(&cl_alphabet, &cl_codes_lengths);
+            CL_ALPHABET.len() - number_of_zero_symbols_at_end(&CL_ALPHABET, &cl_codes_lengths);
         let hclen = cl_table_length - 4;
         result.push_u8_lsb(hclen as u8, 4);
 
+        print!("Encode ");
+        for (cl_code, code) in cl_codes.iter() {
+            print!("({cl_code},{code}), ");
+        }
+        println!();
         for i in 0..cl_table_length {
             let cl_code_length = cl_codes_lengths
-                .get(&cl_alphabet[i])
+                .get(&CL_ALPHABET[i])
                 .map(|x| *x)
                 .unwrap_or(0);
 
@@ -273,7 +278,6 @@ impl DeflateEncoder {
 
         (ll_code_lengths, distance_code_length)
     }
-
 
     fn push_is_last(bitstream: &mut NewBitStream, is_last: bool) {
         if is_last {
