@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct NewBitStream {
     stream: Vec<u8>,
     working_byte: u8,
@@ -175,6 +175,10 @@ impl NewBitStream {
         self.stream.len() * 8 + (self.current_bit_number as usize)
     }
 
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+
     pub fn flush_to_bytes(&mut self) -> Vec<u8> {
         let mut bytes = std::mem::replace(&mut self.stream, Vec::new());
 
@@ -245,7 +249,7 @@ impl<'a> BitStreamReader<'a> {
         let mut number: u16 = 0;
 
         for shift in 0..length {
-            number |= (self.read_bit() << shift) as u16;
+            number |= ((self.read_bit() as u16) << shift) as u16;
         }
 
         number

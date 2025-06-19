@@ -100,3 +100,33 @@ pub fn number_of_zero_symbols_at_end<T: Eq + Hash>(
 
     return result;
 }
+
+pub fn reverse_hashmap<K, V: Eq + Hash>(map: HashMap<K, V>) -> HashMap<V, K> {
+    map.into_iter().map(|(k, v)| (v, k)).collect()
+}
+
+pub fn generate_static_lit_len_table() -> HashMap<u16, NewBitStream> {
+    let lengths = generate_bitstream_from_range(48, 191, 8)
+        .into_iter()
+        .chain(generate_bitstream_from_range(400, 511, 9))
+        .chain(generate_bitstream_from_range(0, 23, 7))
+        .chain(generate_bitstream_from_range(192, 199, 8))
+        .enumerate()
+        .map(|(i, val)| (i as u16, val))
+        .collect();
+
+    lengths
+}
+
+pub fn generate_static_distance_table() -> HashMap<u16, NewBitStream> {
+    (0..30)
+        .zip(0..30)
+        .map(|(i, val)| (i as u16, NewBitStream::from_u32_lsb(val, 5)))
+        .collect()
+}
+
+fn generate_bitstream_from_range(start: usize, end: usize, len: u8) -> Vec<NewBitStream> {
+    (start..=end)
+        .map(|n| NewBitStream::from_u32_lsb(n as u32, len))
+        .collect()
+}

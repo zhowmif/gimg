@@ -111,21 +111,22 @@ fn encode_test() {
 }
 
 fn decode_test() {
-    let input = b"ABCDEABCD ABCDEABCD";
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::None);
-    my_encoder.write_bytes(input);
+    let input = fs::read("save.txt").unwrap();
+    // let input = b"ABCDEABCD ABCDEABCD";
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
+    my_encoder.write_bytes(&input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
-    print!("bytes ");
-    print_bytes(&out_bytes);
+    // print!("bytes ");
+    // print_bytes(&out_bytes);
 
     let mut decode = DeflateDecoder::new(&out_bytes[..]);
     let mut out = Vec::new();
     decode.read_to_end(&mut out).unwrap();
-    println!("Flate2 Out {:?}", out);
+    // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
 
     let decoded = decode_deflate(&out_bytes);
-    println!("my out {:?}", decoded);
+    println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {

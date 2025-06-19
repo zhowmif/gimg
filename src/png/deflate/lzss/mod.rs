@@ -1,5 +1,4 @@
 pub mod backreference;
-mod bitstream_lzss;
 mod hash;
 
 use hash::LzssHashTable;
@@ -7,7 +6,7 @@ use hash::LzssHashTable;
 #[derive(Debug, Clone)]
 pub enum LzssSymbol {
     Literal(u8),
-    Backreference(u16, u8),
+    Backreference(u16, u16),
     EndOfBlock,
 }
 
@@ -43,7 +42,7 @@ fn find_backreference_with_table(
     cursor: usize,
     window_size: usize,
     table: &mut LzssHashTable,
-) -> Option<(u16, u8)> {
+) -> Option<(u16, u16)> {
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {

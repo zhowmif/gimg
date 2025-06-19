@@ -5,7 +5,7 @@ const LENGTH_CODES: [u16; 29] = [
     276, 277, 278, 279, 280, 281, 282, 283, 284, 285,
 ];
 
-const EXTRA_BITS: [u8; 29] = [
+const LENGTH_EXTRA_BITS: [u8; 29] = [
     0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0,
 ];
 const LENGTHS: [u16; 29] = [
@@ -19,24 +19,42 @@ pub fn generate() {
     // for (i, (length, next_length)) in LENGTHS.iter().zip(LENGTHS[1..].iter()).enumerate() {
     //     for l in *length..*next_length {
     //         codes[l as usize] = LENGTH_CODES[i];
-    //         extra_bits[l as usize] = (l - length, EXTRA_BITS[i]);
+    //         extra_bits[l as usize] = (l - length, LENGTH_EXTRA_BITS[i]);
     //     }
     // }
     //
     // println!("{:?}", codes);
     // println!("{:?}", extra_bits);
 
-    let mut distance_codes = [0; *DISTANCES.last().unwrap() as usize];
-    let mut distance_extra_bits = [(0, 0); *DISTANCES.last().unwrap() as usize];
-    for (i, (distance, next_distance)) in DISTANCES.iter().zip(DISTANCES[1..].iter()).enumerate() {
-        for d in *distance..*next_distance {
-            // distance_codes[d as usize] = DISTANCE_CODES[i];
-            distance_extra_bits[d as usize] = (d - distance, DISTANCE_EXTRA_BITS[i]);
-        }
-    }
+    // let mut distance_codes = [0; *DISTANCES.last().unwrap() as usize];
+    // let mut distance_extra_bits = [(0, 0); *DISTANCES.last().unwrap() as usize];
+    // for (i, (distance, next_distance)) in DISTANCES.iter().zip(DISTANCES[1..].iter()).enumerate() {
+    //     for d in *distance..*next_distance {
+    //         // distance_codes[d as usize] = DISTANCE_CODES[i];
+    //         distance_extra_bits[d as usize] = (d - distance, DISTANCE_EXTRA_BITS[i]);
+    //     }
+    // }
 
     // println!("{:?}", distance_codes);
-    println!("{:?}", distance_extra_bits);
+    // println!("{:?}", distance_extra_bits);
+
+    // let mut length_code_to_extra_bits = [0;286];
+    // let mut length_code_to_base_length = [0;286];
+    // for i in 0..LENGTH_CODES.len() {
+        // length_code_to_extra_bits[LENGTH_CODES[i] as usize] = LENGTH_EXTRA_BITS[i];
+        // length_code_to_base_length[LENGTH_CODES[i] as usize] = LENGTHS[i];
+    // }
+    // println!("{:?}", length_code_to_extra_bits);
+    // println!("{:?}", length_code_to_base_length);
+
+    let mut distance_code_to_base_distance = [0;30];
+    // let mut distance_code_to_extra_bits = [0;30];
+    for i in 0..DISTANCE_CODES.len() {
+        distance_code_to_base_distance[DISTANCE_CODES[i] as usize] = DISTANCES[i];
+        // distance_code_to_extra_bits[DISTANCE_CODES[i] as usize] = DISTANCE_EXTRA_BITS[i];
+    }
+    // println!("{:?}", distance_code_to_extra_bits);
+    println!("{:?}", distance_code_to_base_distance);
 }
 
 pub const LENGTH_TO_CODE: [u16; 258] = [
@@ -55,6 +73,11 @@ pub const LENGTH_TO_CODE: [u16; 258] = [
     284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284, 284,
     284, 284, 284, 284, 284, 284, 284, 284, 284, 284,
 ];
+
+pub const LENGTH_CODE_TO_EXTRA_BITS: [usize; 286] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0];
+pub const LENGTH_CODE_TO_BASE_LENGTH: [u16; 286] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258];
+pub const DISTANCE_CODE_TO_EXTRA_BITS: [usize; 30] = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13];
+pub const DISTANCE_CODE_TO_BASE_DISTANCE: [u16; 30] = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577];
 
 
 //(value of extra bits, number of extra bits)

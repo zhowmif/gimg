@@ -21,7 +21,7 @@ use lzss::{
     encode_lzss, LzssSymbol,
 };
 use new_bitsream::NewBitStream;
-use prefix_table::{get_cl_codes_for_code_lengths, number_of_zero_symbols_at_end};
+use prefix_table::{generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths, number_of_zero_symbols_at_end};
 use zlib::zlib_encode;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
@@ -139,8 +139,8 @@ impl DeflateEncoder {
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
 
-        let literal_length_table = self.generate_static_lit_len_table();
-        let distance_table = self.generate_static_distance_table();
+        let literal_length_table = generate_static_lit_len_table();
+        let distance_table = generate_static_distance_table();
 
         Self::encode_lzss_stream(&lzss, &literal_length_table, &distance_table, &mut result);
 
@@ -223,6 +223,7 @@ impl DeflateEncoder {
         for lzss_symbol in lzss_stream {
             match lzss_symbol {
                 lzss::LzssSymbol::Literal(lit) => {
+                    let code = ll_table.get(&(*lit as u16)).unwrap();
                     target.extend(ll_table.get(&(*lit as u16)).unwrap())
                 }
                 lzss::LzssSymbol::Backreference(dist, len) => {
@@ -274,31 +275,6 @@ impl DeflateEncoder {
         (ll_code_lengths, distance_code_length)
     }
 
-    fn generate_static_lit_len_table(&self) -> HashMap<u16, NewBitStream> {
-        let lengths = Self::generate_bitstream_from_range(48, 191, 8)
-            .into_iter()
-            .chain(Self::generate_bitstream_from_range(400, 511, 9))
-            .chain(Self::generate_bitstream_from_range(0, 23, 7))
-            .chain(Self::generate_bitstream_from_range(192, 199, 8))
-            .enumerate()
-            .map(|(i, val)| (i as u16, val))
-            .collect();
-
-        lengths
-    }
-
-    fn generate_static_distance_table(&self) -> HashMap<u16, NewBitStream> {
-        (0..30)
-            .zip(0..30)
-            .map(|(i, val)| (i as u16, NewBitStream::from_u32_lsb(val, 5)))
-            .collect()
-    }
-
-    fn generate_bitstream_from_range(start: usize, end: usize, len: u8) -> Vec<NewBitStream> {
-        (start..=end)
-            .map(|n| NewBitStream::from_u32_lsb(n as u32, len))
-            .collect()
-    }
 
     fn push_is_last(bitstream: &mut NewBitStream, is_last: bool) {
         if is_last {
