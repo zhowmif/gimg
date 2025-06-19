@@ -24,7 +24,7 @@ impl LzssHashTable {
         let chain = self.get_chain(&whole_input[cursor..])?;
         let (index, length) = chain
             .iter()
-            .filter(|idx| **idx > window_start_index)
+            .filter(|idx| **idx >= window_start_index)
             .map(|idx| {
                 (
                     idx,

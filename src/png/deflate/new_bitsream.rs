@@ -62,7 +62,7 @@ impl NewBitStream {
         }
     }
 
-    pub fn push_u16_lsb(&mut self, n: u16) {
+    pub fn push_u16_lsb_le(&mut self, n: u16) {
         self.push_byte_lsb(n as u8);
         self.push_byte_lsb((n >> 8) as u8);
     }
@@ -192,14 +192,14 @@ impl NewBitStream {
 impl Display for NewBitStream {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for byte in self.stream.iter() {
-            write!(f, "{:08b}", byte)?
+            write!(f, "{:08b}", u8::reverse_bits(*byte))?
         }
 
         if self.current_bit_number != 0 {
             write!(
                 f,
                 "{:0width$b}",
-                self.working_byte >> (8 - self.current_bit_number),
+                u8::reverse_bits(self.working_byte),
                 width = self.current_bit_number as usize
             )?;
         }
@@ -214,4 +214,61 @@ fn saturating_shr(lhs: u8, rhs: u8) -> u8 {
 
 fn saturating_shl(lhs: u8, rhs: u8) -> u8 {
     lhs.checked_shl(rhs as u32).unwrap_or(0)
+}
+
+pub struct BitStreamReader<'a> {
+    bytes: &'a [u8],
+    bit_index: usize,
+}
+
+impl<'a> BitStreamReader<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            bit_index: 0,
+        }
+    }
+
+    pub fn read_bit(&mut self) -> u8 {
+        let byte = self.bytes[self.bit_index >> 3];
+        let bit = (byte >> (self.bit_index & 0b111)) & 1;
+        self.bit_index += 1;
+
+        bit
+    }
+
+    pub fn read_bit_boolean(&mut self) -> bool {
+        self.read_bit() == 1
+    }
+
+    pub fn read_number_lsb(&mut self, length: usize) -> u16 {
+        let mut number: u16 = 0;
+
+        for shift in 0..length {
+            number |= (self.read_bit() << shift) as u16;
+        }
+
+        number
+    }
+
+    pub fn align_to_next_byte(&mut self) {
+        if self.bit_index & 0b111 != 0 {
+            self.bit_index = ((self.bit_index >> 3) + 1) << 3;
+        }
+    }
+
+    pub fn read_u16_lsb_le(&mut self) -> u16 {
+        let first = self.read_number_lsb(8);
+        let second = self.read_number_lsb(8);
+        let number = (second << 8) + first;
+
+        number
+    }
+
+    pub fn read_bytes_aligned(&mut self, length: usize) -> &[u8] {
+        let byte_index = self.bit_index >> 3;
+        self.bit_index = (byte_index + length) << 3;
+
+        &self.bytes[byte_index..byte_index + length]
+    }
 }

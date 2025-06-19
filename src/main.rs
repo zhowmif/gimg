@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     fs,
     io::{self, Read},
-    iter::repeat,
+    iter::repeat, u16,
 };
 
 use colors::RGBA;
@@ -16,16 +16,11 @@ use flate2::{
 };
 use png::{
     deflate::{
-        self,
-        huffman::{
+        self, decode::decode_deflate, huffman::{
             construct_canonical_tree_from_lengths,
             package_merge::{self, PackageMergeEncoder},
             HuffmanEncoder,
-        },
-        lzss::{backreference::generate, decode_lzss, encode_lzss},
-        new_bitsream::NewBitStream,
-        prefix_table::get_cl_codes_for_code_lengths,
-        zlib::zlib_encode,
+        }, lzss::{backreference::generate, decode_lzss, encode_lzss}, new_bitsream::{BitStreamReader, NewBitStream}, prefix_table::get_cl_codes_for_code_lengths, zlib::zlib_encode
     },
     encode_png,
 };
@@ -62,6 +57,7 @@ fn main() {
     // lzss_test();
     // generate();
     // encode_test();
+    decode_test();
 }
 
 fn png_test() {
@@ -84,22 +80,24 @@ fn png_test() {
 }
 
 fn encode_test() {
-    let input = fs::read("save.txt").unwrap();
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
-    my_encoder.write_bytes(&input);
+    // let input = fs::read("save.txt").unwrap();
+    let input = b"ABCDEABCD ABCDEABCD";
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
+    my_encoder.write_bytes(input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
     // // print_bytes(&out_bytes);
     //
     let mut decode = DeflateDecoder::new(&out_bytes[..]);
 
-    let mut out = Vec::new();
-    decode.read_to_end(&mut out).unwrap();
-    // println!("Last decoded {:?}", &out[out.len() - 5..]);
+    // let mut out = Vec::new();
+    // decode.read_to_end(&mut out).unwrap();
+    // println!("Out {:?}", out);
 
-    // let mut s = String::new();
-    // decode.read_to_string(&mut s).unwrap();
-    // println!("Res {:?}", &s);
+    let mut s = String::new();
+    decode.read_to_string(&mut s).unwrap();
+    println!("Res {:?}", &s);
+    
     // println!("printed {:?}", &s[1080..1095]);
     // println!("at the start it is {:?}", &input[44..47]);
     // println!("at the end it is {:?}", &input[1088..1091]);
@@ -110,6 +108,24 @@ fn encode_test() {
     // deflateencoder_read_hello_world(&[239]);
 
     // println!("{:?}", flate_out);
+}
+
+fn decode_test() {
+    let input = b"ABCDEABCD ABCDEABCD";
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::None);
+    my_encoder.write_bytes(input);
+    let mut out = my_encoder.finish();
+    let out_bytes = out.flush_to_bytes();
+    print!("bytes ");
+    print_bytes(&out_bytes);
+
+    let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    let mut out = Vec::new();
+    decode.read_to_end(&mut out).unwrap();
+    println!("Flate2 Out {:?}", out);
+
+    let decoded = decode_deflate(&out_bytes);
+    println!("my out {:?}", decoded);
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {

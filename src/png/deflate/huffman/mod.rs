@@ -68,7 +68,7 @@ pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone>(
     symbol_lengths.sort_by_key(|(_symbol, len)| **len);
 
     let mut symbol_codes = HashMap::new();
-    let h = *symbol_lengths.last().unwrap().1;
+    let h = *symbol_lengths.last().map(|(_, len)| *len).unwrap_or(&0);
     let mut b = 0;
     for (symbol, length) in symbol_lengths.into_iter() {
         let m = saturating_shl(b, (8 as u32).saturating_sub(h));

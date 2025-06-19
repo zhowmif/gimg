@@ -91,10 +91,10 @@ pub fn number_of_zero_symbols_at_end<T: Eq + Hash>(
 
     for symbol in sorted_alphabet.iter().rev() {
         match symbol_code_lengths.get(symbol) {
-            Some(_) => result += 1,
-            None => {
+            Some(_) => {
                 break;
             }
+            None => result += 1,
         }
     }
 

@@ -5,8 +5,9 @@ pub mod lzss;
 pub mod new_bitsream;
 pub mod prefix_table;
 pub mod zlib;
+pub mod decode;
 
-use std::{collections::HashMap, io::Read};
+use std::collections::HashMap;
 
 use consts::{
     END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH, MAX_SYMBOL_CODE_LENGTH,
@@ -22,8 +23,6 @@ use lzss::{
 use new_bitsream::NewBitStream;
 use prefix_table::{get_cl_codes_for_code_lengths, number_of_zero_symbols_at_end};
 use zlib::zlib_encode;
-
-use crate::print_bytes;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(BlockType::None);
@@ -50,6 +49,7 @@ pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
 //     compressed
 // }
 
+#[derive(Debug)]
 pub enum BlockType {
     None,
     FixedHuffman,
@@ -62,6 +62,15 @@ impl BlockType {
             BlockType::None => 0,
             BlockType::FixedHuffman => 1,
             BlockType::DynamicHuffman => 2,
+        }
+    }
+
+    fn from_number(n: u8) -> Self {
+        match n {
+            0 => BlockType::None,
+            1 => BlockType::FixedHuffman,
+            2 => BlockType::DynamicHuffman,
+            n => panic!("Unrecognized deflate block type {}", n),
         }
     }
 }
@@ -111,8 +120,8 @@ impl DeflateEncoder {
             bitstream.push_u8_lsb(0, 5);
 
             let len = block_bytes.len() as u16;
-            bitstream.push_u16_lsb(len);
-            bitstream.push_u16_lsb(!len);
+            bitstream.push_u16_lsb_le(len);
+            bitstream.push_u16_lsb_le(!len);
 
             for byte in block_bytes {
                 bitstream.push_byte_lsb(*byte);
@@ -133,11 +142,7 @@ impl DeflateEncoder {
         let literal_length_table = self.generate_static_lit_len_table();
         let distance_table = self.generate_static_distance_table();
 
-        result.extend(&Self::encode_lzss_stream(
-            &lzss,
-            &literal_length_table,
-            &distance_table,
-        ));
+        Self::encode_lzss_stream(&lzss, &literal_length_table, &distance_table, &mut result);
 
         result
     }
@@ -204,7 +209,7 @@ impl DeflateEncoder {
             result.extend(&cl_code.encode(&cl_codes))
         }
 
-        result.extend(&Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes));
+        Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);
 
         result
     }
@@ -213,37 +218,34 @@ impl DeflateEncoder {
         lzss_stream: &[LzssSymbol],
         ll_table: &HashMap<u16, NewBitStream>,
         distance_table: &HashMap<u16, NewBitStream>,
-    ) -> NewBitStream {
-        let mut result = NewBitStream::new();
-
+        target: &mut NewBitStream,
+    ) {
         for lzss_symbol in lzss_stream {
             match lzss_symbol {
                 lzss::LzssSymbol::Literal(lit) => {
-                    result.extend(ll_table.get(&(*lit as u16)).unwrap())
+                    target.extend(ll_table.get(&(*lit as u16)).unwrap())
                 }
                 lzss::LzssSymbol::Backreference(dist, len) => {
                     let length_code = LENGTH_TO_CODE[*len as usize];
                     let encoded_length_code = ll_table.get(&length_code).unwrap();
-                    result.extend(encoded_length_code);
+                    target.extend(encoded_length_code);
 
                     let (len_extra_bits, len_num_extra_bits) = LENGTH_TO_EXTRA_BITS[*len as usize];
-                    result.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
+                    target.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
 
                     let distance_code = DISTANCE_TO_CODE[*dist as usize];
                     let encoded_distance_code = distance_table.get(&distance_code).unwrap();
-                    result.extend(&encoded_distance_code);
+                    target.extend(&encoded_distance_code);
 
                     let (dist_extra_bits, dist_num_extra_bits) =
                         DISTANCE_TO_EXTRA_BITS[*dist as usize];
-                    result.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
+                    target.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
                 }
                 lzss::LzssSymbol::EndOfBlock => {
-                    result.extend(ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap())
+                    target.extend(ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap())
                 }
             }
         }
-
-        result
     }
 
     fn generate_prefix_codes_from_lzss_stream(
