@@ -32,6 +32,22 @@ impl NewBitStream {
         bitstream
     }
 
+    pub fn from_u32_msb_ltr(num: u32, start_index: usize, length: u8) -> Self {
+        let mut bitstream = NewBitStream::new();
+        let mut mask = 1 << (start_index - 1);
+
+        for _i in 0..length {
+            match num & mask {
+                0 => bitstream.push_zero(),
+                _ => bitstream.push_one(),
+            };
+
+            mask >>= 1;
+        }
+
+        bitstream
+    }
+
     fn flush_working_byte(&mut self) {
         if self.current_bit_number == 8 {
             self.stream.push(self.working_byte);

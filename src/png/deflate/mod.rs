@@ -193,7 +193,8 @@ impl DeflateEncoder {
             CL_ALPHABET.len() - number_of_zero_symbols_at_end(&CL_ALPHABET, &cl_codes_lengths);
         let hclen = cl_table_length - 4;
         result.push_u8_lsb(hclen as u8, 4);
-
+        // println!("ENCODE cl_codes_lenths {:?}", cl_codes_lengths);
+        //
         print!("Encode ");
         for (cl_code, code) in cl_codes.iter() {
             print!("({cl_code},{code}), ");

@@ -120,14 +120,14 @@ fn encode_test() {
 fn decode_test() {
     let input = fs::read("save.txt").unwrap();
     // let input = b"ABCDEABCD ABCDEABCD";
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
-    my_encoder.write_bytes(&input);
-    let mut out = my_encoder.finish();
-    let out_bytes = out.flush_to_bytes();
+    // let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
+    // my_encoder.write_bytes(&input);
+    // let mut out = my_encoder.finish();
+    // let out_bytes = out.flush_to_bytes();
 
-    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
-    // let mut out_bytes = Vec::new();
-    // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
+    let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    let mut out_bytes = Vec::new();
+    flate2_encoder.read_to_end(&mut out_bytes).unwrap();
 
     // print!("bytes ");
     // print_bytes(&out_bytes);

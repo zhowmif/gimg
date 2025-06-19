@@ -122,6 +122,7 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
 
     let cl_codes = construct_canonical_tree_from_lengths(&cl_codes_lengths);
 
+    // println!("DECODE cl_codes_lenths {:?}", cl_codes_lengths);
     print!("Decode ");
     for (cl_code, code) in cl_codes.iter() {
         print!("({cl_code},{code}), ");
