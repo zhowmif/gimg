@@ -5,7 +5,7 @@ use std::{
     collections::HashMap,
     fs,
     io::{self, Read},
-    iter::repeat,
+    iter::{repeat, repeat_n},
     u16,
 };
 
@@ -119,15 +119,16 @@ fn encode_test() {
 
 fn decode_test() {
     let input = fs::read("save.txt").unwrap();
+    // let input: Vec<u8> = repeat_n(1, 10_000).collect();
     // let input = b"ABCDEABCD ABCDEABCD";
-    // let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
-    // my_encoder.write_bytes(&input);
-    // let mut out = my_encoder.finish();
-    // let out_bytes = out.flush_to_bytes();
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
+    my_encoder.write_bytes(&input[..]);
+    let mut out = my_encoder.finish();
+    let out_bytes = out.flush_to_bytes();
 
-    let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
-    let mut out_bytes = Vec::new();
-    flate2_encoder.read_to_end(&mut out_bytes).unwrap();
+    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    // let mut out_bytes = Vec::new();
+    // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
 
     // print!("bytes ");
     // print_bytes(&out_bytes);
@@ -139,7 +140,6 @@ fn decode_test() {
 
     let decoded = decode_deflate(&out_bytes);
     println!("my out {:?}", String::from_utf8(decoded).unwrap());
-
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, hash::Hash, iter::repeat_n};
 
-use super::new_bitsream::NewBitStream;
+use super::new_bitsream::{BitStreamReader, NewBitStream};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CLCode {
@@ -20,18 +20,47 @@ impl CLCode {
         }
     }
 
-    pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>) -> NewBitStream {
-        let mut result = NewBitStream::new();
-        result.extend(cl_codes.get(&self.to_number()).unwrap());
+    pub fn parse_from_bitstream(number: u32, bitstream: &mut BitStreamReader) -> Self {
+        match number {
+            0..=15 => CLCode::SingleLength(number),
+            16 => {
+                let repeat_count = bitstream.read_number_lsb(2).into();
+                CLCode::Sixteen { repeat_count }
+            }
+            17 => {
+                let repeat_count = bitstream.read_number_lsb(3).into();
+                CLCode::Seventeen { repeat_count }
+            }
+            18 => {
+                let repeat_count = bitstream.read_number_lsb(7).into();
+                CLCode::Eighteen { repeat_count }
+            }
+
+            _ => panic!("Unrecognized cl code"),
+        }
+    }
+
+    pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>, target: &mut NewBitStream) {
+        // println!("{}", cl_codes.get(&self.to_number()).unwrap());
+        target.extend_reverse(cl_codes.get(&self.to_number()).unwrap());
 
         match self {
             CLCode::SingleLength(_) => {}
-            CLCode::Sixteen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 2),
-            CLCode::Seventeen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 3),
-            CLCode::Eighteen { repeat_count } => result.push_u8_lsb(*repeat_count as u8, 7),
+            CLCode::Sixteen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 2),
+            CLCode::Seventeen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 3),
+            CLCode::Eighteen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 7),
         }
+    }
 
-        result
+    pub fn expand(&self, previous_value: u32) -> Vec<u32> {
+        match self {
+            CLCode::SingleLength(length) => vec![*length],
+            CLCode::Sixteen { repeat_count } => {
+                repeat_n(previous_value, *repeat_count + 3).collect()
+            }
+            CLCode::Seventeen { repeat_count } => repeat_n(0, *repeat_count + 3).collect(),
+            CLCode::Eighteen { repeat_count } => repeat_n(0, *repeat_count + 11).collect(),
+        }
     }
 }
 

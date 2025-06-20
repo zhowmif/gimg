@@ -159,6 +159,7 @@ impl DeflateEncoder {
         lzss.push(lzss::LzssSymbol::EndOfBlock);
         let (ll_code_lengths, distance_code_lengths) =
             Self::generate_prefix_codes_from_lzss_stream(&lzss);
+        // println!("ENCODE ll code lengths {:?}", ll_code_lengths);
         let ll_codes = construct_canonical_tree_from_lengths(&ll_code_lengths);
         let distance_codes = construct_canonical_tree_from_lengths(&distance_code_lengths);
 
@@ -172,8 +173,9 @@ impl DeflateEncoder {
 
         //TODO: should this be 31?
         let distance_alphabet: Vec<_> = (0..=31).collect();
-        let distance_table_length = distance_alphabet.len()
-            - number_of_zero_symbols_at_end(&distance_alphabet, &distance_code_lengths);
+        let distance_table_length = (distance_alphabet.len()
+            - number_of_zero_symbols_at_end(&distance_alphabet, &distance_code_lengths))
+        .max(1);
         let distance_table_cl_codes = get_cl_codes_for_code_lengths(
             &distance_alphabet[..distance_table_length],
             &distance_code_lengths,
@@ -193,13 +195,12 @@ impl DeflateEncoder {
             CL_ALPHABET.len() - number_of_zero_symbols_at_end(&CL_ALPHABET, &cl_codes_lengths);
         let hclen = cl_table_length - 4;
         result.push_u8_lsb(hclen as u8, 4);
-        // println!("ENCODE cl_codes_lenths {:?}", cl_codes_lengths);
-        //
-        print!("Encode ");
-        for (cl_code, code) in cl_codes.iter() {
-            print!("({cl_code},{code}), ");
-        }
-        println!();
+
+        // print!("Encode ");
+        // for (cl_code, code) in cl_codes.iter() {
+        //     print!("({cl_code},{code}), ");
+        // }
+        // println!();
         for i in 0..cl_table_length {
             let cl_code_length = cl_codes_lengths
                 .get(&CL_ALPHABET[i])
@@ -208,11 +209,22 @@ impl DeflateEncoder {
 
             result.push_u8_lsb(cl_code_length as u8, 3);
         }
-        for cl_code in ll_table_cl_codes {
-            result.extend(&cl_code.encode(&cl_codes))
+        print!("Encode ll codes ");
+        for (cl_code, code) in ll_codes.iter() {
+            print!("({cl_code},{code}), ");
         }
+        println!();
+        // println!("Encode ll codes {:?}", ll_codes);
+        // print!("encode ll table: ");
+        for cl_code in ll_table_cl_codes {
+            // print!("Encoding {:?}, code ", cl_code);
+            //     print!("{:?}, ", cl_code);
+            cl_code.encode(&cl_codes, &mut result);
+        }
+        // println!();
         for cl_code in distance_table_cl_codes {
-            result.extend(&cl_code.encode(&cl_codes))
+            // print!("Encoding {:?}, code ", cl_code);
+            cl_code.encode(&cl_codes, &mut result)
         }
 
         Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);

@@ -32,6 +32,10 @@ impl NewBitStream {
         bitstream
     }
 
+    pub fn from_u32_msb(num: u32, length: u8) -> Self {
+        Self::from_u32_msb_ltr(num, length as usize, length)
+    }
+
     pub fn from_u32_msb_ltr(num: u32, start_index: usize, length: u8) -> Self {
         let mut bitstream = NewBitStream::new();
         let mut mask = 1 << (start_index - 1);
@@ -91,6 +95,18 @@ impl NewBitStream {
         if other.current_bit_number != 0 {
             self.push_u8_lsb_ltr(other.working_byte, other.current_bit_number);
         }
+    }
+
+    pub fn extend_reverse(&mut self, other: &Self) {
+        let mut other = other.clone();
+        let other_len = other.len();
+        let other_bytes = other.flush_to_bytes();
+
+        if other_bytes.len() > 1 {
+            panic!("I did not expect this");
+        }
+
+        self.push_u8_lsb(other_bytes[0], other_len as u8);
     }
 
     pub fn push_u8_msb(&mut self, num: u8, length: u8) {

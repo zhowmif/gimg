@@ -6,6 +6,7 @@ use crate::png::deflate::{
         DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS, LENGTH_CODE_TO_BASE_LENGTH,
         LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_EXTRA_BITS,
     },
+    prefix_table::CLCode,
 };
 
 use super::{
@@ -50,10 +51,83 @@ fn parse_block_type_zero(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
 }
 
 fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
-    let mut lzss_stream: Vec<LzssSymbol> = Vec::new();
     let literal_length_table = reverse_hashmap(generate_static_lit_len_table());
     let distance_table = reverse_hashmap(generate_static_distance_table());
 
+    decode_compressed_block(reader, target, literal_length_table, distance_table);
+}
+
+fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
+    let hlit = reader.read_number_lsb(5);
+    let ll_table_length = hlit + 257;
+
+    let hdist = reader.read_number_lsb(5);
+    let distance_table_length = hdist + 1;
+    let hclen = reader.read_number_lsb(4);
+    let cl_table_length = hclen + 4;
+
+    let mut cl_codes_lengths: HashMap<u32, u32> = HashMap::new();
+    for i in 0..cl_table_length {
+        let current_cl_length = reader.read_number_lsb(3);
+
+        if current_cl_length != 0 {
+            cl_codes_lengths.insert(CL_ALPHABET[i as usize], current_cl_length as u32);
+        }
+    }
+
+    let cl_codes = reverse_hashmap(construct_canonical_tree_from_lengths(&cl_codes_lengths));
+
+    // print!("Decode ");
+    // for (cl_code, code) in cl_codes.iter() {
+    //     print!("({code},{}), ", *cl_code);
+    // }
+    // println!();
+
+    let mut ll_and_distance_lengths = Vec::new();
+    let mut current_code = 0;
+    let mut current_code_length = 0;
+    // println!("***************************");
+    while (ll_and_distance_lengths.len() as u16) < ll_table_length + distance_table_length {
+        current_code <<= 1;
+        current_code_length += 1;
+        current_code = match reader.read_bit() {
+            0 => current_code,
+            _ => current_code | 1,
+        };
+        let code = NewBitStream::from_u32_msb(current_code, current_code_length);
+        // println!("looking for code {}", code);
+
+        if let Some(cl_code) = cl_codes.get(&code) {
+            let cl_code = CLCode::parse_from_bitstream(*cl_code, reader);
+            // println!("Decoding {:?}, code {}", cl_code, code);
+            ll_and_distance_lengths
+                .extend_from_slice(&cl_code.expand(*ll_and_distance_lengths.last().unwrap_or(&0)));
+            current_code = 0;
+            current_code_length = 0;
+        }
+    }
+
+    let distance_code_lengths = ll_and_distance_lengths.split_off(ll_table_length as usize);
+    let ll_code_lengths = ll_and_distance_lengths;
+
+    let literal_length_table = get_code_table_from_lengths(ll_code_lengths);
+    print!("decode ll codes ");
+    for (cl_code, code) in literal_length_table.iter() {
+        print!("({cl_code},{code}), ");
+    }
+    println!();
+    let distance_table = get_code_table_from_lengths(distance_code_lengths);
+
+    decode_compressed_block(reader, target, literal_length_table, distance_table);
+}
+
+fn decode_compressed_block(
+    reader: &mut BitStreamReader,
+    target: &mut Vec<u8>,
+    literal_length_table: HashMap<NewBitStream, u16>,
+    distance_table: HashMap<NewBitStream, u16>,
+) {
+    let mut lzss_stream: Vec<LzssSymbol> = Vec::new();
     let mut current_length = 0;
     let mut read_distance = false;
     let mut current_code = 0;
@@ -65,7 +139,8 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
             0 => current_code,
             _ => current_code | 1,
         };
-        let code = NewBitStream::from_u32_lsb(current_code, current_code_length);
+        let code = NewBitStream::from_u32_msb(current_code, current_code_length);
+        println!("Looking for code {}", code);
 
         if read_distance {
             if let Some(distance_code) = distance_table.get(&code) {
@@ -104,28 +179,13 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     target.extend_from_slice(&data);
 }
 
-fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
-    let hlit = reader.read_number_lsb(5);
-    let ll_table_length = hlit + 257;
+fn get_code_table_from_lengths(table_lengths: Vec<u32>) -> HashMap<NewBitStream, u16> {
+    let frequency_map: HashMap<u16, u32> = table_lengths
+        .into_iter()
+        .enumerate()
+        .filter(|(_i, l)| *l != 0)
+        .map(|(i, l)| (i as u16, l))
+        .collect();
 
-    let hdist = reader.read_number_lsb(5);
-    let distance_table_length = hdist + 1;
-    let hclen = reader.read_number_lsb(4);
-    let cl_table_length = hclen + 4;
-
-    let mut cl_codes_lengths: HashMap<u32, u32> = HashMap::new();
-    for i in 0..cl_table_length {
-        let current_cl_length = reader.read_number_lsb(3);
-
-        cl_codes_lengths.insert(CL_ALPHABET[i as usize], current_cl_length as u32);
-    }
-
-    let cl_codes = construct_canonical_tree_from_lengths(&cl_codes_lengths);
-
-    // println!("DECODE cl_codes_lenths {:?}", cl_codes_lengths);
-    print!("Decode ");
-    for (cl_code, code) in cl_codes.iter() {
-        print!("({cl_code},{code}), ");
-    }
-    println!();
+    reverse_hashmap(construct_canonical_tree_from_lengths(&frequency_map))
 }
