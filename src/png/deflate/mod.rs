@@ -148,8 +148,8 @@ impl DeflateEncoder {
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
 
-        let literal_length_table = Self::reverse_bitstream_map(generate_static_lit_len_table());
-        let distance_table = Self::reverse_bitstream_map(generate_static_distance_table());
+        let literal_length_table = generate_static_lit_len_table();
+        let distance_table = generate_static_distance_table();
 
         Self::encode_lzss_stream(&lzss, &literal_length_table, &distance_table, &mut result);
 
@@ -239,12 +239,7 @@ impl DeflateEncoder {
         }
         println!("Starting encode at {}", result.len());
 
-        Self::encode_lzss_stream(
-            &lzss,
-            &ll_codes,
-            &distance_codes,
-            &mut result,
-        );
+        Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);
 
         result
     }

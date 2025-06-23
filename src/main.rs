@@ -120,7 +120,7 @@ fn encode_test() {
 }
 
 fn decode_test() {
-    // let input = &fs::read("save.txt").unwrap();
+    let input = &fs::read("save.txt").unwrap();
     // let input: Vec<u8> = repeat_n(1, 10000).collect();
     let input = b"ABCDEABCD ABCDEABCD";
     // let input = b"AAC";
@@ -132,7 +132,7 @@ fn decode_test() {
     let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
     let mut out_bytes = Vec::new();
     flate2_encoder.read_to_end(&mut out_bytes).unwrap();
-    // print_bytes(&out_bytes);
+    print_bytes(&out_bytes);
 
     // print!("bytes ");
     // print_bytes(&out_bytes);

@@ -150,12 +150,12 @@ pub fn generate_static_lit_len_table() -> HashMap<u16, NewBitStream> {
 pub fn generate_static_distance_table() -> HashMap<u16, NewBitStream> {
     (0..30)
         .zip(0..30)
-        .map(|(i, val)| (i as u16, NewBitStream::from_u32_lsb(val, 5)))
+        .map(|(i, val)| (i as u16, NewBitStream::from_u32_ltr(val, 5)))
         .collect()
 }
 
 fn generate_bitstream_from_range(start: usize, end: usize, len: u8) -> Vec<NewBitStream> {
     (start..=end)
-        .map(|n| NewBitStream::from_u32_lsb(n as u32, len))
+        .map(|n| NewBitStream::from_u32_ltr(n as u32, len))
         .collect()
 }

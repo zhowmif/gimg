@@ -61,12 +61,7 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let literal_length_table = reverse_hashmap(generate_static_lit_len_table());
     let distance_table = reverse_hashmap(generate_static_distance_table());
 
-    decode_compressed_block(
-        reader,
-        target,
-        &reverse_bitstream_map(literal_length_table),
-        &reverse_bitstream_map(distance_table),
-    );
+    decode_compressed_block(reader, target, &literal_length_table, &distance_table);
 }
 
 fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {

@@ -16,9 +16,9 @@ impl NewBitStream {
         }
     }
 
-    pub fn from_u32_lsb(num: u32, length: u8) -> Self {
+    pub fn from_u32_ltr(num: u32, length: u8) -> Self {
         let mut bitstream = NewBitStream::new();
-        let mut mask = 1;
+        let mut mask = 1 << (length - 1);
 
         for _i in 0..length {
             match num & mask {
@@ -26,7 +26,7 @@ impl NewBitStream {
                 _ => bitstream.push_one(),
             };
 
-            mask <<= 1;
+            mask >>= 1;
         }
 
         bitstream
@@ -55,14 +55,6 @@ impl NewBitStream {
         }
 
         bitstream
-    }
-
-    pub fn goo_goo_gaga(num: u32, start_index: usize, length: u8) -> Self {
-        let mut inverted = NewBitStream::new();
-        let bitstream = NewBitStream::from_u32_msb_ltr(num, start_index, length);
-        inverted.extend_reverse(&bitstream);
-
-        inverted
     }
 
     fn flush_working_byte(&mut self) {
