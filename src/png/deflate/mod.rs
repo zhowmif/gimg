@@ -13,7 +13,6 @@ use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
-use decode::reverse_bitstream_map;
 use huffman::{
     calc_kraft_mcmillen_value, construct_canonical_tree_from_lengths,
     package_merge::PackageMergeEncoder,
@@ -124,16 +123,16 @@ impl DeflateEncoder {
             let is_last = block_index == self.bytes.len() / MAX_UNCOMPRESSED_BLOCK_SIZE as usize;
             Self::push_is_last(&mut bitstream, is_last);
 
-            bitstream.push_u8_lsb(BlockType::None.to_number().into(), 2);
+            bitstream.push_u8_rtl(BlockType::None.to_number().into(), 2);
             //padding
-            bitstream.push_u8_lsb(0, 5);
+            bitstream.push_u8_rtl(0, 5);
 
             let len = block_bytes.len() as u16;
-            bitstream.push_u16_lsb_le(len);
-            bitstream.push_u16_lsb_le(!len);
+            bitstream.push_u16_ltr_le(len);
+            bitstream.push_u16_ltr_le(!len);
 
             for byte in block_bytes {
-                bitstream.push_byte_lsb(*byte);
+                bitstream.push_byte_ltr(*byte);
             }
         }
 
@@ -143,7 +142,7 @@ impl DeflateEncoder {
     fn encode_block_type_one(&mut self, is_last: bool) -> NewBitStream {
         let mut result = NewBitStream::new();
         Self::push_is_last(&mut result, is_last);
-        result.push_u8_lsb(BlockType::FixedHuffman.to_number().into(), 2);
+        result.push_u8_rtl(BlockType::FixedHuffman.to_number().into(), 2);
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
@@ -159,7 +158,7 @@ impl DeflateEncoder {
     fn encode_block_type_two(&mut self, is_last: bool) -> NewBitStream {
         let mut result = NewBitStream::new();
         Self::push_is_last(&mut result, is_last);
-        result.push_u8_lsb(BlockType::DynamicHuffman.to_number().into(), 2);
+        result.push_u8_rtl(BlockType::DynamicHuffman.to_number().into(), 2);
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
@@ -175,7 +174,7 @@ impl DeflateEncoder {
         let ll_table_cl_codes =
             get_cl_codes_for_code_lengths(&ll_alphabet[..ll_table_length], &ll_code_lengths);
         let hlit = ll_table_length - 257;
-        result.push_u8_lsb(hlit as u8, 5);
+        result.push_u8_rtl(hlit as u8, 5);
 
         //TODO: should this be 31?
         let distance_alphabet: Vec<_> = (0..=31).collect();
@@ -187,7 +186,7 @@ impl DeflateEncoder {
             &distance_code_lengths,
         );
         let hdist = distance_table_length - 1;
-        result.push_u8_lsb(hdist as u8, 5);
+        result.push_u8_rtl(hdist as u8, 5);
         let mut cl_codes_encoder = PackageMergeEncoder::new();
         for cl_code in ll_table_cl_codes
             .iter()
@@ -200,7 +199,7 @@ impl DeflateEncoder {
         let cl_table_length =
             CL_ALPHABET.len() - number_of_zero_symbols_at_end(&CL_ALPHABET, &cl_codes_lengths);
         let hclen = cl_table_length - 4;
-        result.push_u8_lsb(hclen as u8, 4);
+        result.push_u8_rtl(hclen as u8, 4);
 
         // print!("Encode ");
         // for (cl_code, code) in cl_codes.iter() {
@@ -213,7 +212,7 @@ impl DeflateEncoder {
                 .map(|x| *x)
                 .unwrap_or(0);
 
-            result.push_u8_lsb(cl_code_length as u8, 3);
+            result.push_u8_rtl(cl_code_length as u8, 3);
         }
         // println!("Encode ll codes {:?}", ll_codes.iter());
         // print!("Encode ll codes ");
@@ -242,19 +241,6 @@ impl DeflateEncoder {
         Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);
 
         result
-    }
-
-    fn reverse_bitstream_map(table: HashMap<u16, NewBitStream>) -> HashMap<u16, NewBitStream> {
-        table
-            .into_iter()
-            .map(|(k, mut v)| {
-                let mut inverted = NewBitStream::new();
-                inverted.extend_reverse(&mut v);
-                // println!("inverted {v} to {inverted}");
-
-                (k, inverted)
-            })
-            .collect()
     }
 
     pub fn encode_lzss_stream(
@@ -291,7 +277,7 @@ impl DeflateEncoder {
                     target.extend(encoded_length_code);
 
                     let (len_extra_bits, len_num_extra_bits) = LENGTH_TO_EXTRA_BITS[*len as usize];
-                    target.push_u16_msb_le(len_extra_bits, len_num_extra_bits);
+                    target.push_u16_rtl(len_extra_bits, len_num_extra_bits);
 
                     let distance_code = DISTANCE_TO_CODE[*dist as usize];
                     let encoded_distance_code = distance_table.get(&distance_code).unwrap();
@@ -299,7 +285,7 @@ impl DeflateEncoder {
 
                     let (dist_extra_bits, dist_num_extra_bits) =
                         DISTANCE_TO_EXTRA_BITS[*dist as usize];
-                    target.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
+                    target.push_u16_rtl(dist_extra_bits, dist_num_extra_bits);
                 }
                 lzss::LzssSymbol::EndOfBlock => {
                     let code = ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap();

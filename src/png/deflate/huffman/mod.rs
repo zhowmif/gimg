@@ -77,12 +77,7 @@ pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone + Debug + Ord>
     let h = *symbol_lengths.last().map(|(_, len)| *len).unwrap_or(&0);
     let mut b = 0;
     for (symbol, length) in symbol_lengths.into_iter() {
-        // print!(
-        //     "symbol {:?} num {:08b} length {length} h {h}",
-        //     symbol, b
-        // );
-        let p = NewBitStream::from_u32_msb_ltr(b, h as usize, *length as u8);
-        // println!(", reslen {}", p.len());
+        let p = NewBitStream::from_u32_ltr_with_offset(b, h as usize, *length as u8);
         symbol_codes.insert(symbol.clone(), p);
         b += 1 << (h - length);
     }

@@ -18,13 +18,13 @@ pub fn zlib_encode(mut deflate_encoder: DeflateEncoder) -> NewBitStream {
     let flg = (cmf as u32) << 8 + (flevel << 6) + (fdict << 5);
     let fcheck = (align_up(flg as usize, 31) - flg as usize) as u8;
 
-    encoded.push_u8_lsb(cm, 4);
-    encoded.push_u8_lsb(cminfo, 4);
-    encoded.push_u8_lsb(fcheck, 5);
-    encoded.push_u8_lsb(fdict, 1);
-    encoded.push_u8_lsb(flevel, 2);
+    encoded.push_u8_rtl(cm, 4);
+    encoded.push_u8_rtl(cminfo, 4);
+    encoded.push_u8_rtl(fcheck, 5);
+    encoded.push_u8_rtl(fdict, 1);
+    encoded.push_u8_rtl(flevel, 2);
     encoded.extend(&deflate_encoder.finish());
-    encoded.push_bytes_lsb(&adler32.to_be_bytes());
+    encoded.push_bytes_ltr(&adler32.to_be_bytes());
 
     encoded
 }

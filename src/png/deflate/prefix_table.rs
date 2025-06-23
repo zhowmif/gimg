@@ -41,14 +41,13 @@ impl CLCode {
     }
 
     pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>, target: &mut NewBitStream) {
-        // print!(" {} ", cl_codes.get(&self.to_number()).unwrap());
-        target.deprecated_extend_reverse(cl_codes.get(&self.to_number()).unwrap());
+        target.extend(cl_codes.get(&self.to_number()).unwrap());
 
         match self {
             CLCode::SingleLength(_) => {}
-            CLCode::Sixteen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 2),
-            CLCode::Seventeen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 3),
-            CLCode::Eighteen { repeat_count } => target.push_u8_lsb(*repeat_count as u8, 7),
+            CLCode::Sixteen { repeat_count } => target.push_u8_rtl(*repeat_count as u8, 2),
+            CLCode::Seventeen { repeat_count } => target.push_u8_rtl(*repeat_count as u8, 3),
+            CLCode::Eighteen { repeat_count } => target.push_u8_rtl(*repeat_count as u8, 7),
         }
     }
 

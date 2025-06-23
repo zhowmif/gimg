@@ -101,7 +101,7 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
             0 => current_code,
             _ => current_code | 1,
         };
-        let code = NewBitStream::from_u32_msb(current_code, current_code_length);
+        let code = NewBitStream::from_u32_ltr(current_code, current_code_length);
         // println!("looking for code {}", code);
 
         if let Some(cl_code) = cl_codes.get(&code) {
@@ -137,18 +137,6 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let distance_table = get_code_table_from_lengths(distance_code_lengths);
 
     decode_compressed_block(reader, target, &literal_length_table, &distance_table);
-}
-
-pub fn reverse_bitstream_map(table: HashMap<NewBitStream, u16>) -> HashMap<NewBitStream, u16> {
-    table
-        .into_iter()
-        .map(|(k, v)| {
-            let mut inverted = NewBitStream::new();
-            inverted.extend_reverse(&k);
-
-            (inverted, v)
-        })
-        .collect()
 }
 
 pub fn decode_compressed_block(
