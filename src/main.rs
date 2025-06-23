@@ -91,7 +91,7 @@ fn png_test() {
 fn encode_test() {
     // let input = fs::read("save.txt").unwrap();
     let input = b"ABCDEABCD ABCDEABCD";
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
+    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::None);
     my_encoder.write_bytes(input);
     let mut out = my_encoder.finish();
     let out_bytes = out.flush_to_bytes();
@@ -120,29 +120,30 @@ fn encode_test() {
 }
 
 fn decode_test() {
-    let input = &fs::read("save.txt").unwrap();
+    // let input = &fs::read("save.txt").unwrap();
     // let input: Vec<u8> = repeat_n(1, 10000).collect();
-    // let input = b"ABCDEABCD ABCDEABCD";
+    let input = b"ABCDEABCD ABCDEABCD";
     // let input = b"AAC";
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::DynamicHuffman);
-    my_encoder.write_bytes(&input[..]);
-    let mut out = my_encoder.finish();
-    let out_bytes = out.flush_to_bytes();
+    // let mut my_encoder = deflate::DeflateEncoder::new(deflate::BlockType::FixedHuffman);
+    // my_encoder.write_bytes(&input[..]);
+    // let mut out = my_encoder.finish();
+    // let out_bytes = out.flush_to_bytes();
 
-    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
-    // let mut out_bytes = Vec::new();
-    // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
+    let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    let mut out_bytes = Vec::new();
+    flate2_encoder.read_to_end(&mut out_bytes).unwrap();
+    // print_bytes(&out_bytes);
 
     // print!("bytes ");
     // print_bytes(&out_bytes);
 
-    let mut decode = DeflateDecoder::new(&out_bytes[..]);
-    let mut out = Vec::new();
-    decode.read_to_end(&mut out).unwrap();
-    println!("flate2 out {:?}", String::from_utf8(out).unwrap());
+    // let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    // let mut out = Vec::new();
+    // decode.read_to_end(&mut out).unwrap();
+    // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
 
-    // let decoded = decode_deflate(&out_bytes);
-    // println!("my out {:?}", String::from_utf8(decoded).unwrap());
+    let decoded = decode_deflate(&out_bytes);
+    println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {

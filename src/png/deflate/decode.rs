@@ -61,7 +61,12 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let literal_length_table = reverse_hashmap(generate_static_lit_len_table());
     let distance_table = reverse_hashmap(generate_static_distance_table());
 
-    decode_compressed_block(reader, target, &literal_length_table, &distance_table);
+    decode_compressed_block(
+        reader,
+        target,
+        &reverse_bitstream_map(literal_length_table),
+        &reverse_bitstream_map(distance_table),
+    );
 }
 
 fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
@@ -139,14 +144,14 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     decode_compressed_block(reader, target, &literal_length_table, &distance_table);
 }
 
-pub fn reverse_bitstream_map(table: HashMap<u16, NewBitStream>) -> HashMap<u16, NewBitStream> {
+pub fn reverse_bitstream_map(table: HashMap<NewBitStream, u16>) -> HashMap<NewBitStream, u16> {
     table
         .into_iter()
-        .map(|(k, mut v)| {
+        .map(|(k, v)| {
             let mut inverted = NewBitStream::new();
-            inverted.extend_reverse(&mut v);
+            inverted.extend_reverse(&k);
 
-            (k, v)
+            (inverted, v)
         })
         .collect()
 }
@@ -166,7 +171,13 @@ pub fn decode_compressed_block(
     let mut current_length = 0;
     let mut read_distance = false;
     let mut code = NewBitStream::new();
-    println!("Starting with reader at {}", reader.bit_index);
+    let rev_lit_len: HashMap<_, _> = literal_length_table
+        .clone()
+        .into_iter()
+        .map(|(k, v)| (v, k))
+        .collect();
+    println!("Code for A is {}", rev_lit_len.get(&65).unwrap());
+    // println!("Starting with reader at {}", reader.bit_index);
     loop {
         // if lzss_stream.len() == 1 {
         //     println!("First {:?}", lzss_stream);
@@ -207,7 +218,7 @@ pub fn decode_compressed_block(
         } else {
             if let Some(value) = literal_length_table.get(&code) {
                 if *value < END_OF_BLOCK_MARKER_VALUE {
-                    // println!("Pushing literal {}", value);
+                    println!("Pushing literal {}", value);
                     // if *value == 85 {
                     //     println!("DEC {value} is {code}");
                     // }
@@ -221,10 +232,10 @@ pub fn decode_compressed_block(
                     let extra_bits = reader.read_number_lsb(num_extra_bits);
                     read_distance = true;
                     current_length = base_length + extra_bits;
-                    // println!(
-                    //     "length code {}, length {current_length}, code {}, (reader len {})",
-                    //     value, code, reader.bit_index
-                    // );
+                    println!(
+                        "length code {}, length {current_length}, code {}, (reader len {})",
+                        value, code, reader.bit_index
+                    );
 
                     // if current_length == 28 {
                     //     println!("here {} {code}", lzss_stream.len());
