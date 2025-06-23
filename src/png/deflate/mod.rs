@@ -28,16 +28,15 @@ use prefix_table::{
 use zlib::zlib_encode;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
-    let mut encoder = DeflateEncoder::new(BlockType::None);
+    let mut encoder = DeflateEncoder::new(BlockType::DynamicHuffman);
 
     for scanline in scanlines {
         encoder.write_bytes(&scanline);
     }
 
-    let mut zlib_encoded = zlib_encode(encoder);
-    let compressed = zlib_encoded.flush_to_bytes();
+    let zlib_encoded = zlib_encode(encoder);
 
-    compressed
+    zlib_encoded
 }
 
 #[derive(Debug)]

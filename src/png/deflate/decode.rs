@@ -1,19 +1,13 @@
-use std::{
-    collections::HashMap,
-    process::{self, exit},
-};
+use std::collections::HashMap;
 
-use crate::{
-    is_tree_prefix_free,
-    png::deflate::{
+use crate::png::deflate::{
         huffman::construct_canonical_tree_from_lengths,
         lzss::backreference::{
             DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS,
             LENGTH_CODE_TO_BASE_LENGTH, LENGTH_CODE_TO_EXTRA_BITS,
         },
         prefix_table::CLCode,
-    },
-};
+    };
 
 use super::{
     consts::{CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE},
