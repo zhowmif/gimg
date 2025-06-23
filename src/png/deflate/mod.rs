@@ -7,13 +7,17 @@ pub mod new_bitsream;
 pub mod prefix_table;
 pub mod zlib;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::format, fs};
 
 use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
-use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
+use decode::reverse_bitstream_map;
+use huffman::{
+    calc_kraft_mcmillen_value, construct_canonical_tree_from_lengths,
+    package_merge::PackageMergeEncoder,
+};
 use lzss::{
     backreference::{
         DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
@@ -26,6 +30,8 @@ use prefix_table::{
     number_of_zero_symbols_at_end,
 };
 use zlib::zlib_encode;
+
+use crate::is_tree_prefix_free;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(BlockType::None);
@@ -209,41 +215,82 @@ impl DeflateEncoder {
 
             result.push_u8_lsb(cl_code_length as u8, 3);
         }
-        print!("Encode ll codes ");
-        for (cl_code, code) in ll_codes.iter() {
-            print!("({cl_code},{code}), ");
-        }
-        println!();
-        // println!("Encode ll codes {:?}", ll_codes);
+        // println!("Encode ll codes {:?}", ll_codes.iter());
+        // print!("Encode ll codes ");
+        // for (cl_code, code) in ll_codes.iter() {
+        //     print!("({cl_code},{code}), ");
+        // }
+        // println!();
+        println!("Encode ll codes {:?}", ll_codes);
         // print!("encode ll table: ");
         for cl_code in ll_table_cl_codes {
             // print!("Encoding {:?}, code ", cl_code);
-            //     print!("{:?}, ", cl_code);
+            // print!("[ENCODE] {:?}", cl_code);
             cl_code.encode(&cl_codes, &mut result);
+            // println!("- {}", result.len());
+            // println!()
+            // println!("{}", result);
         }
         // println!();
         for cl_code in distance_table_cl_codes {
-            // print!("Encoding {:?}, code ", cl_code);
-            cl_code.encode(&cl_codes, &mut result)
+            // print!("[ENCODE] {:?}", cl_code);
+            cl_code.encode(&cl_codes, &mut result);
+            // println!("- {}", result.len());
         }
+        println!("Starting encode at {}", result.len());
 
-        Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);
+        Self::encode_lzss_stream(
+            &lzss,
+            &ll_codes,
+            &distance_codes,
+            &mut result,
+        );
 
         result
     }
 
-    fn encode_lzss_stream(
+    fn reverse_bitstream_map(table: HashMap<u16, NewBitStream>) -> HashMap<u16, NewBitStream> {
+        table
+            .into_iter()
+            .map(|(k, mut v)| {
+                let mut inverted = NewBitStream::new();
+                inverted.extend_reverse(&mut v);
+                // println!("inverted {v} to {inverted}");
+
+                (k, inverted)
+            })
+            .collect()
+    }
+
+    pub fn encode_lzss_stream(
         lzss_stream: &[LzssSymbol],
         ll_table: &HashMap<u16, NewBitStream>,
         distance_table: &HashMap<u16, NewBitStream>,
         target: &mut NewBitStream,
     ) {
+        let mut i = 0;
         for lzss_symbol in lzss_stream {
+            i += 1;
             match lzss_symbol {
                 lzss::LzssSymbol::Literal(lit) => {
-                    target.extend(ll_table.get(&(*lit as u16)).unwrap())
+                    let code = ll_table.get(&(*lit as u16)).unwrap();
+                    let len_before = target.len();
+                    // if *lit == 85 {
+                    //     println!("enc {} {code}", i);
+                    // }
+                    target.extend(ll_table.get(&(*lit as u16)).unwrap());
+                    // println!(
+                    //     "Encoding literal {} code {} ({len_before} -> {})",
+                    //     lit,
+                    //     code,
+                    //     target.len()
+                    // );
                 }
                 lzss::LzssSymbol::Backreference(dist, len) => {
+                    // println!(
+                    //     "Encoding backreference ({dist}, {len}), before {}",
+                    //     target.len()
+                    // );
                     let length_code = LENGTH_TO_CODE[*len as usize];
                     let encoded_length_code = ll_table.get(&length_code).unwrap();
                     target.extend(encoded_length_code);
@@ -260,6 +307,8 @@ impl DeflateEncoder {
                     target.push_u16_msb_le(dist_extra_bits, dist_num_extra_bits);
                 }
                 lzss::LzssSymbol::EndOfBlock => {
+                    let code = ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap();
+                    // println!("Encoding end of block {}", code);
                     target.extend(ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap())
                 }
             }

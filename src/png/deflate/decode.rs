@@ -1,12 +1,19 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs,
+    process::{self, exit},
+};
 
-use crate::png::deflate::{
-    huffman::construct_canonical_tree_from_lengths,
-    lzss::backreference::{
-        DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS, LENGTH_CODE_TO_BASE_LENGTH,
-        LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_EXTRA_BITS,
+use crate::{
+    is_tree_prefix_free,
+    png::deflate::{
+        huffman::construct_canonical_tree_from_lengths,
+        lzss::backreference::{
+            DISTANCE_CODE_TO_BASE_DISTANCE, DISTANCE_CODE_TO_EXTRA_BITS,
+            LENGTH_CODE_TO_BASE_LENGTH, LENGTH_CODE_TO_EXTRA_BITS,
+        },
+        prefix_table::CLCode,
     },
-    prefix_table::CLCode,
 };
 
 use super::{
@@ -54,7 +61,7 @@ fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let literal_length_table = reverse_hashmap(generate_static_lit_len_table());
     let distance_table = reverse_hashmap(generate_static_distance_table());
 
-    decode_compressed_block(reader, target, literal_length_table, distance_table);
+    decode_compressed_block(reader, target, &literal_length_table, &distance_table);
 }
 
 fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
@@ -86,7 +93,7 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let mut ll_and_distance_lengths = Vec::new();
     let mut current_code = 0;
     let mut current_code_length = 0;
-    // println!("***************************");
+    println!("***************************");
     while (ll_and_distance_lengths.len() as u16) < ll_table_length + distance_table_length {
         current_code <<= 1;
         current_code_length += 1;
@@ -99,7 +106,7 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
 
         if let Some(cl_code) = cl_codes.get(&code) {
             let cl_code = CLCode::parse_from_bitstream(*cl_code, reader);
-            // println!("Decoding {:?}, code {}", cl_code, code);
+            // println!("[DECODE] {:?} - {} - {}", cl_code, code, reader.bit_index);
             ll_and_distance_lengths
                 .extend_from_slice(&cl_code.expand(*ll_and_distance_lengths.last().unwrap_or(&0)));
             current_code = 0;
@@ -110,45 +117,87 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     let distance_code_lengths = ll_and_distance_lengths.split_off(ll_table_length as usize);
     let ll_code_lengths = ll_and_distance_lengths;
 
+    // print!("ll code lengths {:?}", ll_code_lengths);
     let literal_length_table = get_code_table_from_lengths(ll_code_lengths);
-    print!("decode ll codes ");
-    for (cl_code, code) in literal_length_table.iter() {
-        print!("({cl_code},{code}), ");
-    }
-    println!();
+    println!("Decode ll codes {:?}", literal_length_table.iter());
+    // print!("Decode ");
+    // is_tree_prefix_free(
+    //     &literal_length_table
+    //         .clone()
+    //         .into_iter()
+    //         .map(|(k, v)| (v as u32, k))
+    //         .collect(),
+    // );
+    // process::exit(1);
+    // print!("decode ll codes ");
+    // for (cl_code, code) in literal_length_table.iter() {
+    //     print!("({cl_code},{code}), ");
+    // }
+    // println!();
     let distance_table = get_code_table_from_lengths(distance_code_lengths);
 
-    decode_compressed_block(reader, target, literal_length_table, distance_table);
+    decode_compressed_block(reader, target, &literal_length_table, &distance_table);
 }
 
-fn decode_compressed_block(
+pub fn reverse_bitstream_map(table: HashMap<u16, NewBitStream>) -> HashMap<u16, NewBitStream> {
+    table
+        .into_iter()
+        .map(|(k, mut v)| {
+            let mut inverted = NewBitStream::new();
+            inverted.extend_reverse(&mut v);
+
+            (k, v)
+        })
+        .collect()
+}
+
+pub fn decode_compressed_block(
     reader: &mut BitStreamReader,
     target: &mut Vec<u8>,
-    literal_length_table: HashMap<NewBitStream, u16>,
-    distance_table: HashMap<NewBitStream, u16>,
+    literal_length_table: &HashMap<NewBitStream, u16>,
+    distance_table: &HashMap<NewBitStream, u16>,
 ) {
+    // for (k, v) in literal_length_table.iter() {
+    //     if *v == 65 {
+    //         println!("{} {}", v, k);
+    //     }
+    // }
     let mut lzss_stream: Vec<LzssSymbol> = Vec::new();
     let mut current_length = 0;
     let mut read_distance = false;
-    let mut current_code = 0;
-    let mut current_code_length = 0;
+    let mut code = NewBitStream::new();
+    println!("Starting with reader at {}", reader.bit_index);
     loop {
-        current_code <<= 1;
-        current_code_length += 1;
-        current_code = match reader.read_bit() {
-            0 => current_code,
-            _ => current_code | 1,
+        // if lzss_stream.len() == 1 {
+        //     println!("First {:?}", lzss_stream);
+        // }
+        // if lzss_stream.len() == 14349 {
+        //     fs::write("decode.txt", format!("{:?}", lzss_stream));
+        // }
+        match reader.read_bit() {
+            0 => code.push_zero(),
+            _ => code.push_one(),
         };
-        let code = NewBitStream::from_u32_msb(current_code, current_code_length);
-        println!("Looking for code {}", code);
+        // println!("Looking for code {}", code);
 
         if read_distance {
             if let Some(distance_code) = distance_table.get(&code) {
-                current_code = 0;
-                current_code_length = 0;
+                code.reset();
                 let base_distance = DISTANCE_CODE_TO_BASE_DISTANCE[*distance_code as usize];
                 let num_extra_bits = DISTANCE_CODE_TO_EXTRA_BITS[*distance_code as usize];
+                // println!(
+                //     "Dist code {distance_code} Reading {} extra bits",
+                //     num_extra_bits
+                // );
                 let extra_bits = reader.read_number_lsb(num_extra_bits);
+
+                // println!(
+                //     "Pushing backreference ({}, {}) (len {})",
+                //     base_distance + extra_bits,
+                //     current_length,
+                //     reader.bit_index
+                // );
+                //
                 lzss_stream.push(LzssSymbol::Backreference(
                     base_distance + extra_bits,
                     current_length,
@@ -157,9 +206,11 @@ fn decode_compressed_block(
             }
         } else {
             if let Some(value) = literal_length_table.get(&code) {
-                current_code = 0;
-                current_code_length = 0;
                 if *value < END_OF_BLOCK_MARKER_VALUE {
+                    // println!("Pushing literal {}", value);
+                    // if *value == 85 {
+                    //     println!("DEC {value} is {code}");
+                    // }
                     lzss_stream.push(LzssSymbol::Literal(*value as u8));
                 } else if *value == END_OF_BLOCK_MARKER_VALUE {
                     // lzss_stream.push(LzssSymbol::EndOfBlock);
@@ -170,7 +221,16 @@ fn decode_compressed_block(
                     let extra_bits = reader.read_number_lsb(num_extra_bits);
                     read_distance = true;
                     current_length = base_length + extra_bits;
+                    // println!(
+                    //     "length code {}, length {current_length}, code {}, (reader len {})",
+                    //     value, code, reader.bit_index
+                    // );
+
+                    // if current_length == 28 {
+                    //     println!("here {} {code}", lzss_stream.len());
+                    // }
                 }
+                code.reset();
             }
         }
     }
@@ -180,12 +240,14 @@ fn decode_compressed_block(
 }
 
 fn get_code_table_from_lengths(table_lengths: Vec<u32>) -> HashMap<NewBitStream, u16> {
+    // println!("Table lengths {:?}", table_lengths);
     let frequency_map: HashMap<u16, u32> = table_lengths
         .into_iter()
         .enumerate()
         .filter(|(_i, l)| *l != 0)
         .map(|(i, l)| (i as u16, l))
         .collect();
+    // println!("Frequency map {:?}", frequency_map);
 
     reverse_hashmap(construct_canonical_tree_from_lengths(&frequency_map))
 }

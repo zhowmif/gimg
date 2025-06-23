@@ -2,8 +2,8 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct NewBitStream {
-    stream: Vec<u8>,
-    working_byte: u8,
+    pub stream: Vec<u8>,
+    pub working_byte: u8,
     pub current_bit_number: u8,
 }
 
@@ -38,6 +38,11 @@ impl NewBitStream {
 
     pub fn from_u32_msb_ltr(num: u32, start_index: usize, length: u8) -> Self {
         let mut bitstream = NewBitStream::new();
+
+        if start_index == 0 {
+            return bitstream;
+        }
+
         let mut mask = 1 << (start_index - 1);
 
         for _i in 0..length {
@@ -50,6 +55,14 @@ impl NewBitStream {
         }
 
         bitstream
+    }
+
+    pub fn goo_goo_gaga(num: u32, start_index: usize, length: u8) -> Self {
+        let mut inverted = NewBitStream::new();
+        let bitstream = NewBitStream::from_u32_msb_ltr(num, start_index, length);
+        inverted.extend_reverse(&bitstream);
+
+        inverted
     }
 
     fn flush_working_byte(&mut self) {
@@ -89,24 +102,38 @@ impl NewBitStream {
 
     pub fn extend(&mut self, other: &Self) {
         for byte in other.stream.iter() {
-            self.push_u8_lsb_ltr(*byte, 8);
+            self.push_u8_lsb_rtl(*byte, 8);
         }
 
         if other.current_bit_number != 0 {
-            self.push_u8_lsb_ltr(other.working_byte, other.current_bit_number);
+            self.push_u8_lsb_rtl(other.working_byte, other.current_bit_number);
+        }
+    }
+
+    pub fn deprecated_extend_reverse(&mut self, other: &Self) {
+        if other.current_bit_number != 0 {
+            self.push_u8_lsb(
+                other.working_byte >> (8 - other.current_bit_number),
+                other.current_bit_number as u8,
+            );
+        }
+
+        for byte in other.stream.iter().rev() {
+            self.push_u8_msb(*byte, 8);
         }
     }
 
     pub fn extend_reverse(&mut self, other: &Self) {
-        let mut other = other.clone();
-        let other_len = other.len();
-        let other_bytes = other.flush_to_bytes();
-
-        if other_bytes.len() > 1 {
-            panic!("I did not expect this");
+        if other.current_bit_number != 0 {
+            self.push_u8_msb(
+                other.working_byte >> (8 - other.current_bit_number),
+                other.current_bit_number as u8,
+            );
         }
 
-        self.push_u8_lsb(other_bytes[0], other_len as u8);
+        for byte in other.stream.iter().rev() {
+            self.push_u8_msb(*byte, 8);
+        }
     }
 
     pub fn push_u8_msb(&mut self, num: u8, length: u8) {
@@ -135,8 +162,8 @@ impl NewBitStream {
         }
     }
 
-    pub fn push_u8_lsb_ltr(&mut self, num: u8, length: u8) {
-        let mut mask = 1 << 7;
+    pub fn push_u8_lsb_rtl(&mut self, num: u8, length: u8) {
+        let mut mask = 1 << (8 - length);
 
         for _i in 0..length {
             match num & mask {
@@ -144,7 +171,7 @@ impl NewBitStream {
                 _ => self.push_one(),
             };
 
-            mask >>= 1;
+            mask <<= 1;
         }
     }
 
@@ -169,23 +196,6 @@ impl NewBitStream {
         // } else if len > 0 {
         //     self.push_u8_lsb(num as u8, len);
         // }
-    }
-
-    pub fn test_me(&mut self, num: u16, len: u8) {
-        if len == 0 {
-            return;
-        }
-
-        let mut mask = 1 << (len - 1);
-
-        for _i in 0..len {
-            match num & mask {
-                0 => self.push_zero(),
-                _ => self.push_one(),
-            };
-
-            mask >>= 1;
-        }
     }
 
     pub fn read_byte_lsb(&self, bit_index: &mut usize) -> u8 {
@@ -254,7 +264,7 @@ fn saturating_shl(lhs: u8, rhs: u8) -> u8 {
 
 pub struct BitStreamReader<'a> {
     bytes: &'a [u8],
-    bit_index: usize,
+    pub bit_index: usize,
 }
 
 impl<'a> BitStreamReader<'a> {

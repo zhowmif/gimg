@@ -4,7 +4,7 @@ pub struct PackageMergeEncoder<T: Eq + Hash + Clone> {
     symbol_frequencies: HashMap<T, u32>,
 }
 
-impl<T: Eq + Hash + Clone + Debug> PackageMergeEncoder<T> {
+impl<T: Eq + Hash + Clone + Debug + Ord> PackageMergeEncoder<T> {
     pub fn new() -> Self {
         Self {
             symbol_frequencies: HashMap::new(),
@@ -27,10 +27,20 @@ impl<T: Eq + Hash + Clone + Debug> PackageMergeEncoder<T> {
                 self.symbol_frequencies.len()
             )
         }
-        let symbol_frequencies: Vec<(T, u32)> =
+
+        let mut symbol_frequencies: Vec<(T, u32)> =
             mem::replace(&mut self.symbol_frequencies, HashMap::new())
                 .into_iter()
                 .collect();
+        symbol_frequencies.sort();
+
+        if symbol_frequencies.len() == 1 {
+            let mut result = HashMap::new();
+            result.insert(symbol_frequencies.remove(0).0, 1);
+
+            return result;
+        }
+
         let starting_coin_queue: Vec<_> = symbol_frequencies
             .clone()
             .into_iter()

@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::hash::Hash;
 use std::mem;
 
@@ -77,12 +77,24 @@ pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone + Debug + Ord>
     let h = *symbol_lengths.last().map(|(_, len)| *len).unwrap_or(&0);
     let mut b = 0;
     for (symbol, length) in symbol_lengths.into_iter() {
+        // print!(
+        //     "symbol {:?} num {:08b} length {length} h {h}",
+        //     symbol, b
+        // );
         let p = NewBitStream::from_u32_msb_ltr(b, h as usize, *length as u8);
+        // println!(", reslen {}", p.len());
         symbol_codes.insert(symbol.clone(), p);
         b += 1 << (h - length);
     }
 
     symbol_codes
+}
+
+pub fn calc_kraft_mcmillen_value<T>(symbol_lengths: &HashMap<T, u32>) -> f64 {
+    symbol_lengths
+        .iter()
+        .map(|(_s, length)| 2f64.powf(-(*length as f64)))
+        .sum()
 }
 
 fn saturating_shl(lhs: u32, rhs: u32) -> u32 {

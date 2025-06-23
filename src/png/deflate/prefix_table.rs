@@ -41,8 +41,8 @@ impl CLCode {
     }
 
     pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>, target: &mut NewBitStream) {
-        // println!("{}", cl_codes.get(&self.to_number()).unwrap());
-        target.extend_reverse(cl_codes.get(&self.to_number()).unwrap());
+        // print!(" {} ", cl_codes.get(&self.to_number()).unwrap());
+        target.deprecated_extend_reverse(cl_codes.get(&self.to_number()).unwrap());
 
         match self {
             CLCode::SingleLength(_) => {}
