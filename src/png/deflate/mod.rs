@@ -7,16 +7,13 @@ pub mod new_bitsream;
 pub mod prefix_table;
 pub mod zlib;
 
-use std::{collections::HashMap, fmt::format, fs};
+use std::collections::HashMap;
 
 use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
-use huffman::{
-    calc_kraft_mcmillen_value, construct_canonical_tree_from_lengths,
-    package_merge::PackageMergeEncoder,
-};
+use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{
         DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
@@ -30,8 +27,6 @@ use prefix_table::{
 };
 use zlib::zlib_encode;
 
-use crate::is_tree_prefix_free;
-
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = DeflateEncoder::new(BlockType::None);
 
@@ -44,18 +39,6 @@ pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
 
     compressed
 }
-
-// pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
-//     let mut e = ZlibEncoder::new(Vec::new(), Compression::none());
-//
-//     for scanline in scanlines {
-//         e.write_all(&scanline).expect("Deflate writing failed");
-//     }
-//
-//     let compressed = e.finish().unwrap();
-//
-//     compressed
-// }
 
 #[derive(Debug)]
 pub enum BlockType {
@@ -164,7 +147,6 @@ impl DeflateEncoder {
         lzss.push(lzss::LzssSymbol::EndOfBlock);
         let (ll_code_lengths, distance_code_lengths) =
             Self::generate_prefix_codes_from_lzss_stream(&lzss);
-        // println!("ENCODE ll code lengths {:?}", ll_code_lengths);
         let ll_codes = construct_canonical_tree_from_lengths(&ll_code_lengths);
         let distance_codes = construct_canonical_tree_from_lengths(&distance_code_lengths);
 
@@ -176,7 +158,6 @@ impl DeflateEncoder {
         let hlit = ll_table_length - 257;
         result.push_u8_rtl(hlit as u8, 5);
 
-        //TODO: should this be 31?
         let distance_alphabet: Vec<_> = (0..=31).collect();
         let distance_table_length = (distance_alphabet.len()
             - number_of_zero_symbols_at_end(&distance_alphabet, &distance_code_lengths))
@@ -201,11 +182,6 @@ impl DeflateEncoder {
         let hclen = cl_table_length - 4;
         result.push_u8_rtl(hclen as u8, 4);
 
-        // print!("Encode ");
-        // for (cl_code, code) in cl_codes.iter() {
-        //     print!("({cl_code},{code}), ");
-        // }
-        // println!();
         for i in 0..cl_table_length {
             let cl_code_length = cl_codes_lengths
                 .get(&CL_ALPHABET[i])
@@ -214,29 +190,12 @@ impl DeflateEncoder {
 
             result.push_u8_rtl(cl_code_length as u8, 3);
         }
-        // println!("Encode ll codes {:?}", ll_codes.iter());
-        // print!("Encode ll codes ");
-        // for (cl_code, code) in ll_codes.iter() {
-        //     print!("({cl_code},{code}), ");
-        // }
-        // println!();
-        println!("Encode ll codes {:?}", ll_codes);
-        // print!("encode ll table: ");
         for cl_code in ll_table_cl_codes {
-            // print!("Encoding {:?}, code ", cl_code);
-            // print!("[ENCODE] {:?}", cl_code);
             cl_code.encode(&cl_codes, &mut result);
-            // println!("- {}", result.len());
-            // println!()
-            // println!("{}", result);
         }
-        // println!();
         for cl_code in distance_table_cl_codes {
-            // print!("[ENCODE] {:?}", cl_code);
             cl_code.encode(&cl_codes, &mut result);
-            // println!("- {}", result.len());
         }
-        println!("Starting encode at {}", result.len());
 
         Self::encode_lzss_stream(&lzss, &ll_codes, &distance_codes, &mut result);
 
@@ -249,29 +208,12 @@ impl DeflateEncoder {
         distance_table: &HashMap<u16, NewBitStream>,
         target: &mut NewBitStream,
     ) {
-        let mut i = 0;
         for lzss_symbol in lzss_stream {
-            i += 1;
             match lzss_symbol {
                 lzss::LzssSymbol::Literal(lit) => {
-                    let code = ll_table.get(&(*lit as u16)).unwrap();
-                    let len_before = target.len();
-                    // if *lit == 85 {
-                    //     println!("enc {} {code}", i);
-                    // }
                     target.extend(ll_table.get(&(*lit as u16)).unwrap());
-                    // println!(
-                    //     "Encoding literal {} code {} ({len_before} -> {})",
-                    //     lit,
-                    //     code,
-                    //     target.len()
-                    // );
                 }
                 lzss::LzssSymbol::Backreference(dist, len) => {
-                    // println!(
-                    //     "Encoding backreference ({dist}, {len}), before {}",
-                    //     target.len()
-                    // );
                     let length_code = LENGTH_TO_CODE[*len as usize];
                     let encoded_length_code = ll_table.get(&length_code).unwrap();
                     target.extend(encoded_length_code);
@@ -288,8 +230,6 @@ impl DeflateEncoder {
                     target.push_u16_rtl(dist_extra_bits, dist_num_extra_bits);
                 }
                 lzss::LzssSymbol::EndOfBlock => {
-                    let code = ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap();
-                    // println!("Encoding end of block {}", code);
                     target.extend(ll_table.get(&END_OF_BLOCK_MARKER_VALUE).unwrap())
                 }
             }

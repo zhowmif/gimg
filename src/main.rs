@@ -67,6 +67,7 @@ fn main() {
     // prefix_test();
     // bug_test();
     decode_test();
+    // png_test();
 }
 
 fn png_test() {
@@ -137,13 +138,13 @@ fn decode_test() {
     // print!("bytes ");
     // print_bytes(&out_bytes);
 
-    // let mut decode = DeflateDecoder::new(&out_bytes[..]);
-    // let mut out = Vec::new();
-    // decode.read_to_end(&mut out).unwrap();
-    // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
+    let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    let mut out = Vec::new();
+    decode.read_to_end(&mut out).unwrap();
+    println!("flate2 out {:?}", String::from_utf8(out).unwrap());
 
-    let decoded = decode_deflate(&out_bytes);
-    println!("my out {:?}", String::from_utf8(decoded).unwrap());
+    // let decoded = decode_deflate(&out_bytes);
+    // println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 
 fn deflateencoder_read_hello_world(input: &[u8]) {
