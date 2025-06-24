@@ -12,25 +12,25 @@ use crate::png::deflate::{
 use super::{
     consts::{CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE},
     lzss::{decode_lzss, LzssSymbol},
-    new_bitsream::{BitStreamReader, NewBitStream},
+    bitsream::{ReadBitStream, WriteBitStream},
     prefix_table::{
         generate_static_distance_table, generate_static_lit_len_table, reverse_hashmap,
     },
-    BlockType,
+    DeflateBlockType,
 };
 
 pub fn decode_deflate(bytes: &[u8]) -> Vec<u8> {
-    let mut bitsream = BitStreamReader::new(bytes);
+    let mut bitsream = ReadBitStream::new(bytes);
     let mut result = Vec::new();
 
     loop {
         let is_last = bitsream.read_bit_boolean();
-        let btype = BlockType::from_number(bitsream.read_number_lsb(2) as u8);
+        let btype = DeflateBlockType::from_number(bitsream.read_number_lsb(2) as u8);
 
         match btype {
-            BlockType::None => parse_block_type_zero(&mut bitsream, &mut result),
-            BlockType::FixedHuffman => parse_block_type_one(&mut bitsream, &mut result),
-            BlockType::DynamicHuffman => parse_block_type_two(&mut bitsream, &mut result),
+            DeflateBlockType::None => parse_block_type_zero(&mut bitsream, &mut result),
+            DeflateBlockType::FixedHuffman => parse_block_type_one(&mut bitsream, &mut result),
+            DeflateBlockType::DynamicHuffman => parse_block_type_two(&mut bitsream, &mut result),
         }
 
         if is_last {
@@ -41,7 +41,7 @@ pub fn decode_deflate(bytes: &[u8]) -> Vec<u8> {
     result
 }
 
-fn parse_block_type_zero(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
+fn parse_block_type_zero(reader: &mut ReadBitStream, target: &mut Vec<u8>) {
     reader.align_to_next_byte();
     let len = reader.read_u16_lsb_le();
     let _nlen = reader.read_u16_lsb_le();
@@ -50,14 +50,14 @@ fn parse_block_type_zero(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
     target.extend_from_slice(bytes);
 }
 
-fn parse_block_type_one(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
+fn parse_block_type_one(reader: &mut ReadBitStream, target: &mut Vec<u8>) {
     let literal_length_table = reverse_hashmap(generate_static_lit_len_table());
     let distance_table = reverse_hashmap(generate_static_distance_table());
 
     decode_compressed_block(reader, target, &literal_length_table, &distance_table);
 }
 
-fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
+fn parse_block_type_two(reader: &mut ReadBitStream, target: &mut Vec<u8>) {
     let hlit = reader.read_number_lsb(5);
     let ll_table_length = hlit + 257;
 
@@ -87,7 +87,7 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
             0 => current_code,
             _ => current_code | 1,
         };
-        let code = NewBitStream::from_u32_ltr(current_code, current_code_length);
+        let code = WriteBitStream::from_u32_ltr(current_code, current_code_length);
 
         if let Some(cl_code) = cl_codes.get(&code) {
             let cl_code = CLCode::parse_from_bitstream(*cl_code, reader);
@@ -108,15 +108,15 @@ fn parse_block_type_two(reader: &mut BitStreamReader, target: &mut Vec<u8>) {
 }
 
 pub fn decode_compressed_block(
-    reader: &mut BitStreamReader,
+    reader: &mut ReadBitStream,
     target: &mut Vec<u8>,
-    literal_length_table: &HashMap<NewBitStream, u16>,
-    distance_table: &HashMap<NewBitStream, u16>,
+    literal_length_table: &HashMap<WriteBitStream, u16>,
+    distance_table: &HashMap<WriteBitStream, u16>,
 ) {
     let mut lzss_stream: Vec<LzssSymbol> = Vec::new();
     let mut current_length = 0;
     let mut read_distance = false;
-    let mut code = NewBitStream::new();
+    let mut code = WriteBitStream::new();
     loop {
         match reader.read_bit() {
             0 => code.push_zero(),
@@ -157,7 +157,7 @@ pub fn decode_compressed_block(
     target.extend_from_slice(&data);
 }
 
-fn get_code_table_from_lengths(table_lengths: Vec<u32>) -> HashMap<NewBitStream, u16> {
+fn get_code_table_from_lengths(table_lengths: Vec<u32>) -> HashMap<WriteBitStream, u16> {
     let frequency_map: HashMap<u16, u32> = table_lengths
         .into_iter()
         .enumerate()

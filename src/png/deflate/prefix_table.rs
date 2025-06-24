@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash, iter::repeat_n};
 
-use super::new_bitsream::{BitStreamReader, NewBitStream};
+use super::bitsream::{ReadBitStream, WriteBitStream};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CLCode {
@@ -20,7 +20,7 @@ impl CLCode {
         }
     }
 
-    pub fn parse_from_bitstream(number: u32, bitstream: &mut BitStreamReader) -> Self {
+    pub fn parse_from_bitstream(number: u32, bitstream: &mut ReadBitStream) -> Self {
         match number {
             0..=15 => CLCode::SingleLength(number),
             16 => {
@@ -40,7 +40,7 @@ impl CLCode {
         }
     }
 
-    pub fn encode(&self, cl_codes: &HashMap<u32, NewBitStream>, target: &mut NewBitStream) {
+    pub fn encode(&self, cl_codes: &HashMap<u32, WriteBitStream>, target: &mut WriteBitStream) {
         target.extend(cl_codes.get(&self.to_number()).unwrap());
 
         match self {
@@ -133,7 +133,7 @@ pub fn reverse_hashmap<K, V: Eq + Hash>(map: HashMap<K, V>) -> HashMap<V, K> {
     map.into_iter().map(|(k, v)| (v, k)).collect()
 }
 
-pub fn generate_static_lit_len_table() -> HashMap<u16, NewBitStream> {
+pub fn generate_static_lit_len_table() -> HashMap<u16, WriteBitStream> {
     let lengths = generate_bitstream_from_range(48, 191, 8)
         .into_iter()
         .chain(generate_bitstream_from_range(400, 511, 9))
@@ -146,15 +146,15 @@ pub fn generate_static_lit_len_table() -> HashMap<u16, NewBitStream> {
     lengths
 }
 
-pub fn generate_static_distance_table() -> HashMap<u16, NewBitStream> {
+pub fn generate_static_distance_table() -> HashMap<u16, WriteBitStream> {
     (0..30)
         .zip(0..30)
-        .map(|(i, val)| (i as u16, NewBitStream::from_u32_ltr(val, 5)))
+        .map(|(i, val)| (i as u16, WriteBitStream::from_u32_ltr(val, 5)))
         .collect()
 }
 
-fn generate_bitstream_from_range(start: usize, end: usize, len: u8) -> Vec<NewBitStream> {
+fn generate_bitstream_from_range(start: usize, end: usize, len: u8) -> Vec<WriteBitStream> {
     (start..=end)
-        .map(|n| NewBitStream::from_u32_ltr(n as u32, len))
+        .map(|n| WriteBitStream::from_u32_ltr(n as u32, len))
         .collect()
 }

@@ -1,14 +1,14 @@
-mod bitstream;
+pub mod bitsream;
 mod consts;
 pub mod decode;
 pub mod huffman;
 pub mod lzss;
-pub mod new_bitsream;
 pub mod prefix_table;
 pub mod zlib;
 
 use std::collections::HashMap;
 
+use bitsream::WriteBitStream;
 use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
@@ -20,58 +20,55 @@ use lzss::{
     },
     encode_lzss, LzssSymbol,
 };
-use new_bitsream::NewBitStream;
 use prefix_table::{
     generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
     number_of_zero_symbols_at_end,
 };
-use zlib::zlib_encode;
+use zlib::ZlibEncoder;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
-    let mut encoder = DeflateEncoder::new(BlockType::DynamicHuffman);
+    let mut encoder = ZlibEncoder::new();
 
     for scanline in scanlines {
         encoder.write_bytes(&scanline);
     }
 
-    let zlib_encoded = zlib_encode(encoder);
-
-    zlib_encoded
+    encoder.flush()
 }
 
 #[derive(Debug)]
-pub enum BlockType {
+pub enum DeflateBlockType {
     None,
     FixedHuffman,
     DynamicHuffman,
 }
 
-impl BlockType {
+impl DeflateBlockType {
     fn to_number(&self) -> u8 {
         match self {
-            BlockType::None => 0,
-            BlockType::FixedHuffman => 1,
-            BlockType::DynamicHuffman => 2,
+            DeflateBlockType::None => 0,
+            DeflateBlockType::FixedHuffman => 1,
+            DeflateBlockType::DynamicHuffman => 2,
         }
     }
 
     fn from_number(n: u8) -> Self {
         match n {
-            0 => BlockType::None,
-            1 => BlockType::FixedHuffman,
-            2 => BlockType::DynamicHuffman,
+            0 => DeflateBlockType::None,
+            1 => DeflateBlockType::FixedHuffman,
+            2 => DeflateBlockType::DynamicHuffman,
             n => panic!("Unrecognized deflate block type {}", n),
         }
     }
 }
 
 pub struct DeflateEncoder {
-    block_type: BlockType,
+    block_type: DeflateBlockType,
     bytes: Vec<u8>,
 }
 
 impl DeflateEncoder {
-    pub fn new(block_type: BlockType) -> Self {
+    pub fn new(block_type: DeflateBlockType) -> Self {
         Self {
             block_type,
             bytes: vec![],
@@ -82,20 +79,16 @@ impl DeflateEncoder {
         self.bytes.extend_from_slice(bytes);
     }
 
-    pub fn uncompreseed(&self) -> &[u8] {
-        &self.bytes
-    }
-
-    pub fn finish(&mut self) -> NewBitStream {
+    pub fn finish(&mut self) -> WriteBitStream {
         match self.block_type {
-            BlockType::None => self.encode_block_type_zero(),
-            BlockType::FixedHuffman => self.encode_block_type_one(true),
-            BlockType::DynamicHuffman => self.encode_block_type_two(true),
+            DeflateBlockType::None => self.encode_block_type_zero(),
+            DeflateBlockType::FixedHuffman => self.encode_block_type_one(true),
+            DeflateBlockType::DynamicHuffman => self.encode_block_type_two(true),
         }
     }
 
-    fn encode_block_type_zero(&mut self) -> NewBitStream {
-        let mut bitstream = NewBitStream::new();
+    fn encode_block_type_zero(&mut self) -> WriteBitStream {
+        let mut bitstream = WriteBitStream::new();
 
         for (block_index, block_bytes) in self
             .bytes
@@ -105,7 +98,7 @@ impl DeflateEncoder {
             let is_last = block_index == self.bytes.len() / MAX_UNCOMPRESSED_BLOCK_SIZE as usize;
             Self::push_is_last(&mut bitstream, is_last);
 
-            bitstream.push_u8_rtl(BlockType::None.to_number().into(), 2);
+            bitstream.push_u8_rtl(DeflateBlockType::None.to_number().into(), 2);
             //padding
             bitstream.push_u8_rtl(0, 5);
 
@@ -121,10 +114,10 @@ impl DeflateEncoder {
         bitstream
     }
 
-    fn encode_block_type_one(&mut self, is_last: bool) -> NewBitStream {
-        let mut result = NewBitStream::new();
+    fn encode_block_type_one(&mut self, is_last: bool) -> WriteBitStream {
+        let mut result = WriteBitStream::new();
         Self::push_is_last(&mut result, is_last);
-        result.push_u8_rtl(BlockType::FixedHuffman.to_number().into(), 2);
+        result.push_u8_rtl(DeflateBlockType::FixedHuffman.to_number().into(), 2);
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
@@ -137,10 +130,10 @@ impl DeflateEncoder {
         result
     }
 
-    fn encode_block_type_two(&mut self, is_last: bool) -> NewBitStream {
-        let mut result = NewBitStream::new();
+    fn encode_block_type_two(&mut self, is_last: bool) -> WriteBitStream {
+        let mut result = WriteBitStream::new();
         Self::push_is_last(&mut result, is_last);
-        result.push_u8_rtl(BlockType::DynamicHuffman.to_number().into(), 2);
+        result.push_u8_rtl(DeflateBlockType::DynamicHuffman.to_number().into(), 2);
 
         let mut lzss = encode_lzss(&self.bytes, LZSS_WINDOW_SIZE);
         lzss.push(lzss::LzssSymbol::EndOfBlock);
@@ -203,9 +196,9 @@ impl DeflateEncoder {
 
     pub fn encode_lzss_stream(
         lzss_stream: &[LzssSymbol],
-        ll_table: &HashMap<u16, NewBitStream>,
-        distance_table: &HashMap<u16, NewBitStream>,
-        target: &mut NewBitStream,
+        ll_table: &HashMap<u16, WriteBitStream>,
+        distance_table: &HashMap<u16, WriteBitStream>,
+        target: &mut WriteBitStream,
     ) {
         for lzss_symbol in lzss_stream {
             match lzss_symbol {
@@ -261,7 +254,7 @@ impl DeflateEncoder {
         (ll_code_lengths, distance_code_length)
     }
 
-    fn push_is_last(bitstream: &mut NewBitStream, is_last: bool) {
+    fn push_is_last(bitstream: &mut WriteBitStream, is_last: bool) {
         if is_last {
             bitstream.push_one();
         } else {

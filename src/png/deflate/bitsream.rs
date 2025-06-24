@@ -1,13 +1,13 @@
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct NewBitStream {
+pub struct WriteBitStream {
     pub stream: Vec<u8>,
     pub working_byte: u8,
     pub current_bit_number: u8,
 }
 
-impl NewBitStream {
+impl WriteBitStream {
     pub fn new() -> Self {
         Self {
             stream: Vec::new(),
@@ -21,7 +21,7 @@ impl NewBitStream {
     }
 
     pub fn from_u32_ltr_with_offset(num: u32, start_index: usize, length: u8) -> Self {
-        let mut bitstream = NewBitStream::new();
+        let mut bitstream = WriteBitStream::new();
 
         if start_index == 0 {
             return bitstream;
@@ -160,7 +160,7 @@ impl NewBitStream {
     }
 }
 
-impl Display for NewBitStream {
+impl Display for WriteBitStream {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for byte in self.stream.iter() {
             write!(f, "{:08b}", u8::reverse_bits(*byte))?
@@ -179,12 +179,12 @@ impl Display for NewBitStream {
     }
 }
 
-pub struct BitStreamReader<'a> {
+pub struct ReadBitStream<'a> {
     bytes: &'a [u8],
     pub bit_index: usize,
 }
 
-impl<'a> BitStreamReader<'a> {
+impl<'a> ReadBitStream<'a> {
     pub fn new(bytes: &'a [u8]) -> Self {
         Self {
             bytes,
