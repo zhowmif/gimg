@@ -13,6 +13,7 @@ use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
+use decode::DeflateDecodeError;
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{
@@ -52,13 +53,18 @@ impl DeflateBlockType {
         }
     }
 
-    fn from_number(n: u8) -> Self {
-        match n {
+    fn from_number(n: u8) -> Result<Self, DeflateDecodeError> {
+        Ok(match n {
             0 => DeflateBlockType::None,
             1 => DeflateBlockType::FixedHuffman,
             2 => DeflateBlockType::DynamicHuffman,
-            n => panic!("Unrecognized deflate block type {}", n),
-        }
+            n => {
+                return Err(DeflateDecodeError(format!(
+                    "Unrecognized deflate block type - {}",
+                    n
+                )))
+            }
+        })
     }
 }
 

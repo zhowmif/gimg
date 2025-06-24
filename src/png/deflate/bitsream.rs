@@ -181,7 +181,7 @@ impl Display for WriteBitStream {
 
 pub struct ReadBitStream<'a> {
     bytes: &'a [u8],
-    pub bit_index: usize,
+    bit_index: usize,
 }
 
 impl<'a> ReadBitStream<'a> {
@@ -192,26 +192,26 @@ impl<'a> ReadBitStream<'a> {
         }
     }
 
-    pub fn read_bit(&mut self) -> u8 {
-        let byte = self.bytes[self.bit_index >> 3];
+    pub fn read_bit(&mut self) -> Option<u8> {
+        let byte = self.bytes.get(self.bit_index >> 3)?;
         let bit = (byte >> (self.bit_index & 0b111)) & 1;
         self.bit_index += 1;
 
-        bit
+        Some(bit)
     }
 
-    pub fn read_bit_boolean(&mut self) -> bool {
-        self.read_bit() == 1
+    pub fn read_bit_boolean(&mut self) -> Option<bool> {
+        Some(self.read_bit()? == 1)
     }
 
-    pub fn read_number_lsb(&mut self, length: usize) -> u16 {
+    pub fn read_number_lsb(&mut self, length: usize) -> Option<u16> {
         let mut number: u16 = 0;
 
         for shift in 0..length {
-            number |= ((self.read_bit() as u16) << shift) as u16;
+            number |= ((self.read_bit()? as u16) << shift) as u16;
         }
 
-        number
+        Some(number)
     }
 
     pub fn align_to_next_byte(&mut self) {
@@ -220,18 +220,23 @@ impl<'a> ReadBitStream<'a> {
         }
     }
 
-    pub fn read_u16_lsb_le(&mut self) -> u16 {
-        let first = self.read_number_lsb(8);
-        let second = self.read_number_lsb(8);
+    pub fn read_u16_lsb_le(&mut self) -> Option<u16> {
+        let first = self.read_number_lsb(8)?;
+        let second = self.read_number_lsb(8)?;
         let number = (second << 8) + first;
 
-        number
+        Some(number)
     }
 
-    pub fn read_bytes_aligned(&mut self, length: usize) -> &[u8] {
+    pub fn read_bytes_aligned(&mut self, length: usize) -> Option<&[u8]> {
         let byte_index = self.bit_index >> 3;
+
+        if byte_index + length > self.bytes.len() {
+            return None;
+        }
+
         self.bit_index = (byte_index + length) << 3;
 
-        &self.bytes[byte_index..byte_index + length]
+        Some(&self.bytes[byte_index..byte_index + length])
     }
 }

@@ -6,7 +6,7 @@ use colors::RGBA;
 use demuxers::image_demuxer::ImageDemuxer;
 use flate2::read::DeflateDecoder;
 use png::{
-    deflate::{self},
+    deflate::{self, decode::decode_deflate},
     encode_png,
 };
 use stream::Stream;
@@ -30,7 +30,8 @@ mod stream;
 mod tree;
 
 fn main() {
-    png_test();
+    deflate_test();
+    // png_test();
 }
 
 fn png_test() {
@@ -60,7 +61,10 @@ fn deflate_test() {
     let mut my_encoder = deflate::DeflateEncoder::new(deflate::DeflateBlockType::DynamicHuffman);
     my_encoder.write_bytes(&input[..]);
     let mut out = my_encoder.finish();
-    let out_bytes = out.flush_to_bytes();
+    let mut out_bytes = out.flush_to_bytes();
+    print_bytes(&out_bytes[..10]);
+    out_bytes[0] -= 8;
+    print_bytes(&out_bytes[..10]);
 
     // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
     // let mut out_bytes = Vec::new();
@@ -70,12 +74,12 @@ fn deflate_test() {
     // print!("bytes ");
     // print_bytes(&out_bytes);
 
-    let mut decode = DeflateDecoder::new(&out_bytes[..]);
-    let mut out = Vec::new();
-    decode.read_to_end(&mut out).unwrap();
-    println!("flate2 out {:?}", String::from_utf8(out).unwrap());
-
-    // let decoded = decode_deflate(&out_bytes);
+    // let mut decode = DeflateDecoder::new(&out_bytes[..]);
+    // let mut out = Vec::new();
+    // decode.read_to_end(&mut out).unwrap();
+    // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
+    //
+    let decoded = decode_deflate(&out_bytes).unwrap();
     // println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 

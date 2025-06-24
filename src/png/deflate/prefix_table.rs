@@ -1,6 +1,11 @@
 use std::{collections::HashMap, hash::Hash, iter::repeat_n};
 
-use super::bitsream::{ReadBitStream, WriteBitStream};
+use crate::deflate_read_bits;
+
+use super::{
+    bitsream::{ReadBitStream, WriteBitStream},
+    decode::DeflateDecodeError,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CLCode {
@@ -20,24 +25,32 @@ impl CLCode {
         }
     }
 
-    pub fn parse_from_bitstream(number: u32, bitstream: &mut ReadBitStream) -> Self {
-        match number {
+    pub fn parse_from_bitstream(
+        number: u32,
+        bitstream: &mut ReadBitStream,
+    ) -> Result<Self, DeflateDecodeError> {
+        Ok(match number {
             0..=15 => CLCode::SingleLength(number),
-            16 => {
-                let repeat_count = bitstream.read_number_lsb(2).into();
-                CLCode::Sixteen { repeat_count }
+            16 => CLCode::Sixteen {
+                repeat_count: Self::read_repeat_count(bitstream, 2)?,
+            },
+            17 => CLCode::Seventeen {
+                repeat_count: Self::read_repeat_count(bitstream, 3)?,
+            },
+            18 => CLCode::Eighteen {
+                repeat_count: Self::read_repeat_count(bitstream, 7)?,
+            },
+            n => {
+                return Err(DeflateDecodeError(format!("Unrecognized cl code {}", n)));
             }
-            17 => {
-                let repeat_count = bitstream.read_number_lsb(3).into();
-                CLCode::Seventeen { repeat_count }
-            }
-            18 => {
-                let repeat_count = bitstream.read_number_lsb(7).into();
-                CLCode::Eighteen { repeat_count }
-            }
+        })
+    }
 
-            _ => panic!("Unrecognized cl code"),
-        }
+    fn read_repeat_count(
+        bitstream: &mut ReadBitStream,
+        len: usize,
+    ) -> Result<usize, DeflateDecodeError> {
+        Ok(deflate_read_bits!(bitstream.read_number_lsb(len), "sdsa") as usize)
     }
 
     pub fn encode(&self, cl_codes: &HashMap<u32, WriteBitStream>, target: &mut WriteBitStream) {

@@ -3,6 +3,8 @@ mod hash;
 
 use hash::LzssHashTable;
 
+use super::decode::DeflateDecodeError;
+
 #[derive(Debug, Clone)]
 pub enum LzssSymbol {
     Literal(u8),
@@ -53,23 +55,33 @@ fn find_backreference_with_table(
     best_match
 }
 
-pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Vec<u8> {
+pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Result<Vec<u8>, DeflateDecodeError> {
     let mut result: Vec<u8> = Vec::new();
 
-    for symbol in lzss_symbols {
+    for (i, symbol) in lzss_symbols.iter().enumerate() {
         match symbol {
             LzssSymbol::Literal(literal) => result.push(*literal),
             LzssSymbol::Backreference(distance, length) => {
-                let backreference_data_start = result.len() - *distance as usize;
+                let backreference_data_start = match result.len().checked_sub(*distance as usize) {
+                    Some(n) => n,
+                    None => {
+                        return Err(DeflateDecodeError(format!(
+                            "Invalid backreference for lzss symbol {}, distance {} is too big",
+                            i, distance
+                        )))
+                    }
+                };
 
                 //we must do this byte by byte in case there are repetitions
                 for i in backreference_data_start..backreference_data_start + *length as usize {
                     result.push(result[i]);
                 }
             }
-            LzssSymbol::EndOfBlock => todo!("What to do what to do"),
+            LzssSymbol::EndOfBlock => {
+                break;
+            }
         }
     }
 
-    result
+    Ok(result)
 }
