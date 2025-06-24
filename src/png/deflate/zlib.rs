@@ -1,6 +1,10 @@
-use crate::{algebra::align_up, png::adler32::Adler32Calculator};
+use crate::{algebra::align_up, deflate_read_bits, png::adler32::Adler32Calculator};
 
-use super::{bitsream::WriteBitStream, DeflateBlockType, DeflateEncoder};
+use super::{
+    bitsream::{ReadBitStream, WriteBitStream},
+    decode::{decode_deflate, DeflateDecodeError},
+    DeflateBlockType, DeflateEncoder,
+};
 
 pub struct ZlibEncoder {
     deflate_encoder: DeflateEncoder,
@@ -45,4 +49,56 @@ impl ZlibEncoder {
 
         result
     }
+}
+
+pub fn decode_zlib(bytes: &[u8]) -> Result<Vec<u8>, DeflateDecodeError> {
+    let data_start_index = decode_zlib_header(bytes)?;
+    let uncompressed_data = decode_deflate(&bytes[data_start_index..bytes.len() - 4])?;
+    let _adler32 = u32::from_be_bytes(bytes[bytes.len() - 4..].try_into().unwrap());
+    //TODO: validate adler 32
+
+    Ok(uncompressed_data)
+}
+
+pub fn decode_zlib_header(bytes: &[u8]) -> Result<usize, DeflateDecodeError> {
+    let mut header_bitstream = ReadBitStream::new(bytes);
+    let cm = deflate_read_bits!(
+        header_bitstream.read_number_lsb(4),
+        "expected ZLIB compression method (CM)"
+    );
+
+    if cm != 8 {
+        return Err(DeflateDecodeError(format!(
+            "Unsupported compression method in ZLIB header {}",
+            cm
+        )));
+    }
+
+    let cminfo = deflate_read_bits!(
+        header_bitstream.read_number_lsb(4),
+        "expected ZLIB compression info (CMINFO)"
+    );
+
+    if cminfo > 7 {
+        return Err(DeflateDecodeError(format!(
+            "Unsupported compression info value in ZLIB header: {}",
+            cminfo
+        )));
+    }
+    let cmf = (cminfo << 4) as u8 + cm as u8;
+
+    let fcheck = deflate_read_bits!(header_bitstream.read_number_lsb(5), "expected ZLIB fcheck");
+    let fdict = deflate_read_bits!(header_bitstream.read_bit(), "expected ZLIB FDICT");
+    let flevel = deflate_read_bits!(header_bitstream.read_number_lsb(2), "expected ZLIB FLEVEL");
+    let flg = (flevel << 6) + ((fdict as u16) << 5) + fcheck;
+
+    if (((cmf as u16) << 8) + flg) % 31 != 0 {
+        return Err(DeflateDecodeError(format!(
+            "ZLIB CMF + FLG is not a multiple of 31"
+        )));
+    }
+
+    let data_start_index = 2 + if fdict == 1 { 4 } else { 0 };
+
+    Ok(data_start_index)
 }

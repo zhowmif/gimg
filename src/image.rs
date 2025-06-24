@@ -10,6 +10,13 @@ impl Resolution {
     pub fn new(width: usize, height: usize) -> Self {
         Self { width, height }
     }
+
+    pub fn from_vec<T>(vec: &Vec<Vec<T>>) -> Self {
+        Self {
+            height: vec.len(),
+            width: vec[0].len(),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -22,6 +29,7 @@ impl Image {
     pub fn new(resolution: Resolution, pixels: Vec<Vec<YCbCr>>) -> Self {
         Self { resolution, pixels }
     }
+
     pub fn from_bytes(resolution: Resolution, file: Vec<u8>) -> Self {
         assert!(
             file.len() == resolution.height * resolution.width * 3,

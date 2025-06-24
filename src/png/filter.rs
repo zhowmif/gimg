@@ -1,3 +1,6 @@
+use super::PngParseError;
+
+#[derive(Debug)]
 enum AdaptiveFilterType {
     None,
     Sub,
@@ -9,14 +12,27 @@ enum AdaptiveFilterType {
 impl AdaptiveFilterType {
     fn apply_filter(&self, x: u8, a: u8, b: u8, c: u8) -> u8 {
         match self {
-            Self::None => x,
-            Self::Sub => x.overflowing_sub(a).0,
-            Self::Up => x.overflowing_sub(b).0,
-            Self::Average => {
+            AdaptiveFilterType::None => x,
+            AdaptiveFilterType::Sub => x.overflowing_sub(a).0,
+            AdaptiveFilterType::Up => x.overflowing_sub(b).0,
+            AdaptiveFilterType::Average => {
                 x.overflowing_sub(((a as f32 + b as f32) / 2.).floor() as u8)
                     .0
             }
-            Self::Paeth => x.overflowing_sub(paeth_predictor(a, b, c)).0,
+            AdaptiveFilterType::Paeth => x.overflowing_sub(paeth_predictor(a, b, c)).0,
+        }
+    }
+
+    fn revert_filter(&self, x: u8, a: u8, b: u8, c: u8) -> u8 {
+        match self {
+            AdaptiveFilterType::None => x,
+            AdaptiveFilterType::Sub => x.overflowing_add(a).0,
+            AdaptiveFilterType::Up => x.overflowing_add(b).0,
+            AdaptiveFilterType::Average => {
+                x.overflowing_add(((a as f32 + b as f32) / 2.).floor() as u8)
+                    .0
+            }
+            AdaptiveFilterType::Paeth => x.overflowing_add(paeth_predictor(a, b, c)).0,
         }
     }
 
@@ -28,6 +44,22 @@ impl AdaptiveFilterType {
             AdaptiveFilterType::Average => 3,
             AdaptiveFilterType::Paeth => 4,
         }
+    }
+
+    fn from_byte(byte: u8) -> Result<Self, PngParseError> {
+        Ok(match byte {
+            0 => AdaptiveFilterType::None,
+            1 => AdaptiveFilterType::Sub,
+            2 => AdaptiveFilterType::Up,
+            3 => AdaptiveFilterType::Average,
+            4 => AdaptiveFilterType::Paeth,
+            f => {
+                return Err(PngParseError(format!(
+                    "Unrecognized adaptive filter type {}",
+                    f
+                )));
+            }
+        })
     }
 }
 
@@ -69,6 +101,7 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
             for col in 0..scanlines[row].len() {
                 let x = scanlines[row][col];
                 let (row, col) = (row as i16, col as i16);
+                //TODO: this is only 4 when there are 4 samples per pixel (and a bit depth of 8)
                 let a = get_byte(&scanlines, row, col - 4);
                 let b = get_byte(&scanlines, row - 1, col);
                 let c = get_byte(&scanlines, row - 1, col - 4);
@@ -100,4 +133,29 @@ fn get_byte(scanlines: &Vec<Vec<u8>>, row: i16, col: i16) -> u8 {
         .map(|scanline| scanline.get(col as usize).map(|val| val.clone()))
         .flatten()
         .unwrap_or(0)
+}
+
+pub fn remove_scanlines_filter(scanlines: &Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>, PngParseError> {
+    let mut unfiltered_scanlines = Vec::with_capacity(scanlines.len());
+
+    for row in 0..scanlines.len() {
+        let filter_type = AdaptiveFilterType::from_byte(scanlines[row][0])?;
+        unfiltered_scanlines.push(Vec::with_capacity(scanlines[row].len()));
+
+        for col in 1..scanlines[row].len() {
+            let x = scanlines[row][col];
+            //subtract 1 from col because there is no filter type byte in unfiltered_scanlines
+            let (row, col) = (row as i16, col as i16 - 1);
+
+            let a = get_byte(&unfiltered_scanlines, row, col - 4);
+            let b = get_byte(&unfiltered_scanlines, row - 1, col);
+            let c = get_byte(&unfiltered_scanlines, row - 1, col - 4);
+
+            let val = filter_type.revert_filter(x, a, b, c);
+
+            unfiltered_scanlines[row as usize].push(val);
+        }
+    }
+
+    Ok(unfiltered_scanlines)
 }

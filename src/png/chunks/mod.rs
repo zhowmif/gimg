@@ -11,8 +11,8 @@ pub mod iend;
 
 #[derive(Debug)]
 pub struct Chunk<'a> {
-    chunk_type: &'a [u8],
-    chunk_data: &'a [u8],
+    pub chunk_type: &'a [u8],
+    pub chunk_data: &'a [u8],
     crc: u32,
 }
 
@@ -52,6 +52,7 @@ impl<'a> Chunk<'a> {
 
         let chunk_type = read_bytes(offset, bytes, 4);
         let chunk_data = read_bytes(offset, bytes, length as usize);
+        //TODO: validate crc
         let crc = read_u32(offset, bytes);
 
         Ok(Chunk {

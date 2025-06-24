@@ -25,7 +25,11 @@ use prefix_table::{
     generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
     number_of_zero_symbols_at_end,
 };
-use zlib::ZlibEncoder;
+use zlib::{decode_zlib, ZlibEncoder};
+
+use crate::png_assert;
+
+use super::PngParseError;
 
 pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut encoder = ZlibEncoder::new();
@@ -35,6 +39,40 @@ pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
     }
 
     encoder.flush()
+}
+
+pub fn uncompress_scanlines<'a>(
+    data: &'a [u8],
+    height: usize,
+    width: usize,
+    bits_per_pixel: usize,
+) -> Result<Vec<Vec<u8>>, PngParseError> {
+    //TODO: find a better way to convert this error
+    let uncompressed_data = match decode_zlib(data) {
+        Ok(data) => data,
+        Err(deflate_error) => {
+            return Err(PngParseError(deflate_error.0));
+        }
+    };
+
+    let filter_byte_size = 1;
+    let bytes_per_scanline = filter_byte_size + ((width * bits_per_pixel) >> 3);
+    let expected_data_size = height * bytes_per_scanline;
+    png_assert!(
+        uncompressed_data.len() == expected_data_size,
+        format!(
+            "Expected {} bytes for resolution {}x{} after decompressing, but received {}",
+            expected_data_size,
+            height,
+            width,
+            uncompressed_data.len()
+        )
+    );
+
+    Ok(uncompressed_data
+        .chunks(bytes_per_scanline)
+        .map(|scanline| scanline.to_vec())
+        .collect())
 }
 
 #[derive(Debug)]

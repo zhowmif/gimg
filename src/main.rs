@@ -2,10 +2,13 @@
 
 use std::{fs, io::Read};
 
-use colors::RGBA;
-use demuxers::image_demuxer::ImageDemuxer;
+use colors::{YCbCr, RGBA};
+use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
 use flate2::read::DeflateDecoder;
+use image::{Image, Resolution};
+use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
+    decode_png,
     deflate::{self, decode::decode_deflate},
     encode_png,
 };
@@ -30,11 +33,11 @@ mod stream;
 mod tree;
 
 fn main() {
-    deflate_test();
-    // png_test();
+    png_encode_test();
+    png_decode_test();
 }
 
-fn png_test() {
+fn png_encode_test() {
     let mut dx = ImageDemuxer::new("files/mountain.png", "rgb24");
     let img = dx.get_next_image().unwrap();
 
@@ -51,6 +54,20 @@ fn png_test() {
 
     let png_bytes = encode_png(rgba_pixels);
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
+}
+
+fn png_decode_test() {
+    let png_file = fs::read("files/mymountain.png").unwrap();
+    let decoded_png = decode_png(&png_file).unwrap();
+    let ycbcr_pixels: Vec<Vec<YCbCr>> = decoded_png
+        .into_iter()
+        .map(|row| row.into_iter().map(|pixel| YCbCr::from(pixel)).collect())
+        .collect();
+
+    let img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
+    let dx = RawImageDemuxer::new(img);
+    let show = ShowMuxer::new("rgb24");
+    show.consume_stream(dx);
 }
 
 fn deflate_test() {

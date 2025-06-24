@@ -1,6 +1,6 @@
 use crate::algebra::{Matrix3, Vec3};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RGB {
     pub r: u8,
     pub g: u8,
@@ -64,6 +64,14 @@ impl From<Vec3> for YCbCr {
     }
 }
 
+impl From<RGBA> for YCbCr {
+    fn from(value: RGBA) -> Self {
+        let rgb: RGB = value.into();
+
+        (&rgb).into()
+    }
+}
+
 const RGB_TO_YCBCR_CONVERSION_TABLE: Matrix3 = Matrix3::new(
     [0.299, -0.168935, 0.499813],
     [0.587, -0.331665, -0.418531],
@@ -112,7 +120,7 @@ impl From<&YCbCr> for RGB {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RGBA {
     pub r: u8,
     pub g: u8,
@@ -123,5 +131,15 @@ pub struct RGBA {
 impl RGBA {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
+    }
+}
+
+impl Into<RGB> for RGBA {
+    fn into(self) -> RGB {
+        RGB {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+        }
     }
 }

@@ -1,8 +1,11 @@
-use crate::png::{
-    binary_utils::{read_byte, read_u32},
-    consts::{CHUNK_METADATA_LENGTH, IHDR_CHUNK_TYPE, IHDR_DATA_LENGTH},
-    crc::CrcCalculator,
-    PngParseError,
+use crate::{
+    png::{
+        binary_utils::{read_byte, read_u32},
+        consts::{CHUNK_METADATA_LENGTH, IHDR_CHUNK_TYPE, IHDR_DATA_LENGTH},
+        crc::CrcCalculator,
+        PngParseError,
+    },
+    png_assert,
 };
 
 use super::Chunk;
@@ -122,8 +125,8 @@ impl Into<u8> for &InterlaceMethod {
 
 #[derive(Debug)]
 pub struct IHDR {
-    width: u32,
-    height: u32,
+    pub width: u32,
+    pub height: u32,
     bit_depth: u8,
     color_type: ColorType,
     compression_method: CompressionMethod,
@@ -159,20 +162,19 @@ impl IHDR {
     }
 
     pub fn from_chunk(chunk: Chunk) -> Result<Self, PngParseError> {
-        if *chunk.chunk_type != *IHDR_CHUNK_TYPE {
-            return Err(PngParseError(format!(
-                "Expected IHDR chunk, found {:?}",
-                chunk.chunk_type
-            )));
-        }
+        png_assert!(
+            *chunk.chunk_type == *IHDR_CHUNK_TYPE,
+            format!("Expected IHDR chunk, found {:?}", chunk.chunk_type)
+        );
 
-        if chunk.chunk_data.len() != IHDR_DATA_LENGTH {
-            return Err(PngParseError(format!(
-                "Invalid IHDR chunk size, expect {}, received {}",
+        png_assert!(
+            chunk.chunk_data.len() == IHDR_DATA_LENGTH,
+            format!(
+                "Invalid IHDR chunk size, expected {}, received {}",
                 IHDR_DATA_LENGTH,
                 chunk.chunk_data.len()
-            )));
-        }
+            )
+        );
 
         let mut offset = 0;
         let width = read_u32(&mut offset, chunk.chunk_data);
@@ -195,28 +197,38 @@ impl IHDR {
     }
 
     pub fn check_compatibility(&self) -> Result<(), PngParseError> {
-        if !matches!(self.color_type, ColorType::TrueColorAlpha) {
-            return Err(PngParseError(format!(
-                "Unsupported color type {:?}",
-                self.color_type
-            )));
-        }
+        png_assert!(
+            matches!(self.color_type, ColorType::TrueColorAlpha),
+            format!("Unsupported color type {:?}", self.color_type)
+        );
 
-        if !matches!(self.compression_method, CompressionMethod::Deflate) {
-            return Err(PngParseError("Unsupported compression method".to_string()));
-        }
+        png_assert!(
+            matches!(self.compression_method, CompressionMethod::Deflate),
+            "Unsupported compression method".to_string()
+        );
 
-        if !matches!(self.filter_method, FilterMethod::Adaptive) {
-            return Err(PngParseError(
-                "Only adaptive filtering is supported".to_string(),
-            ));
-        }
+        png_assert!(
+            matches!(self.filter_method, FilterMethod::Adaptive),
+            "Only adaptive filtering is supported".to_string()
+        );
 
-        if !matches!(self.interlace_method, InterlaceMethod::NoInterlace) {
-            return Err(PngParseError("Interlacing is not supported".to_string()));
-        }
+        png_assert!(
+            matches!(self.interlace_method, InterlaceMethod::NoInterlace),
+            "Interlacing is not supported".to_string()
+        );
 
         Ok(())
     }
-}
 
+    pub fn get_bits_per_pixel(&self) -> usize {
+        let samples_per_pixel: usize = match self.color_type {
+            ColorType::Greyscale => 1,
+            ColorType::Truecolor => 3,
+            ColorType::IndexedColor => 1,
+            ColorType::GreyscaleAlpha => 1,
+            ColorType::TrueColorAlpha => 4,
+        };
+
+        self.bit_depth as usize * samples_per_pixel
+    }
+}
