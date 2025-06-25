@@ -12,10 +12,11 @@ use png::{
     deflate::{self, decode::decode_deflate},
     encode_png,
 };
+use ppm::decode_ppm;
 use stream::Stream;
 
 mod algebra;
-mod bits;
+mod binary;
 mod codec;
 mod colors;
 mod dct;
@@ -27,14 +28,29 @@ mod image;
 mod muxers;
 mod pixel_formats;
 mod png;
+mod ppm;
 mod quantization;
 mod queue;
 mod stream;
 mod tree;
 
 fn main() {
-    png_encode_test();
-    png_decode_test();
+    ppm_decode_test();
+    // png_encode_test();
+    // png_decode_test();
+}
+
+fn ppm_decode_test() {
+    let file = fs::read("files/mountain.ppm").unwrap();
+    let pixels = decode_ppm(&file[..]).unwrap();
+    let ycbcr_pixels: Vec<Vec<YCbCr>> = pixels
+        .into_iter()
+        .map(|row| row.into_iter().map(|pixel| YCbCr::from(&pixel)).collect())
+        .collect();
+    let img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
+    let dx = RawImageDemuxer::new(img);
+    let show = ShowMuxer::new("rgb24");
+    show.consume_stream(dx);
 }
 
 fn png_encode_test() {

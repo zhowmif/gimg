@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash, iter::repeat};
 
-use crate::bits::Bits;
+use crate::binary::bits::Bits;
 
 pub struct BinaryTree<T> {
     value: T,
