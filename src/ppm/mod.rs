@@ -20,6 +20,7 @@ macro_rules! ppm_read_bytes {
 }
 
 const PPM_SIGNATURE: &[u8] = &[80, 54];
+const LINE_FEED: u8 = 10;
 
 pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
     let mut reader = ByteReader::new(bytes);
@@ -88,4 +89,33 @@ fn read_ascii_integer(reader: &mut ByteReader, field_name: &str) -> Result<u32, 
         .map_err(|_e| PpmParseError(format!("{} is not a valid unsigned integer", field_name)))?;
 
     Ok(number)
+}
+
+pub fn encode_ppm(pixels: &[Vec<RGB>]) -> Vec<u8> {
+    let mut result = Vec::with_capacity(20 + pixels.len() * pixels[0].len());
+
+    result.extend_from_slice(PPM_SIGNATURE);
+    result.push(LINE_FEED);
+
+    let width = pixels[0].len();
+    result.extend_from_slice(width.to_string().as_bytes());
+    result.push(LINE_FEED);
+
+    let height = pixels.len();
+    result.extend_from_slice(height.to_string().as_bytes());
+    result.push(LINE_FEED);
+
+    let maxval = 255;
+    result.extend_from_slice(maxval.to_string().as_bytes());
+    result.push(LINE_FEED);
+
+    for row in pixels {
+        for pixel in row {
+            result.push(pixel.r);
+            result.push(pixel.g);
+            result.push(pixel.b);
+        }
+    }
+
+    result
 }

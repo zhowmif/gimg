@@ -12,7 +12,7 @@ use png::{
     deflate::{self, decode::decode_deflate},
     encode_png,
 };
-use ppm::decode_ppm;
+use ppm::{decode_ppm, encode_ppm};
 use stream::Stream;
 
 mod algebra;
@@ -35,7 +35,8 @@ mod stream;
 mod tree;
 
 fn main() {
-    ppm_decode_test();
+    ppm_encode_test();
+    // ppm_decode_test();
     // png_encode_test();
     // png_decode_test();
 }
@@ -51,6 +52,13 @@ fn ppm_decode_test() {
     let dx = RawImageDemuxer::new(img);
     let show = ShowMuxer::new("rgb24");
     show.consume_stream(dx);
+}
+
+fn ppm_encode_test() {
+    let file = fs::read("files/mountain.ppm").unwrap();
+    let pixels = decode_ppm(&file[..]).unwrap();
+    let my_ppm = encode_ppm(&pixels);
+    fs::write("files/mymountain.ppm", &my_ppm).unwrap();
 }
 
 fn png_encode_test() {
