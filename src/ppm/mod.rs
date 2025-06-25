@@ -22,6 +22,7 @@ macro_rules! ppm_read_bytes {
 const PPM_SIGNATURE: &[u8] = &[80, 54];
 const LINE_FEED: u8 = 10;
 
+//TODO: ignore comments
 pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
     let mut reader = ByteReader::new(bytes);
     let signature = ppm_read_bytes!(reader.read_until_whitespace(), "expected magic number");
