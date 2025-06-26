@@ -50,7 +50,7 @@ impl<'a> ByteReader<'a> {
         self.bytes.len().saturating_sub(self.offset)
     }
 
-    pub fn read_until_whitespace(&mut self) -> Option<&'a [u8]> {
+    fn read_until_whitespace(&mut self) -> Option<&'a [u8]> {
         //should also read until end of file
         while Self::is_whitespace(self.read_byte()?) {}
         self.offset -= 1;
@@ -65,15 +65,20 @@ impl<'a> ByteReader<'a> {
         Some(&self.bytes[start_index..self.offset])
     }
 
-    pub fn is_whitespace(byte: u8) -> bool {
-        WHITESPACE_SYMBOLS.contains(&byte)
+    pub fn read_ppm_symbol(&mut self) -> Option<&'a [u8]> {
+        let mut symbol: &[u8] = &[PPM_COMMENT_START_BYTE];
+
+        while symbol.starts_with(&[PPM_COMMENT_START_BYTE]) {
+            symbol = self.read_until_whitespace()?;
+        }
+
+        Some(symbol)
     }
 
-    pub fn read_utf8_string(&mut self, size: usize) -> Option<String> {
-        let bytes = self.read_bytes(size)?.to_vec();
-
-        Some(String::from_utf8(bytes).ok()?)
+    fn is_whitespace(byte: u8) -> bool {
+        WHITESPACE_SYMBOLS.contains(&byte)
     }
 }
 
 const WHITESPACE_SYMBOLS: [u8; 6] = [10, 32, 13, 9, 11, 12];
+const PPM_COMMENT_START_BYTE: u8 = 35;

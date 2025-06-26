@@ -1,5 +1,3 @@
-use std::{fmt::format, num};
-
 use crate::{binary::byte_reader::ByteReader, colors::RGB};
 
 #[derive(Debug)]
@@ -25,7 +23,7 @@ const LINE_FEED: u8 = 10;
 //TODO: ignore comments
 pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
     let mut reader = ByteReader::new(bytes);
-    let signature = ppm_read_bytes!(reader.read_until_whitespace(), "expected magic number");
+    let signature = ppm_read_bytes!(reader.read_ppm_symbol(), "expected magic number");
 
     if signature != PPM_SIGNATURE {
         return Err(PpmParseError(
@@ -80,10 +78,7 @@ pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
 }
 
 fn read_ascii_integer(reader: &mut ByteReader, field_name: &str) -> Result<u32, PpmParseError> {
-    let bytes = ppm_read_bytes!(
-        reader.read_until_whitespace(),
-        format!("expected {}", field_name)
-    );
+    let bytes = ppm_read_bytes!(reader.read_ppm_symbol(), format!("expected {}", field_name));
     let number = String::from_utf8(bytes.to_vec())
         .map_err(|_e| PpmParseError(format!("{} is not valid utf8", field_name)))?
         .parse::<u32>()

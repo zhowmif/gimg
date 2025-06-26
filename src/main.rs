@@ -35,8 +35,8 @@ mod stream;
 mod tree;
 
 fn main() {
-    ppm_encode_test();
-    // ppm_decode_test();
+    // ppm_encode_test();
+    ppm_decode_test();
     // png_encode_test();
     // png_decode_test();
 }
