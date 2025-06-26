@@ -42,7 +42,7 @@ fn main() {
 }
 
 fn ppm_decode_test() {
-    let file = fs::read("files/mountain.ppm").unwrap();
+    let file = fs::read("files/maxval.ppm").unwrap();
     let pixels = decode_ppm(&file[..]).unwrap();
     let ycbcr_pixels: Vec<Vec<YCbCr>> = pixels
         .into_iter()

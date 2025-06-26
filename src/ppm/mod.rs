@@ -20,7 +20,6 @@ macro_rules! ppm_read_bytes {
 const PPM_SIGNATURE: &[u8] = &[80, 54];
 const LINE_FEED: u8 = 10;
 
-//TODO: ignore comments
 pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
     let mut reader = ByteReader::new(bytes);
     let signature = ppm_read_bytes!(reader.read_ppm_symbol(), "expected magic number");
@@ -43,11 +42,12 @@ pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
         )));
     }
 
-    if max_color_value > 255 {
-        panic!("Max val greater than 255 not supported yet");
-    }
-
-    let expected_pixel_bytes_size: usize = (width * height * 3) as usize;
+    let bytes_per_pixel = if max_color_value > u8::MAX.into() {
+        2
+    } else {
+        1
+    };
+    let expected_pixel_bytes_size: usize = (width * height * 3) as usize * bytes_per_pixel;
     reader.skip_whitespace();
     let mut pixel_bytes = ppm_read_bytes!(
         reader.read_bytes(expected_pixel_bytes_size),
@@ -65,16 +65,39 @@ pub fn decode_ppm(bytes: &[u8]) -> Result<Vec<Vec<RGB>>, PpmParseError> {
     }
 
     let pixels: Vec<_> = pixel_bytes
-        .chunks_exact(width as usize * 3)
+        .chunks_exact(width as usize * 3 * bytes_per_pixel)
         .map(|row| {
-            row.chunks_exact(3)
-                .map(|rgb_bytes| RGB::new(rgb_bytes[0], rgb_bytes[1], rgb_bytes[2]))
+            row.chunks_exact(3 * bytes_per_pixel)
+                .map(|rgb_bytes| {
+                    let normalization_factor = 255. / max_color_value as f32;
+                    if bytes_per_pixel == 1 {
+                        rgb24_from_bytes(rgb_bytes, normalization_factor)
+                    } else {
+                        rgb48_from_bytes(rgb_bytes, normalization_factor)
+                    }
+                })
                 .collect()
         })
         .collect();
     debug_assert_eq!(pixels.len(), height as usize);
 
     Ok(pixels)
+}
+
+fn rgb24_from_bytes(rgb_bytes: &[u8], normalization_factor: f32) -> RGB {
+    RGB::new(
+        ((rgb_bytes[0] as f32) * normalization_factor) as u8,
+        ((rgb_bytes[1] as f32) * normalization_factor) as u8,
+        ((rgb_bytes[2] as f32) * normalization_factor) as u8,
+    )
+}
+
+fn rgb48_from_bytes(rgb_bytes: &[u8], normalization_factor: f32) -> RGB {
+    RGB::new(
+        ((((rgb_bytes[0] as u16) << 8) + rgb_bytes[1] as u16) as f32 * normalization_factor) as u8,
+        ((((rgb_bytes[2] as u16) << 8) + rgb_bytes[3] as u16) as f32 * normalization_factor) as u8,
+        ((((rgb_bytes[4] as u16) << 8) + rgb_bytes[5] as u16) as f32 * normalization_factor) as u8,
+    )
 }
 
 fn read_ascii_integer(reader: &mut ByteReader, field_name: &str) -> Result<u32, PpmParseError> {
