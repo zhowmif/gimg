@@ -37,7 +37,7 @@ mod tree;
 fn main() {
     // ppm_encode_test();
     // ppm_decode_test();
-    // png_encode_test();
+    // png_encode_test(Some(png::ColorType::Greyscale), Some(1));
     png_decode_test();
     // median_cut_test();
 }
@@ -75,7 +75,7 @@ fn ppm_encode_test() {
     fs::write("files/mymountain.ppm", &my_ppm).unwrap();
 }
 
-fn png_encode_test() {
+fn png_encode_test(color_type: Option<png::ColorType>, bit_depth: Option<u8>) {
     let mut dx = ImageDemuxer::new("files/mountain.png", "rgb24");
     let img = dx.get_next_image().unwrap();
 
@@ -90,12 +90,12 @@ fn png_encode_test() {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::TrueColorAlpha), Some(16));
+    let png_bytes = encode_png(rgba_pixels, color_type, bit_depth);
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 
 fn png_decode_test() {
-    let png_file = fs::read("files/16bit.png").unwrap();
+    let png_file = fs::read("files/mymountain.png").unwrap();
     let decoded_png = decode_png(&png_file).unwrap();
     let ycbcr_pixels: Vec<Vec<YCbCr>> = decoded_png
         .into_iter()

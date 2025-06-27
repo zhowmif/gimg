@@ -78,9 +78,11 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         ihdr_chunk.get_bits_per_pixel(),
     )?;
     let scanlines = remove_scanlines_filter(&filtered_scanlines, bbp)?;
-    let pixels = ihdr_chunk
-        .color_type
-        .scanline_to_pixels(&scanlines, ihdr_chunk.bit_depth);
+    let pixels = ihdr_chunk.color_type.scanline_to_pixels(
+        &scanlines,
+        ihdr_chunk.bit_depth,
+        ihdr_chunk.width as usize,
+    );
 
     Ok(pixels)
 }

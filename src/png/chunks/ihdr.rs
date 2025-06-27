@@ -184,11 +184,6 @@ impl IHDR {
 
     pub fn check_compatibility(&self) -> Result<(), PngParseError> {
         png_assert!(
-            matches!(self.color_type, ColorType::TrueColorAlpha),
-            format!("Unsupported color type {:?}", self.color_type)
-        );
-
-        png_assert!(
             matches!(self.compression_method, CompressionMethod::Deflate),
             "Unsupported compression method".to_string()
         );
@@ -209,6 +204,6 @@ impl IHDR {
     }
 
     pub fn get_bits_per_pixel(&self) -> usize {
-        self.bit_depth as usize * self.color_type.bytes_per_pixel()
+        self.bit_depth as usize * self.color_type.samples_per_pixel()
     }
 }

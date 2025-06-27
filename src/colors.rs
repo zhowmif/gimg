@@ -160,4 +160,4 @@ impl Into<RGB> for &RGBA {
             b: self.b,
         }
     }
-}
+    }

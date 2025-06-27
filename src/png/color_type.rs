@@ -1,8 +1,11 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, u8};
 
 use crate::colors::{YCbCr, RGB, RGBA};
 
-use super::{deflate::bitsream::WriteBitStream, palette, PngParseError};
+use super::{
+    deflate::bitsream::{ReadBitStream, WriteBitStream},
+    palette, PngParseError,
+};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorType {
@@ -115,6 +118,7 @@ impl ColorType {
                         }
                         None => panic!("Palette must be created to encode indexed color image"),
                     },
+                    //this line should never be reached because of earlier validty checks
                     _ => panic!("Only greyscale and indexed color should be used with less than 8 bit depth")
                 }
             }
@@ -125,24 +129,55 @@ impl ColorType {
         scanlines
     }
 
-    pub fn scanline_to_pixels(&self, scanlines: &[Vec<u8>], bit_depth: u8) -> Vec<Vec<RGBA>> {
+    pub fn scanline_to_pixels(
+        &self,
+        scanlines: &[Vec<u8>],
+        bit_depth: u8,
+        width: usize,
+    ) -> Vec<Vec<RGBA>> {
         if bit_depth < 8 {
-            todo!()
+            return self.scanline_to_pixels_bit_aligned(scanlines, bit_depth, width);
         }
 
         let mut pixels = Vec::with_capacity(scanlines.len());
-        let bytes_per_pixel = self.bytes_per_pixel() * ((bit_depth as usize) >> 3);
+        let bytes_per_pixel = self.samples_per_pixel() * ((bit_depth as usize) >> 3);
 
         for scanline in scanlines {
             let mut pixel_row = Vec::with_capacity(scanline.len() / bytes_per_pixel);
 
             for pixel_bytes in scanline.chunks_exact(bytes_per_pixel) {
-                let r = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
-                let g = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
-                let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
-                let a = Self::read_channel_bytes(pixel_bytes, bit_depth, 3);
+                let pixel = match self {
+                    ColorType::Greyscale => {
+                        let gamma = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
+                        let ycbcr = YCbCr::new(gamma, 127, 127);
 
-                let pixel = RGBA::new(r, g, b, a);
+                        ycbcr.into()
+                    }
+                    ColorType::Truecolor => {
+                        let r = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
+                        let g = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
+                        let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
+
+                        RGBA::new(r, g, b, u8::MAX)
+                    }
+                    ColorType::IndexedColor => todo!(),
+                    ColorType::GreyscaleAlpha => {
+                        let gamma = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
+                        let alpha = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
+                        let ycbcr = YCbCr::new(gamma, 127, 127);
+                        let rgb: RGB = RGB::from(&ycbcr);
+
+                        RGBA::new(rgb.r, rgb.g, rgb.b, alpha)
+                    }
+                    ColorType::TrueColorAlpha => {
+                        let r = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
+                        let g = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
+                        let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
+                        let a = Self::read_channel_bytes(pixel_bytes, bit_depth, 3);
+
+                        RGBA::new(r, g, b, a)
+                    }
+                };
 
                 pixel_row.push(pixel);
             }
@@ -164,7 +199,7 @@ impl ColorType {
         }
     }
 
-    pub fn bytes_per_pixel(&self) -> usize {
+    pub fn samples_per_pixel(&self) -> usize {
         match self {
             ColorType::Greyscale => 1,
             ColorType::Truecolor => 3,
@@ -172,6 +207,55 @@ impl ColorType {
             ColorType::GreyscaleAlpha => 2,
             ColorType::TrueColorAlpha => 4,
         }
+    }
+
+    fn scanline_to_pixels_bit_aligned(
+        &self,
+        scanlines: &[Vec<u8>],
+        bit_depth: u8,
+        width: usize,
+    ) -> Vec<Vec<RGBA>> {
+        let mut pixels = Vec::with_capacity(scanlines.len());
+
+        for scanline in scanlines {
+            let mut bitstream = ReadBitStream::new(scanline);
+            let mut pixel_row = Vec::with_capacity(width);
+
+            while pixel_row.len() < width {
+                let value = bitstream.read_number_lsb(bit_depth as usize).unwrap() as u8;
+
+                let pixel = match self {
+                    ColorType::Greyscale => {
+                        let gamma = Self::repeat_value_in_byte(value, bit_depth);
+                        let ycbcr = YCbCr::new(gamma, 127, 127);
+
+                        ycbcr.into()
+                    }
+                    ColorType::IndexedColor => todo!(),
+                    //this line should never be reached because of earlier validty checks
+                    _ => panic!(
+                    "Only greyscale and indexed color should be used with less than 8 bit depth"
+                ),
+                };
+
+                pixel_row.push(pixel);
+            }
+
+            pixels.push(pixel_row)
+        }
+
+        pixels
+    }
+
+    fn repeat_value_in_byte(value: u8, bit_depth: u8) -> u8 {
+        let mut byte = 0;
+
+        for _i in 0..(8 / bit_depth) {
+            byte += value;
+            byte <<= bit_depth;
+        }
+
+        byte
     }
 }
 
