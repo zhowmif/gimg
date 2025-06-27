@@ -8,3 +8,5 @@ pub const IDAT_CHUNK_TYPE: &[u8] = &[0x49, 0x44, 0x41, 0x54];
 pub const IDAT_CHUNK_MAX_SIZE: u32 = (2 as u32).pow(31) - 1;
 
 pub const IEND_CHUNK_TYPE: &[u8] = &[0x49, 0x45, 0x4e, 0x44];
+
+pub const PLTE_CHUNK_TYPE: &[u8] = &[0x50, 0x4C, 0x54, 0x45];

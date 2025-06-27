@@ -1,6 +1,6 @@
 use crate::algebra::{Matrix3, Vec3};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RGB {
     pub r: u8,
     pub g: u8,

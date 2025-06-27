@@ -3,6 +3,7 @@ use chunks::{
     idat::IDAT,
     iend::IEND,
     ihdr::{self},
+    plte::PLTE,
     Chunk,
 };
 pub use color_type::ColorType;
@@ -11,7 +12,8 @@ use crc::CrcCalculator;
 use deflate::{compress_scanlines, uncompress_scanlines};
 use filter::{filter_scanlines, remove_scanlines_filter};
 use ihdr::IHDR;
-use serialization::{create_scanlines, scanline_to_pixels};
+use palette::{create_pallete_from_colors_median_cut, get_unique_colors};
+use serialization::scanline_to_pixels;
 
 use crate::colors::RGBA;
 
@@ -23,6 +25,7 @@ mod consts;
 mod crc;
 pub mod deflate;
 mod filter;
+pub mod palette;
 mod serialization;
 
 #[derive(Debug)]
@@ -87,6 +90,16 @@ pub fn encode_png(
     let color_type = color_type.unwrap_or(ColorType::TrueColorAlpha);
     let bit_depth = bit_depth.unwrap_or(8);
 
+    let palette = match color_type {
+        ColorType::IndexedColor => {
+            let unique_colors = get_unique_colors(&pixels[..]);
+            let palette = create_pallete_from_colors_median_cut(&unique_colors, bit_depth as usize);
+
+            Some(palette)
+        }
+        _ => None,
+    };
+
     let mut crc = CrcCalculator::new();
     let ihdr = IHDR::new(
         pixels[0].len() as u32,
@@ -96,13 +109,17 @@ pub fn encode_png(
     );
     ihdr.check_bit_depth_validity();
 
-    let scanlines = color_type.create_scanlines(&pixels, ihdr.bit_depth);
+    let scanlines = color_type.create_scanlines(&pixels, ihdr.bit_depth, &palette);
     let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
     let compressed_data = compress_scanlines(&filtered_scanlines);
 
     let mut encoded_png: Vec<u8> = Vec::with_capacity(compressed_data.len() + 1000);
     encoded_png.extend_from_slice(PNG_SIGNATURE);
     encoded_png.extend_from_slice(&ihdr.to_bytes(&mut crc));
+
+    if let Some(palette) = palette {
+        encoded_png.extend_from_slice(&PLTE::encode_palette(&palette, &mut crc));
+    }
 
     compressed_data
         .chunks(IDAT_CHUNK_MAX_SIZE as usize)

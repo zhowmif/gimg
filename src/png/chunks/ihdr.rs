@@ -165,7 +165,7 @@ impl IHDR {
         match self.color_type {
             ColorType::Greyscale => Self::validate_bit_depth(&[1, 2, 4, 8, 16], self.bit_depth),
             ColorType::Truecolor => Self::validate_bit_depth(&[8, 16], self.bit_depth),
-            ColorType::IndexedColor => Self::validate_bit_depth(&[1, 4, 8], self.bit_depth),
+            ColorType::IndexedColor => Self::validate_bit_depth(&[1, 2, 4, 8], self.bit_depth),
             ColorType::GreyscaleAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
             ColorType::TrueColorAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
         }

@@ -1,6 +1,8 @@
-use crate::colors::{YCbCr, RGBA};
+use std::collections::HashMap;
 
-use super::{deflate::bitsream::WriteBitStream, PngParseError};
+use crate::colors::{YCbCr, RGB, RGBA};
+
+use super::{deflate::bitsream::WriteBitStream, palette, PngParseError};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorType {
@@ -12,9 +14,14 @@ pub enum ColorType {
 }
 
 impl ColorType {
-    pub fn create_scanlines(&self, pixels: &[Vec<RGBA>], bit_depth: u8) -> Vec<Vec<u8>> {
+    pub fn create_scanlines(
+        &self,
+        pixels: &[Vec<RGBA>],
+        bit_depth: u8,
+        palette: &Option<HashMap<RGB, (usize, RGB)>>,
+    ) -> Vec<Vec<u8>> {
         if bit_depth < 8 {
-            return self.create_scanlines_bit_aligned(pixels, bit_depth);
+            return self.create_scanlines_bit_aligned(pixels, bit_depth, palette);
         }
 
         let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
@@ -24,7 +31,18 @@ impl ColorType {
 
             for pixel in row {
                 match self {
-                    ColorType::IndexedColor => todo!(),
+                    ColorType::IndexedColor => match palette {
+                        Some(palette) => {
+                            let rgb: RGB = pixel.into();
+                            let idx = palette
+                                .get(&rgb)
+                                .expect("all unique image rgb values must be present in palette")
+                                .0 as u8;
+
+                            Self::push_channel_value(&mut scanline, idx, bit_depth);
+                        }
+                        None => panic!("Palette must be created to encode indexed color image"),
+                    },
                     ColorType::Greyscale => {
                         let ycbcr = YCbCr::from(pixel.clone());
 
@@ -65,7 +83,12 @@ impl ColorType {
         }
     }
 
-    fn create_scanlines_bit_aligned(&self, pixels: &[Vec<RGBA>], bit_depth: u8) -> Vec<Vec<u8>> {
+    fn create_scanlines_bit_aligned(
+        &self,
+        pixels: &[Vec<RGBA>],
+        bit_depth: u8,
+        palette: &Option<HashMap<RGB, (usize, RGB)>>,
+    ) -> Vec<Vec<u8>> {
         let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
 
         for row in pixels {
@@ -79,7 +102,18 @@ impl ColorType {
 
                         scanline.push_u8_rtl(greyscale_adjusted_to_depths, bit_depth);
                     },
-                    ColorType::IndexedColor => todo!(),
+                    ColorType::IndexedColor => match palette {
+                        Some(palette) => {
+                            let rgb: RGB = pixel.into();
+                            let idx = palette
+                                .get(&rgb)
+                                .expect("all unique image rgb values must be present in palette")
+                                .0 as u8;
+
+                            scanline.push_u8_rtl(idx, bit_depth)
+                        }
+                        None => panic!("Palette must be created to encode indexed color image"),
+                    },
                     _ => panic!("Only greyscale and indexed color should be used with less than 8 bit depth")
                 }
             }

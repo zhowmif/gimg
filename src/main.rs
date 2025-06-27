@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use std::{fs, io::Read};
+use std::{collections::HashSet, fs, io::Read};
 
-use colors::{YCbCr, RGBA};
+use colors::{YCbCr, RGB, RGBA};
 use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
 use flate2::read::DeflateDecoder;
 use image::{Image, Resolution};
@@ -11,6 +11,7 @@ use png::{
     decode_png,
     deflate::{self, decode::decode_deflate},
     encode_png,
+    palette::create_pallete_from_colors_median_cut,
 };
 use ppm::{decode_ppm, encode_ppm};
 use stream::Stream;
@@ -38,6 +39,20 @@ fn main() {
     // ppm_decode_test();
     png_encode_test();
     // png_decode_test();
+    // median_cut_test();
+}
+
+fn median_cut_test() {
+    // let colors = vec![
+    //     RGB::new(100, 0, 0),
+    //     RGB::new(120, 0, 0),
+    //     RGB::new(0, 100, 0),
+    //     RGB::new(0, 105, 20),
+    // ];
+    // let g = HashSet::from_iter(colors);
+    // let result = create_pallete_from_colors_median_cut(&colors, 1);
+    //
+    // println!("Palette: {:?}", result);
 }
 
 fn ppm_decode_test() {
@@ -75,7 +90,7 @@ fn png_encode_test() {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::Greyscale), Some(4));
+    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::IndexedColor), Some(4));
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 
