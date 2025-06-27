@@ -21,7 +21,6 @@ mod codec;
 mod colors;
 mod dct;
 mod demuxers;
-mod ffmpeg;
 mod filters;
 mod guy_format;
 mod image;
@@ -42,7 +41,7 @@ fn main() {
 }
 
 fn ppm_decode_test() {
-    let file = fs::read("files/maxval.ppm").unwrap();
+    let file = fs::read("files/mountain.ppm").unwrap();
     let pixels = decode_ppm(&file[..]).unwrap();
     let ycbcr_pixels: Vec<Vec<YCbCr>> = pixels
         .into_iter()
