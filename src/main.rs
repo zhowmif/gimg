@@ -35,8 +35,8 @@ mod tree;
 
 fn main() {
     // ppm_encode_test();
-    ppm_decode_test();
-    // png_encode_test();
+    // ppm_decode_test();
+    png_encode_test();
     // png_decode_test();
 }
 
@@ -75,7 +75,7 @@ fn png_encode_test() {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels);
+    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::GreyscaleAlpha));
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 

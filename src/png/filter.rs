@@ -89,7 +89,8 @@ const FILTERS: [AdaptiveFilterType; 5] = [
 
 type FilteredScenaline = (AdaptiveFilterType, Vec<u8>);
 
-pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>, bbp: usize) -> Vec<Vec<u8>> {
+    let other_byte_offsets = if bbp <= 8 { 1 } else { (bbp >> 3) as i16 };
     let mut filtered_scanelines: Vec<Vec<u8>> = Vec::with_capacity(scanlines.len());
 
     for row in 0..scanlines.len() {
@@ -102,9 +103,9 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
                 let x = scanlines[row][col];
                 let (row, col) = (row as i16, col as i16);
                 //TODO: this is only 4 when there are 4 samples per pixel (and a bit depth of 8)
-                let a = get_byte(&scanlines, row, col - 4);
+                let a = get_byte(&scanlines, row, col - other_byte_offsets);
                 let b = get_byte(&scanlines, row - 1, col);
-                let c = get_byte(&scanlines, row - 1, col - 4);
+                let c = get_byte(&scanlines, row - 1, col - other_byte_offsets);
 
                 current_filter_result.push(filter.apply_filter(x, a, b, c));
             }

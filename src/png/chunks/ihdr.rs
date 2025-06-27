@@ -1,6 +1,7 @@
 use crate::{
     png::{
         binary_utils::{read_byte, read_u32},
+        color_type::ColorType,
         consts::{CHUNK_METADATA_LENGTH, IHDR_CHUNK_TYPE, IHDR_DATA_LENGTH},
         crc::CrcCalculator,
         PngParseError,
@@ -9,42 +10,6 @@ use crate::{
 };
 
 use super::Chunk;
-
-#[derive(Debug)]
-enum ColorType {
-    Greyscale,
-    Truecolor,
-    IndexedColor,
-    GreyscaleAlpha,
-    TrueColorAlpha,
-}
-
-impl TryFrom<u8> for ColorType {
-    type Error = PngParseError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::Greyscale),
-            2 => Ok(Self::Truecolor),
-            3 => Ok(Self::IndexedColor),
-            4 => Ok(Self::GreyscaleAlpha),
-            6 => Ok(Self::TrueColorAlpha),
-            _ => Err(PngParseError(format!("Unrecognized color type {value}"))),
-        }
-    }
-}
-
-impl Into<u8> for &ColorType {
-    fn into(self) -> u8 {
-        match self {
-            ColorType::Greyscale => 0,
-            ColorType::Truecolor => 2,
-            ColorType::IndexedColor => 3,
-            ColorType::GreyscaleAlpha => 4,
-            ColorType::TrueColorAlpha => 6,
-        }
-    }
-}
 
 #[derive(Debug)]
 enum CompressionMethod {
@@ -135,12 +100,12 @@ pub struct IHDR {
 }
 
 impl IHDR {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: u32, height: u32, color_type: ColorType) -> Self {
         Self {
             width,
             height,
             bit_depth: 8,
-            color_type: ColorType::TrueColorAlpha,
+            color_type,
             compression_method: CompressionMethod::Deflate,
             filter_method: FilterMethod::Adaptive,
             interlace_method: InterlaceMethod::NoInterlace,
@@ -225,7 +190,7 @@ impl IHDR {
             ColorType::Greyscale => 1,
             ColorType::Truecolor => 3,
             ColorType::IndexedColor => 1,
-            ColorType::GreyscaleAlpha => 1,
+            ColorType::GreyscaleAlpha => 2,
             ColorType::TrueColorAlpha => 4,
         };
 

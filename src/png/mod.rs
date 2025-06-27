@@ -1,7 +1,11 @@
-use std::{iter::repeat_n, process};
-
 use binary_utils::read_bytes;
-use chunks::{idat::IDAT, iend::IEND, ihdr, Chunk};
+use chunks::{
+    idat::IDAT,
+    iend::IEND,
+    ihdr::{self},
+    Chunk,
+};
+pub use color_type::ColorType;
 use consts::{IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PNG_SIGNATURE};
 use crc::CrcCalculator;
 use deflate::{compress_scanlines, uncompress_scanlines};
@@ -14,6 +18,7 @@ use crate::colors::RGBA;
 mod adler32;
 mod binary_utils;
 mod chunks;
+mod color_type;
 mod consts;
 mod crc;
 pub mod deflate;
@@ -74,11 +79,13 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     Ok(pixels)
 }
 
-pub fn encode_png(pixels: Vec<Vec<RGBA>>) -> Vec<u8> {
+pub fn encode_png(pixels: Vec<Vec<RGBA>>, color_type: Option<ColorType>) -> Vec<u8> {
+    let color_type = color_type.unwrap_or(ColorType::TrueColorAlpha);
+
     let mut crc = CrcCalculator::new();
-    let ihdr = IHDR::new(pixels[0].len() as u32, pixels.len() as u32);
-    let scanlines = create_scanlines(&pixels);
-    let filtered_scanlines = filter_scanlines(&scanlines);
+    let ihdr = IHDR::new(pixels[0].len() as u32, pixels.len() as u32, color_type);
+    let scanlines = color_type.create_scanlines(&pixels);
+    let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
     let compressed_data = compress_scanlines(&filtered_scanlines);
 
     let mut encoded_png: Vec<u8> = Vec::with_capacity(compressed_data.len() + 1000);
