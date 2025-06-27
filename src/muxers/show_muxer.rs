@@ -2,7 +2,6 @@ use std::{fs, process::Command};
 
 use crate::{
     colors::RGB,
-    image::Resolution,
     pixel_formats::{get_pixel_format, PixelFormat},
     ppm::encode_ppm,
     stream::Stream,

@@ -1,19 +1,16 @@
 #![allow(dead_code)]
 
-use std::{collections::HashSet, fs, io::Read};
+use std::fs;
 
-use colors::{YCbCr, RGB, RGBA};
+use colors::{YCbCr, RGBA};
 use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
-use flate2::read::DeflateDecoder;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
     deflate::{self, decode::decode_deflate},
-    encode_png,
-    palette::create_pallete_from_colors_median_cut,
+    encode_png, ColorType, InterlaceMethod,
 };
-use ppm::{decode_ppm, encode_ppm};
 use stream::Stream;
 
 mod algebra;
@@ -35,47 +32,19 @@ mod stream;
 mod tree;
 
 fn main() {
-    // ppm_encode_test();
-    // ppm_decode_test();
-    // png_encode_test(Some(png::ColorType::IndexedColor), Some(1));
-    png_decode_test();
-    // median_cut_test();
+    png_encode_test(
+        Some(ColorType::Greyscale),
+        Some(2),
+        Some(InterlaceMethod::Adam7),
+    );
+    // png_decode_test();
 }
 
-fn median_cut_test() {
-    // let colors = vec![
-    //     RGB::new(100, 0, 0),
-    //     RGB::new(120, 0, 0),
-    //     RGB::new(0, 100, 0),
-    //     RGB::new(0, 105, 20),
-    // ];
-    // let g = HashSet::from_iter(colors);
-    // let result = create_pallete_from_colors_median_cut(&colors, 1);
-    //
-    // println!("Palette: {:?}", result);
-}
-
-fn ppm_decode_test() {
-    let file = fs::read("files/mountain.ppm").unwrap();
-    let pixels = decode_ppm(&file[..]).unwrap();
-    let ycbcr_pixels: Vec<Vec<YCbCr>> = pixels
-        .into_iter()
-        .map(|row| row.into_iter().map(|pixel| YCbCr::from(&pixel)).collect())
-        .collect();
-    let img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
-    let dx = RawImageDemuxer::new(img);
-    let show = ShowMuxer::new("rgb24");
-    show.consume_stream(dx);
-}
-
-fn ppm_encode_test() {
-    let file = fs::read("files/mountain.ppm").unwrap();
-    let pixels = decode_ppm(&file[..]).unwrap();
-    let my_ppm = encode_ppm(&pixels);
-    fs::write("files/mymountain.ppm", &my_ppm).unwrap();
-}
-
-fn png_encode_test(color_type: Option<png::ColorType>, bit_depth: Option<u8>) {
+fn png_encode_test(
+    color_type: Option<png::ColorType>,
+    bit_depth: Option<u8>,
+    interlace_method: Option<png::InterlaceMethod>,
+) {
     let mut dx = ImageDemuxer::new("files/mountain.png", "rgb24");
     let img = dx.get_next_image().unwrap();
 
@@ -90,7 +59,7 @@ fn png_encode_test(color_type: Option<png::ColorType>, bit_depth: Option<u8>) {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels, color_type, bit_depth);
+    let png_bytes = encode_png(rgba_pixels, color_type, bit_depth, interlace_method);
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 

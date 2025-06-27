@@ -4,6 +4,7 @@ use crate::{
         color_type::ColorType,
         consts::{CHUNK_METADATA_LENGTH, IHDR_CHUNK_TYPE, IHDR_DATA_LENGTH},
         crc::CrcCalculator,
+        interlace::InterlaceMethod,
         PngParseError,
     },
     png_assert,
@@ -60,35 +61,6 @@ impl Into<u8> for &FilterMethod {
 }
 
 #[derive(Debug)]
-enum InterlaceMethod {
-    NoInterlace,
-    Adam7,
-}
-
-impl TryFrom<u8> for InterlaceMethod {
-    type Error = PngParseError;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        match value {
-            0 => Ok(Self::NoInterlace),
-            1 => Ok(Self::Adam7),
-            _ => Err(PngParseError(format!(
-                "Unrecognized interlace method {value}"
-            ))),
-        }
-    }
-}
-
-impl Into<u8> for &InterlaceMethod {
-    fn into(self) -> u8 {
-        match self {
-            InterlaceMethod::NoInterlace => 0,
-            InterlaceMethod::Adam7 => 1,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct IHDR {
     pub width: u32,
     pub height: u32,
@@ -100,7 +72,13 @@ pub struct IHDR {
 }
 
 impl IHDR {
-    pub fn new(width: u32, height: u32, color_type: ColorType, bit_depth: u8) -> Self {
+    pub fn new(
+        width: u32,
+        height: u32,
+        color_type: ColorType,
+        bit_depth: u8,
+        interlace_method: InterlaceMethod,
+    ) -> Self {
         Self {
             width,
             height,
@@ -108,7 +86,7 @@ impl IHDR {
             color_type,
             compression_method: CompressionMethod::Deflate,
             filter_method: FilterMethod::Adaptive,
-            interlace_method: InterlaceMethod::NoInterlace,
+            interlace_method,
         }
     }
 

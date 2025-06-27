@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     colors::{RGB, RGBA},
-    png::{chunks::Chunk, consts::PLTE_CHUNK_TYPE, crc::CrcCalculator, palette, PngParseError},
+    png::{chunks::Chunk, consts::PLTE_CHUNK_TYPE, crc::CrcCalculator, PngParseError},
     png_assert,
 };
 

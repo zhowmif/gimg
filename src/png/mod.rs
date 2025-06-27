@@ -14,6 +14,7 @@ use crc::CrcCalculator;
 use deflate::{compress_scanlines, uncompress_scanlines};
 use filter::{filter_scanlines, remove_scanlines_filter};
 use ihdr::IHDR;
+pub use interlace::InterlaceMethod;
 use palette::{create_pallete_from_colors_median_cut, get_unique_colors};
 
 use crate::colors::RGBA;
@@ -26,6 +27,7 @@ mod consts;
 mod crc;
 pub mod deflate;
 mod filter;
+mod interlace;
 pub mod palette;
 mod serialization;
 
@@ -71,11 +73,13 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
                 }
                 None => palette = Some(PLTE::decode_palette(&chunk.chunk_data)?),
             },
-            _ => {
-                return Err(PngParseError(format!(
-                    "Unrecognized chunk type: {:?}",
-                    chunk.chunk_type
-                )))
+            chunk_type => {
+                if chunk_type[0] & 32 == 0 {
+                    return Err(PngParseError(format!(
+                        "Unrecognized critical chunk: {:?}",
+                        chunk.chunk_type
+                    )));
+                }
             }
         }
     }
@@ -97,7 +101,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         &scanlines,
         ihdr_chunk.bit_depth,
         ihdr_chunk.width as usize,
-        palette
+        palette,
     )?;
 
     Ok(pixels)
@@ -107,9 +111,11 @@ pub fn encode_png(
     pixels: Vec<Vec<RGBA>>,
     color_type: Option<ColorType>,
     bit_depth: Option<u8>,
+    interlace_method: Option<InterlaceMethod>,
 ) -> Vec<u8> {
     let color_type = color_type.unwrap_or(ColorType::TrueColorAlpha);
     let bit_depth = bit_depth.unwrap_or(8);
+    let interlace_method = interlace_method.unwrap_or(InterlaceMethod::NoInterlace);
 
     let palette = match color_type {
         ColorType::IndexedColor => {
@@ -127,18 +133,26 @@ pub fn encode_png(
         pixels.len() as u32,
         color_type,
         bit_depth,
+        interlace_method,
     );
     ihdr.check_bit_depth_validity().unwrap();
-
-    let scanlines = color_type.create_scanlines(&pixels, ihdr.bit_depth, &palette);
-    let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
-    let compressed_data = compress_scanlines(&filtered_scanlines);
-
-    let mut encoded_png: Vec<u8> = Vec::with_capacity(compressed_data.len() + 1000);
+    let mut encoded_png: Vec<u8> = Vec::new();
     encoded_png.extend_from_slice(PNG_SIGNATURE);
     encoded_png.extend_from_slice(&ihdr.to_bytes(&mut crc));
 
-    if let Some(palette) = palette {
+    let reduced_images = interlace_method.perform_pass_extraction(pixels);
+
+    let mut all_filtered_scanlines: Vec<Vec<u8>> = Vec::new();
+
+    for reduced_image in reduced_images.iter() {
+        let scanlines = color_type.create_scanlines(reduced_image, ihdr.bit_depth, &palette);
+        let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
+        all_filtered_scanlines.extend_from_slice(&filtered_scanlines);
+    }
+
+    let compressed_data = compress_scanlines(&all_filtered_scanlines);
+
+    if let Some(ref palette) = palette {
         encoded_png.extend_from_slice(&PLTE::encode_palette(&palette, &mut crc));
     }
 
