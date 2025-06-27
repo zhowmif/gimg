@@ -93,7 +93,7 @@ pub struct IHDR {
     pub width: u32,
     pub height: u32,
     pub bit_depth: u8,
-    color_type: ColorType,
+    pub color_type: ColorType,
     compression_method: CompressionMethod,
     filter_method: FilterMethod,
     interlace_method: InterlaceMethod,
@@ -161,7 +161,7 @@ impl IHDR {
         })
     }
 
-    pub fn check_bit_depth_validity(&self) {
+    pub fn check_bit_depth_validity(&self) -> Result<(), PngParseError> {
         match self.color_type {
             ColorType::Greyscale => Self::validate_bit_depth(&[1, 2, 4, 8, 16], self.bit_depth),
             ColorType::Truecolor => Self::validate_bit_depth(&[8, 16], self.bit_depth),
@@ -171,13 +171,15 @@ impl IHDR {
         }
     }
 
-    fn validate_bit_depth(valid_bit_depths: &[u8], bit_depth: u8) {
+    fn validate_bit_depth(valid_bit_depths: &[u8], bit_depth: u8) -> Result<(), PngParseError> {
         if !valid_bit_depths.contains(&bit_depth) {
-            panic!(
+            return Err(PngParseError(format!(
                 "Invalid bit depths {}, allowed bit depths for color type are {:?}",
-                bit_depth, valid_bit_depths
-            )
+                bit_depth, valid_bit_depths,
+            )));
         }
+
+        Ok(())
     }
 
     pub fn check_compatibility(&self) -> Result<(), PngParseError> {
@@ -201,18 +203,12 @@ impl IHDR {
             "Interlacing is not supported".to_string()
         );
 
+        self.check_bit_depth_validity()?;
+
         Ok(())
     }
 
     pub fn get_bits_per_pixel(&self) -> usize {
-        let samples_per_pixel: usize = match self.color_type {
-            ColorType::Greyscale => 1,
-            ColorType::Truecolor => 3,
-            ColorType::IndexedColor => 1,
-            ColorType::GreyscaleAlpha => 2,
-            ColorType::TrueColorAlpha => 4,
-        };
-
-        self.bit_depth as usize * samples_per_pixel
+        self.bit_depth as usize * self.color_type.bytes_per_pixel()
     }
 }

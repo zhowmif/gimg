@@ -70,14 +70,17 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         }
     }
 
+    let bbp = ihdr_chunk.get_bits_per_pixel();
     let filtered_scanlines = uncompress_scanlines(
         &compressed_data,
         ihdr_chunk.height as usize,
         ihdr_chunk.width as usize,
         ihdr_chunk.get_bits_per_pixel(),
     )?;
-    let scanlines = remove_scanlines_filter(&filtered_scanlines)?;
-    let pixels = scanline_to_pixels(&scanlines);
+    let scanlines = remove_scanlines_filter(&filtered_scanlines, bbp)?;
+    let pixels = ihdr_chunk
+        .color_type
+        .scanline_to_pixels(&scanlines, ihdr_chunk.bit_depth);
 
     Ok(pixels)
 }
@@ -107,7 +110,7 @@ pub fn encode_png(
         color_type,
         bit_depth,
     );
-    ihdr.check_bit_depth_validity();
+    ihdr.check_bit_depth_validity().unwrap();
 
     let scanlines = color_type.create_scanlines(&pixels, ihdr.bit_depth, &palette);
     let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());

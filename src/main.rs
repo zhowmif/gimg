@@ -37,8 +37,8 @@ mod tree;
 fn main() {
     // ppm_encode_test();
     // ppm_decode_test();
-    png_encode_test();
-    // png_decode_test();
+    // png_encode_test();
+    png_decode_test();
     // median_cut_test();
 }
 
@@ -90,12 +90,12 @@ fn png_encode_test() {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::IndexedColor), Some(4));
+    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::TrueColorAlpha), Some(16));
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 
 fn png_decode_test() {
-    let png_file = fs::read("files/mymountain.png").unwrap();
+    let png_file = fs::read("files/16bit.png").unwrap();
     let decoded_png = decode_png(&png_file).unwrap();
     let ycbcr_pixels: Vec<Vec<YCbCr>> = decoded_png
         .into_iter()

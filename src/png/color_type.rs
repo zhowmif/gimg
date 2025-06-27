@@ -109,6 +109,7 @@ impl ColorType {
                                 .get(&rgb)
                                 .expect("all unique image rgb values must be present in palette")
                                 .0 as u8;
+                            debug_assert!(idx < (1<<bit_depth));
 
                             scanline.push_u8_rtl(idx, bit_depth)
                         }
@@ -122,6 +123,55 @@ impl ColorType {
         }
 
         scanlines
+    }
+
+    pub fn scanline_to_pixels(&self, scanlines: &[Vec<u8>], bit_depth: u8) -> Vec<Vec<RGBA>> {
+        if bit_depth < 8 {
+            todo!()
+        }
+
+        let mut pixels = Vec::with_capacity(scanlines.len());
+        let bytes_per_pixel = self.bytes_per_pixel() * ((bit_depth as usize) >> 3);
+
+        for scanline in scanlines {
+            let mut pixel_row = Vec::with_capacity(scanline.len() / bytes_per_pixel);
+
+            for pixel_bytes in scanline.chunks_exact(bytes_per_pixel) {
+                let r = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
+                let g = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
+                let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
+                let a = Self::read_channel_bytes(pixel_bytes, bit_depth, 3);
+
+                let pixel = RGBA::new(r, g, b, a);
+
+                pixel_row.push(pixel);
+            }
+
+            pixels.push(pixel_row);
+        }
+
+        pixels
+    }
+
+    fn read_channel_bytes(pixel_bytes: &[u8], bit_depth: u8, value_idx: usize) -> u8 {
+        if bit_depth == 8 {
+            pixel_bytes[value_idx]
+        } else {
+            let first = pixel_bytes[value_idx * 2];
+            let second = pixel_bytes[value_idx + 1];
+
+            first.saturating_add(second >> 7)
+        }
+    }
+
+    pub fn bytes_per_pixel(&self) -> usize {
+        match self {
+            ColorType::Greyscale => 1,
+            ColorType::Truecolor => 3,
+            ColorType::IndexedColor => 1,
+            ColorType::GreyscaleAlpha => 2,
+            ColorType::TrueColorAlpha => 4,
+        }
     }
 }
 

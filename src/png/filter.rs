@@ -135,8 +135,12 @@ fn get_byte(scanlines: &Vec<Vec<u8>>, row: i16, col: i16) -> u8 {
         .unwrap_or(0)
 }
 
-pub fn remove_scanlines_filter(scanlines: &Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>, PngParseError> {
+pub fn remove_scanlines_filter(
+    scanlines: &Vec<Vec<u8>>,
+    bbp: usize,
+) -> Result<Vec<Vec<u8>>, PngParseError> {
     let mut unfiltered_scanlines = Vec::with_capacity(scanlines.len());
+    let other_byte_offsets = if bbp <= 8 { 1 } else { (bbp >> 3) as i16 };
 
     for row in 0..scanlines.len() {
         let filter_type = AdaptiveFilterType::from_byte(scanlines[row][0])?;
@@ -147,9 +151,9 @@ pub fn remove_scanlines_filter(scanlines: &Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>,
             //subtract 1 from col because there is no filter type byte in unfiltered_scanlines
             let (row, col) = (row as i16, col as i16 - 1);
 
-            let a = get_byte(&unfiltered_scanlines, row, col - 4);
+            let a = get_byte(&unfiltered_scanlines, row, col - other_byte_offsets);
             let b = get_byte(&unfiltered_scanlines, row - 1, col);
-            let c = get_byte(&unfiltered_scanlines, row - 1, col - 4);
+            let c = get_byte(&unfiltered_scanlines, row - 1, col - other_byte_offsets);
 
             let val = filter_type.revert_filter(x, a, b, c);
 
