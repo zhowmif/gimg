@@ -92,7 +92,7 @@ impl Into<u8> for &InterlaceMethod {
 pub struct IHDR {
     pub width: u32,
     pub height: u32,
-    bit_depth: u8,
+    pub bit_depth: u8,
     color_type: ColorType,
     compression_method: CompressionMethod,
     filter_method: FilterMethod,
@@ -100,11 +100,11 @@ pub struct IHDR {
 }
 
 impl IHDR {
-    pub fn new(width: u32, height: u32, color_type: ColorType) -> Self {
+    pub fn new(width: u32, height: u32, color_type: ColorType, bit_depth: u8) -> Self {
         Self {
             width,
             height,
-            bit_depth: 8,
+            bit_depth,
             color_type,
             compression_method: CompressionMethod::Deflate,
             filter_method: FilterMethod::Adaptive,
@@ -159,6 +159,25 @@ impl IHDR {
             filter_method,
             interlace_method,
         })
+    }
+
+    pub fn check_bit_depth_validity(&self) {
+        match self.color_type {
+            ColorType::Greyscale => Self::validate_bit_depth(&[1, 2, 4, 8, 16], self.bit_depth),
+            ColorType::Truecolor => Self::validate_bit_depth(&[8, 16], self.bit_depth),
+            ColorType::IndexedColor => Self::validate_bit_depth(&[1, 4, 8], self.bit_depth),
+            ColorType::GreyscaleAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
+            ColorType::TrueColorAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
+        }
+    }
+
+    fn validate_bit_depth(valid_bit_depths: &[u8], bit_depth: u8) {
+        if !valid_bit_depths.contains(&bit_depth) {
+            panic!(
+                "Invalid bit depths {}, allowed bit depths for color type are {:?}",
+                bit_depth, valid_bit_depths
+            )
+        }
     }
 
     pub fn check_compatibility(&self) -> Result<(), PngParseError> {

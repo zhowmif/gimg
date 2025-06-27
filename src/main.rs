@@ -75,7 +75,7 @@ fn png_encode_test() {
         rgba_pixels.push(pixel_row);
     }
 
-    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::GreyscaleAlpha));
+    let png_bytes = encode_png(rgba_pixels, Some(png::ColorType::Greyscale), Some(4));
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 

@@ -1,6 +1,6 @@
 use crate::colors::{YCbCr, RGBA};
 
-use super::PngParseError;
+use super::{deflate::bitsream::WriteBitStream, PngParseError};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ColorType {
@@ -12,7 +12,11 @@ pub enum ColorType {
 }
 
 impl ColorType {
-    pub fn create_scanlines(&self, pixels: &[Vec<RGBA>]) -> Vec<Vec<u8>> {
+    pub fn create_scanlines(&self, pixels: &[Vec<RGBA>], bit_depth: u8) -> Vec<Vec<u8>> {
+        if bit_depth < 8 {
+            return self.create_scanlines_bit_aligned(pixels, bit_depth);
+        }
+
         let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
 
         for row in pixels {
@@ -24,29 +28,63 @@ impl ColorType {
                     ColorType::Greyscale => {
                         let ycbcr = YCbCr::from(pixel.clone());
 
-                        scanline.push(ycbcr.y);
+                        Self::push_channel_value(&mut scanline, ycbcr.y, bit_depth);
                     }
                     ColorType::GreyscaleAlpha => {
                         let ycbcr = YCbCr::from(pixel.clone());
 
-                        scanline.push(ycbcr.y);
-                        scanline.push(pixel.a);
+                        Self::push_channel_value(&mut scanline, ycbcr.y, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.a, bit_depth);
                     }
                     ColorType::Truecolor => {
-                        scanline.push(pixel.r);
-                        scanline.push(pixel.g);
-                        scanline.push(pixel.b);
+                        Self::push_channel_value(&mut scanline, pixel.r, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.g, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.b, bit_depth);
                     }
                     ColorType::TrueColorAlpha => {
-                        scanline.push(pixel.r);
-                        scanline.push(pixel.g);
-                        scanline.push(pixel.b);
-                        scanline.push(pixel.a);
+                        Self::push_channel_value(&mut scanline, pixel.r, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.g, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.b, bit_depth);
+                        Self::push_channel_value(&mut scanline, pixel.a, bit_depth);
                     }
                 }
             }
 
             scanlines.push(scanline);
+        }
+
+        scanlines
+    }
+
+    fn push_channel_value(scanline: &mut Vec<u8>, value: u8, bit_depth: u8) {
+        if bit_depth == 8 {
+            scanline.push(value);
+        } else {
+            scanline.push(value);
+            scanline.push(value);
+        }
+    }
+
+    fn create_scanlines_bit_aligned(&self, pixels: &[Vec<RGBA>], bit_depth: u8) -> Vec<Vec<u8>> {
+        let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
+
+        for row in pixels {
+            let mut scanline = WriteBitStream::new();
+
+            for pixel in row {
+                match self {
+                    ColorType::Greyscale => {
+                        let ycbcr = YCbCr::from(pixel.clone());
+                        let greyscale_adjusted_to_depths = ycbcr.y >> (8 - bit_depth);
+
+                        scanline.push_u8_rtl(greyscale_adjusted_to_depths, bit_depth);
+                    },
+                    ColorType::IndexedColor => todo!(),
+                    _ => panic!("Only greyscale and indexed color should be used with less than 8 bit depth")
+                }
+            }
+
+            scanlines.push(scanline.flush_to_bytes());
         }
 
         scanlines

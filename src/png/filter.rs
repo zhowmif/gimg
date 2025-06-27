@@ -102,7 +102,6 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>, bbp: usize) -> Vec<Vec<u8>> {
             for col in 0..scanlines[row].len() {
                 let x = scanlines[row][col];
                 let (row, col) = (row as i16, col as i16);
-                //TODO: this is only 4 when there are 4 samples per pixel (and a bit depth of 8)
                 let a = get_byte(&scanlines, row, col - other_byte_offsets);
                 let b = get_byte(&scanlines, row - 1, col);
                 let c = get_byte(&scanlines, row - 1, col - other_byte_offsets);

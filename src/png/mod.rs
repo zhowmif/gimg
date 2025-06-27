@@ -79,12 +79,24 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     Ok(pixels)
 }
 
-pub fn encode_png(pixels: Vec<Vec<RGBA>>, color_type: Option<ColorType>) -> Vec<u8> {
+pub fn encode_png(
+    pixels: Vec<Vec<RGBA>>,
+    color_type: Option<ColorType>,
+    bit_depth: Option<u8>,
+) -> Vec<u8> {
     let color_type = color_type.unwrap_or(ColorType::TrueColorAlpha);
+    let bit_depth = bit_depth.unwrap_or(8);
 
     let mut crc = CrcCalculator::new();
-    let ihdr = IHDR::new(pixels[0].len() as u32, pixels.len() as u32, color_type);
-    let scanlines = color_type.create_scanlines(&pixels);
+    let ihdr = IHDR::new(
+        pixels[0].len() as u32,
+        pixels.len() as u32,
+        color_type,
+        bit_depth,
+    );
+    ihdr.check_bit_depth_validity();
+
+    let scanlines = color_type.create_scanlines(&pixels, ihdr.bit_depth);
     let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
     let compressed_data = compress_scanlines(&filtered_scanlines);
 
