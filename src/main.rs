@@ -37,7 +37,7 @@ mod tree;
 fn main() {
     // ppm_encode_test();
     // ppm_decode_test();
-    // png_encode_test(Some(png::ColorType::Greyscale), Some(1));
+    // png_encode_test(Some(png::ColorType::IndexedColor), Some(1));
     png_decode_test();
     // median_cut_test();
 }

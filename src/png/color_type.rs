@@ -4,7 +4,7 @@ use crate::colors::{YCbCr, RGB, RGBA};
 
 use super::{
     deflate::bitsream::{ReadBitStream, WriteBitStream},
-    palette, PngParseError,
+    PngParseError,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -118,8 +118,7 @@ impl ColorType {
                         }
                         None => panic!("Palette must be created to encode indexed color image"),
                     },
-                    //this line should never be reached because of earlier validty checks
-                    _ => panic!("Only greyscale and indexed color should be used with less than 8 bit depth")
+                    _ => panic!("scanline_to_pixels called with less than 8 bits for non compatible color type")
                 }
             }
 
@@ -134,9 +133,10 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-    ) -> Vec<Vec<RGBA>> {
+        palette: Option<Vec<RGBA>>,
+    ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         if bit_depth < 8 {
-            return self.scanline_to_pixels_bit_aligned(scanlines, bit_depth, width);
+            return self.scanline_to_pixels_bit_aligned(scanlines, bit_depth, width, palette);
         }
 
         let mut pixels = Vec::with_capacity(scanlines.len());
@@ -160,7 +160,14 @@ impl ColorType {
 
                         RGBA::new(r, g, b, u8::MAX)
                     }
-                    ColorType::IndexedColor => todo!(),
+                    ColorType::IndexedColor => {
+                        let color = &palette
+                            .as_ref()
+                            .expect("scanline_to_pixels called with indexed color but no palette")
+                            [pixel_bytes[0] as usize];
+
+                        color.clone()
+                    }
                     ColorType::GreyscaleAlpha => {
                         let gamma = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
                         let alpha = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
@@ -185,7 +192,7 @@ impl ColorType {
             pixels.push(pixel_row);
         }
 
-        pixels
+        Ok(pixels)
     }
 
     fn read_channel_bytes(pixel_bytes: &[u8], bit_depth: u8, value_idx: usize) -> u8 {
@@ -214,7 +221,8 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-    ) -> Vec<Vec<RGBA>> {
+        palette: Option<Vec<RGBA>>,
+    ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         let mut pixels = Vec::with_capacity(scanlines.len());
 
         for scanline in scanlines {
@@ -231,10 +239,16 @@ impl ColorType {
 
                         ycbcr.into()
                     }
-                    ColorType::IndexedColor => todo!(),
-                    //this line should never be reached because of earlier validty checks
+                    ColorType::IndexedColor => {
+                        let color = &palette
+                            .as_ref()
+                            .expect("scanline_to_pixels called with indexed color but no palette")
+                            [value as usize];
+
+                        color.clone()
+                    }
                     _ => panic!(
-                    "Only greyscale and indexed color should be used with less than 8 bit depth"
+                    "scanline_to_pixels called with less than 8 bits for non compatible color type"
                 ),
                 };
 
@@ -244,7 +258,7 @@ impl ColorType {
             pixels.push(pixel_row)
         }
 
-        pixels
+        Ok(pixels)
     }
 
     fn repeat_value_in_byte(value: u8, bit_depth: u8) -> u8 {

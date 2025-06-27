@@ -7,13 +7,14 @@ use chunks::{
     Chunk,
 };
 pub use color_type::ColorType;
-use consts::{IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PNG_SIGNATURE};
+use consts::{
+    IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PLTE_CHUNK_TYPE, PNG_SIGNATURE,
+};
 use crc::CrcCalculator;
 use deflate::{compress_scanlines, uncompress_scanlines};
 use filter::{filter_scanlines, remove_scanlines_filter};
 use ihdr::IHDR;
 use palette::{create_pallete_from_colors_median_cut, get_unique_colors};
-use serialization::scanline_to_pixels;
 
 use crate::colors::RGBA;
 
@@ -51,6 +52,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     }
     let ihdr_chunk = IHDR::from_chunk(Chunk::from_bytes(bytes, &mut offset)?)?;
     ihdr_chunk.check_compatibility()?;
+    let mut palette: Option<Vec<RGBA>> = None;
     let mut compressed_data: Vec<u8> = Vec::new();
 
     loop {
@@ -61,6 +63,14 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
             IEND_CHUNK_TYPE => {
                 break;
             }
+            PLTE_CHUNK_TYPE => match palette {
+                Some(_) => {
+                    return Err(PngParseError(
+                        "PLTE chunks appears more than once".to_string(),
+                    ))
+                }
+                None => palette = Some(PLTE::decode_palette(&chunk.chunk_data)?),
+            },
             _ => {
                 return Err(PngParseError(format!(
                     "Unrecognized chunk type: {:?}",
@@ -69,6 +79,11 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
             }
         }
     }
+
+    png_assert!(
+        !(matches!(ihdr_chunk.color_type, ColorType::IndexedColor) && matches!(palette, None)),
+        "No PLTE chunk for indexed color".to_string()
+    );
 
     let bbp = ihdr_chunk.get_bits_per_pixel();
     let filtered_scanlines = uncompress_scanlines(
@@ -82,7 +97,8 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         &scanlines,
         ihdr_chunk.bit_depth,
         ihdr_chunk.width as usize,
-    );
+        palette
+    )?;
 
     Ok(pixels)
 }

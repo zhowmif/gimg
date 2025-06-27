@@ -1,8 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    u8,
+};
 
 use crate::{
-    colors::RGB,
-    png::{chunks::Chunk, consts::PLTE_CHUNK_TYPE, crc::CrcCalculator},
+    colors::{RGB, RGBA},
+    png::{chunks::Chunk, consts::PLTE_CHUNK_TYPE, crc::CrcCalculator, palette, PngParseError},
+    png_assert,
 };
 
 pub struct PLTE;
@@ -28,5 +32,21 @@ impl PLTE {
         let chunk = Chunk::new(PLTE_CHUNK_TYPE, &color_bytes, crc_calculator);
 
         chunk.to_bytes()
+    }
+
+    pub fn decode_palette(bytes: &[u8]) -> Result<Vec<RGBA>, PngParseError> {
+        png_assert!(
+            bytes.len() % 3 == 0 && bytes.len() <= 256 * 3,
+            format!("invalid PLTE chunk size - {}, PLTE size must a multiple of 3 and contain no more than 256 colors", bytes.len())
+        );
+        let mut palette = Vec::with_capacity(bytes.len() / 3);
+
+        for pixel_bytes in bytes.chunks_exact(3) {
+            let rgb = RGBA::new(pixel_bytes[0], pixel_bytes[1], pixel_bytes[2], u8::MAX);
+
+            palette.push(rgb);
+        }
+
+        Ok(palette)
     }
 }
