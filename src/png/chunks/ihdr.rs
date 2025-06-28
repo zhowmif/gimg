@@ -179,13 +179,4 @@ impl IHDR {
     pub fn get_bits_per_pixel(&self) -> usize {
         self.bit_depth as usize * self.color_type.samples_per_pixel()
     }
-
-    pub fn get_bytes_per_scanline_value(&self) -> usize {
-        self.color_type.samples_per_pixel()
-            * if self.bit_depth < 8 {
-                1
-            } else {
-                self.bit_depth as usize >> 3
-            }
-    }
 }

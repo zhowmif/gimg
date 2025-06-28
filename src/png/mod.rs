@@ -100,7 +100,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         &uncompressed_data,
         ihdr_chunk.height as usize,
         ihdr_chunk.width as usize,
-        ihdr_chunk.get_bytes_per_scanline_value(),
+        ihdr_chunk.get_bits_per_pixel(),
     )?;
 
     let reduced_images = reduced_images_scanlines

@@ -57,13 +57,13 @@ impl InterlaceMethod {
         data: &[u8],
         height: usize,
         width: usize,
-        bytes_per_scanline_value: usize,
+        bits_per_pixel: usize,
     ) -> Result<Vec<Vec<Vec<u8>>>, PngParseError> {
         let filter_byte_size = 1;
 
         match self {
             InterlaceMethod::NoInterlace => {
-                let bytes_per_scanline = filter_byte_size + (width * bytes_per_scanline_value);
+                let bytes_per_scanline = filter_byte_size + ((width * bits_per_pixel) >> 3);
                 let expected_data_size = height * bytes_per_scanline;
                 png_assert!(
                     data.len() == expected_data_size,
@@ -89,8 +89,9 @@ impl InterlaceMethod {
                 for pass in 0..ADAM7_PASSES.len() {
                     let (number_of_scanlines, scanline_number_of_pixels) =
                         scanline_dimensions_by_pass[pass];
-                    let scanline_width_bytes =
-                        filter_byte_size + (scanline_number_of_pixels * bytes_per_scanline_value);
+                    let scanline_width_bytes = filter_byte_size
+                        + ((scanline_number_of_pixels as f32 * bits_per_pixel as f32) / 8.).ceil()
+                            as usize;
                     let expected_data_size = number_of_scanlines * scanline_width_bytes;
 
                     let current_pass_scanlines: Vec<Vec<u8>> = match data_reader

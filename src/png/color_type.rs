@@ -226,10 +226,11 @@ impl ColorType {
         let mut pixels = Vec::with_capacity(scanlines.len());
 
         for scanline in scanlines {
+            let row_size = (self.samples_per_pixel() * scanline.len() * 8) / bit_depth as usize;
             let mut bitstream = ReadBitStream::new(scanline);
             let mut pixel_row = Vec::with_capacity(width);
 
-            while pixel_row.len() < width {
+            while pixel_row.len() < row_size {
                 let value = bitstream.read_number_lsb(bit_depth as usize).unwrap() as u8;
 
                 let pixel = match self {

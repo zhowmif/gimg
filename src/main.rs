@@ -9,7 +9,7 @@ use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
     deflate::{self, decode::decode_deflate},
-    encode_png,
+    encode_png, ColorType, InterlaceMethod,
 };
 use stream::Stream;
 
@@ -33,8 +33,8 @@ mod tree;
 
 fn main() {
     // png_encode_test(
-    //     Some(png::ColorType::Greyscale),
-    //     Some(4),
+    //     Some(png::ColorType::Truecolor),
+    //     Some(16),
     //     Some(png::InterlaceMethod::Adam7),
     // );
     png_decode_test();
