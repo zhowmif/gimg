@@ -12,6 +12,10 @@ impl<'a> ByteReader<'a> {
         self.offset = 0;
     }
 
+    pub fn is_finished(&self) -> bool {
+        self.number_of_bytes_left() == 0
+    }
+
     pub fn read_byte(&mut self) -> Option<u8> {
         let byte = self.bytes.get(self.offset);
         self.offset += 1;

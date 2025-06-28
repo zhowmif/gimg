@@ -11,7 +11,7 @@ use consts::{
     IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PLTE_CHUNK_TYPE, PNG_SIGNATURE,
 };
 use crc::CrcCalculator;
-use deflate::{compress_scanlines, uncompress_scanlines};
+use deflate::{compress_scanlines, zlib::decode_zlib};
 use filter::{filter_scanlines, remove_scanlines_filter};
 use ihdr::IHDR;
 pub use interlace::InterlaceMethod;
@@ -26,7 +26,7 @@ mod color_type;
 mod consts;
 mod crc;
 pub mod deflate;
-mod filter;
+pub mod filter;
 mod interlace;
 pub mod palette;
 mod serialization;
@@ -90,21 +90,40 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     );
 
     let bbp = ihdr_chunk.get_bits_per_pixel();
-    let filtered_scanlines = uncompress_scanlines(
-        &compressed_data,
+    let uncompressed_data = match decode_zlib(&compressed_data) {
+        Ok(data) => data,
+        Err(deflate_error) => {
+            return Err(PngParseError(deflate_error.0));
+        }
+    };
+    let reduced_images_scanlines = ihdr_chunk.interlace_method.reconstruct_filtered_scanlines(
+        &uncompressed_data,
         ihdr_chunk.height as usize,
         ihdr_chunk.width as usize,
-        ihdr_chunk.get_bits_per_pixel(),
-    )?;
-    let scanlines = remove_scanlines_filter(&filtered_scanlines, bbp)?;
-    let pixels = ihdr_chunk.color_type.scanline_to_pixels(
-        &scanlines,
-        ihdr_chunk.bit_depth,
-        ihdr_chunk.width as usize,
-        palette,
+        ihdr_chunk.get_bytes_per_scanline_value(),
     )?;
 
-    Ok(pixels)
+    let reduced_images = reduced_images_scanlines
+        .into_iter()
+        .map(|reduced_image_scanlines| {
+            let scanlines = remove_scanlines_filter(&reduced_image_scanlines, bbp)?;
+            let reduced_image_pixels = ihdr_chunk.color_type.scanline_to_pixels(
+                &scanlines,
+                ihdr_chunk.bit_depth,
+                ihdr_chunk.width as usize,
+                &palette,
+            )?;
+
+            Ok(reduced_image_pixels)
+        })
+        .collect::<Result<Vec<Vec<Vec<RGBA>>>, PngParseError>>()?;
+    let image = ihdr_chunk.interlace_method.deinterlace_image(
+        reduced_images,
+        ihdr_chunk.height as usize,
+        ihdr_chunk.width as usize,
+    );
+
+    Ok(image)
 }
 
 pub fn encode_png(

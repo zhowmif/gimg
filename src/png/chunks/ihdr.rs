@@ -66,9 +66,9 @@ pub struct IHDR {
     pub height: u32,
     pub bit_depth: u8,
     pub color_type: ColorType,
+    pub interlace_method: InterlaceMethod,
     compression_method: CompressionMethod,
     filter_method: FilterMethod,
-    interlace_method: InterlaceMethod,
 }
 
 impl IHDR {
@@ -171,11 +171,6 @@ impl IHDR {
             "Only adaptive filtering is supported".to_string()
         );
 
-        png_assert!(
-            matches!(self.interlace_method, InterlaceMethod::NoInterlace),
-            "Interlacing is not supported".to_string()
-        );
-
         self.check_bit_depth_validity()?;
 
         Ok(())
@@ -183,5 +178,14 @@ impl IHDR {
 
     pub fn get_bits_per_pixel(&self) -> usize {
         self.bit_depth as usize * self.color_type.samples_per_pixel()
+    }
+
+    pub fn get_bytes_per_scanline_value(&self) -> usize {
+        self.color_type.samples_per_pixel()
+            * if self.bit_depth < 8 {
+                1
+            } else {
+                self.bit_depth as usize >> 3
+            }
     }
 }

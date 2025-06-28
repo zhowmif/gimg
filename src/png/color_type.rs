@@ -133,7 +133,7 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-        palette: Option<Vec<RGBA>>,
+        palette: &Option<Vec<RGBA>>,
     ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         if bit_depth < 8 {
             return self.scanline_to_pixels_bit_aligned(scanlines, bit_depth, width, palette);
@@ -221,7 +221,7 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-        palette: Option<Vec<RGBA>>,
+        palette: &Option<Vec<RGBA>>,
     ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
         let mut pixels = Vec::with_capacity(scanlines.len());
 

@@ -1,6 +1,6 @@
 use std::iter::repeat_n;
 
-use crate::colors::RGBA;
+use crate::{binary::byte_reader::ByteReader, colors::RGBA, png_assert};
 
 use super::PngParseError;
 
@@ -52,6 +52,77 @@ impl InterlaceMethod {
         }
     }
 
+    pub fn reconstruct_filtered_scanlines(
+        &self,
+        data: &[u8],
+        height: usize,
+        width: usize,
+        bytes_per_scanline_value: usize,
+    ) -> Result<Vec<Vec<Vec<u8>>>, PngParseError> {
+        let filter_byte_size = 1;
+
+        match self {
+            InterlaceMethod::NoInterlace => {
+                let bytes_per_scanline = filter_byte_size + (width * bytes_per_scanline_value);
+                let expected_data_size = height * bytes_per_scanline;
+                png_assert!(
+                    data.len() == expected_data_size,
+                    format!(
+            "Expected {} bytes for resolution {}x{} after decompressing, but received {}",
+            expected_data_size,
+            height,
+            width,
+            data.len()
+        )
+                );
+
+                Ok(vec![data
+                    .chunks(bytes_per_scanline)
+                    .map(|scanline| scanline.to_vec())
+                    .collect()])
+            }
+            InterlaceMethod::Adam7 => {
+                let mut data_reader = ByteReader::new(data);
+                let scanline_dimensions_by_pass = adam7_scanlines_dimensions_by_pass(height, width);
+                let mut all_scanlines = Vec::new();
+
+                for pass in 0..ADAM7_PASSES.len() {
+                    let (number_of_scanlines, scanline_number_of_pixels) =
+                        scanline_dimensions_by_pass[pass];
+                    let scanline_width_bytes =
+                        filter_byte_size + (scanline_number_of_pixels * bytes_per_scanline_value);
+                    let expected_data_size = number_of_scanlines * scanline_width_bytes;
+
+                    let current_pass_scanlines: Vec<Vec<u8>> = match data_reader
+                        .read_bytes(expected_data_size)
+                    {
+                        Some(bytes) => bytes
+                            .chunks(scanline_width_bytes)
+                            .map(|slice| slice.to_vec())
+                            .collect(),
+                        None => {
+                            return Err(PngParseError(format!(
+                                        "Expected {expected_data_size} bytes for adam7 pass #{pass}, but only had {} bytes left in the buffer",
+                                        data_reader.number_of_bytes_left()
+                            )));
+                        }
+                    };
+
+                    all_scanlines.push(current_pass_scanlines);
+                }
+
+                png_assert!(
+                    data_reader.is_finished(),
+                    format!(
+                        "Interlace decode error: Decompressed data is too long, expected {} bytes but data is {} bytes", data.len() -  data_reader.number_of_bytes_left(), data.len()
+                    )
+                );
+
+                Ok(all_scanlines)
+            }
+        }
+    }
+
     pub fn deinterlace_image(
         &self,
         mut reduced_images: Vec<Vec<Vec<RGBA>>>,
@@ -83,7 +154,6 @@ impl InterlaceMethod {
                         let pixel = reduced_images[pass_number][new_pass_coordinates.0 .0]
                             [new_pass_coordinates.0 .1]
                             .clone();
-                        println!("{pass_number}, {:?} {}", new_pass_coordinates, pixel.r);
 
                         row.push(pixel);
 
@@ -141,7 +211,7 @@ const ADAM7_PASSES: [&[(usize, &[usize])]; 7] = [
     ],
 ];
 
-const ADAM7_SUBSET_PASSES: [[usize; 8]; 8] = [
+const ADAM7_BLOCK_PASSES: [[usize; 8]; 8] = [
     [0, 5, 3, 5, 1, 5, 3, 5],
     [6, 6, 6, 6, 6, 6, 6, 6],
     [4, 5, 4, 5, 4, 5, 4, 5],
@@ -153,5 +223,47 @@ const ADAM7_SUBSET_PASSES: [[usize; 8]; 8] = [
 ];
 
 fn coordinates_to_pass_number(y: usize, x: usize) -> usize {
-    ADAM7_SUBSET_PASSES[y & 0b111][x & 0b111]
+    ADAM7_BLOCK_PASSES[y & 0b111][x & 0b111]
 }
+
+fn adam7_scanlines_dimensions_by_pass(height: usize, width: usize) -> Vec<(usize, usize)> {
+    let number_of_extra_rows = height & 0b111;
+    let number_of_extra_cols = width & 0b111;
+
+    (0..ADAM7_PASSES.len())
+        .map(|pass_number| {
+            let full_block_rows = FULL_BLOCK_NUMBER_OF_ROWS_BY_PASS[pass_number] * (height >> 3);
+            let pass_number_of_extra_rows =
+                PARTIAL_BLOCK_NUMBER_OF_ROWS_BY_HEIGHT_BY_PASS[pass_number][number_of_extra_rows];
+            let full_block_cols = FULL_BLOCK_NUMBER_OF_COLS_BY_PASS[pass_number] * (width >> 3);
+            let pass_number_of_extra_cols =
+                PARTIAL_BLOCK_NUMBER_OF_COLS_BY_WIDTH_BY_PASS[pass_number][number_of_extra_cols];
+
+            (
+                full_block_rows + pass_number_of_extra_rows,
+                full_block_cols + pass_number_of_extra_cols,
+            )
+        })
+        .collect()
+}
+
+const FULL_BLOCK_NUMBER_OF_ROWS_BY_PASS: [usize; 7] = [1, 1, 1, 2, 2, 4, 4];
+const FULL_BLOCK_NUMBER_OF_COLS_BY_PASS: [usize; 7] = [1, 1, 2, 2, 4, 4, 8];
+const PARTIAL_BLOCK_NUMBER_OF_ROWS_BY_HEIGHT_BY_PASS: [[usize; 9]; 7] = [
+    [0, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 2, 2, 2, 2],
+    [0, 0, 0, 1, 1, 1, 1, 2, 2],
+    [0, 1, 1, 2, 2, 3, 3, 4, 4],
+    [0, 0, 1, 1, 2, 2, 3, 3, 4],
+];
+const PARTIAL_BLOCK_NUMBER_OF_COLS_BY_WIDTH_BY_PASS: [[usize; 9]; 7] = [
+    [0, 1, 1, 1, 1, 1, 1, 1, 1],
+    [0, 0, 0, 0, 0, 1, 1, 1, 1],
+    [0, 1, 1, 1, 1, 2, 2, 2, 2],
+    [0, 0, 0, 1, 1, 1, 1, 2, 2],
+    [0, 1, 1, 2, 2, 3, 3, 4, 4],
+    [0, 0, 1, 1, 2, 2, 3, 3, 4],
+    [0, 1, 2, 3, 4, 5, 6, 7, 8],
+];

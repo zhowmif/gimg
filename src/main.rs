@@ -9,7 +9,7 @@ use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
     deflate::{self, decode::decode_deflate},
-    encode_png, InterlaceMethod,
+    encode_png,
 };
 use stream::Stream;
 
@@ -32,46 +32,12 @@ mod stream;
 mod tree;
 
 fn main() {
-    adam7_test();
-    // png_encode_test(None, None, Some(InterlaceMethod::Adam7));
-    // png_decode_test();
-}
-
-fn adam7_test() {
-    let mut pixels: Vec<Vec<RGBA>> = Vec::new();
-
-    //problem occurs when width>height
-    let height = 10;
-    let width = 12;
-    let mut n: u64 = 0;
-    for i in 0..height {
-        let mut row = Vec::new();
-        // let r = i as f32 / height as f32 * 255.;
-        for j in 0..width {
-            let r = i * width + j;
-            // let g = j as f32 / width as f32 * 255.;
-            let g = 0;
-            row.push(RGBA::new(r as u8, g as u8, 0, 255));
-            n += 1;
-        }
-
-        pixels.push(row);
-    }
-
-    // let png_bytes = encode_png(pixels, None, None, Some(InterlaceMethod::Adam7));
-    // fs::write("files/goop.png", png_bytes).expect("Failed to write my png");
-
-    let interlace = InterlaceMethod::Adam7;
-    let reduced_images = interlace.perform_pass_extraction(pixels);
-    let reconstructed_image = interlace.deinterlace_image(reduced_images, height, width);
-
-    for pass in reconstructed_image {
-        println!("[");
-        for row in pass {
-            println!("  {:?}", row);
-        }
-        println!("[");
-    }
+    // png_encode_test(
+    //     Some(png::ColorType::Greyscale),
+    //     Some(4),
+    //     Some(png::InterlaceMethod::Adam7),
+    // );
+    png_decode_test();
 }
 
 fn png_encode_test(
@@ -137,7 +103,7 @@ fn deflate_test() {
     // decode.read_to_end(&mut out).unwrap();
     // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
     //
-    let decoded = decode_deflate(&out_bytes).unwrap();
+    let _decoded = decode_deflate(&out_bytes).unwrap();
     // println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 
