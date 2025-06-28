@@ -195,8 +195,7 @@ pub fn decode_compressed_block(
         }
     }
 
-    let data = decode_lzss(&lzss_stream)?;
-    target.extend_from_slice(&data);
+    decode_lzss(target, &lzss_stream)?;
 
     Ok(())
 }

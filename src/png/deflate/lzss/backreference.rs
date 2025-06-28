@@ -11,50 +11,6 @@ const LENGTHS: [u16; 29] = [
     163, 195, 227, 258,
 ];
 
-pub fn generate() {
-    // let mut codes = [0; 258];
-    // let mut extra_bits = [(0, 0); 258];
-    // for (i, (length, next_length)) in LENGTHS.iter().zip(LENGTHS[1..].iter()).enumerate() {
-    //     for l in *length..*next_length {
-    //         codes[l as usize] = LENGTH_CODES[i];
-    //         extra_bits[l as usize] = (l - length, LENGTH_EXTRA_BITS[i]);
-    //     }
-    // }
-    //
-    // println!("{:?}", codes);
-    // println!("{:?}", extra_bits);
-
-    // let mut distance_codes = [0; *DISTANCES.last().unwrap() as usize];
-    // let mut distance_extra_bits = [(0, 0); *DISTANCES.last().unwrap() as usize];
-    // for (i, (distance, next_distance)) in DISTANCES.iter().zip(DISTANCES[1..].iter()).enumerate() {
-    //     for d in *distance..*next_distance {
-    //         // distance_codes[d as usize] = DISTANCE_CODES[i];
-    //         distance_extra_bits[d as usize] = (d - distance, DISTANCE_EXTRA_BITS[i]);
-    //     }
-    // }
-
-    // println!("{:?}", distance_codes);
-    // println!("{:?}", distance_extra_bits);
-
-    // let mut length_code_to_extra_bits = [0;286];
-    // let mut length_code_to_base_length = [0;286];
-    // for i in 0..LENGTH_CODES.len() {
-        // length_code_to_extra_bits[LENGTH_CODES[i] as usize] = LENGTH_EXTRA_BITS[i];
-        // length_code_to_base_length[LENGTH_CODES[i] as usize] = LENGTHS[i];
-    // }
-    // println!("{:?}", length_code_to_extra_bits);
-    // println!("{:?}", length_code_to_base_length);
-
-    let mut distance_code_to_base_distance = [0;30];
-    // let mut distance_code_to_extra_bits = [0;30];
-    for i in 0..DISTANCE_CODES.len() {
-        distance_code_to_base_distance[DISTANCE_CODES[i] as usize] = DISTANCES[i];
-        // distance_code_to_extra_bits[DISTANCE_CODES[i] as usize] = DISTANCE_EXTRA_BITS[i];
-    }
-    // println!("{:?}", distance_code_to_extra_bits);
-    println!("{:?}", distance_code_to_base_distance);
-}
-
 pub const LENGTH_TO_CODE: [u16; 259] = [
     0, 0, 0, 257, 258, 259, 260, 261, 262, 263, 264, 265, 265, 266, 266, 267, 267, 268, 268, 269,
     269, 269, 269, 270, 270, 270, 270, 271, 271, 271, 271, 272, 272, 272, 272, 273, 273, 273, 273,

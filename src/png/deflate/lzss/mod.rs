@@ -55,14 +55,15 @@ fn find_backreference_with_table(
     best_match
 }
 
-pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Result<Vec<u8>, DeflateDecodeError> {
-    let mut result: Vec<u8> = Vec::new();
-
+pub fn decode_lzss(
+    target: &mut Vec<u8>,
+    lzss_symbols: &[LzssSymbol],
+) -> Result<(), DeflateDecodeError> {
     for (i, symbol) in lzss_symbols.iter().enumerate() {
         match symbol {
-            LzssSymbol::Literal(literal) => result.push(*literal),
+            LzssSymbol::Literal(literal) => target.push(*literal),
             LzssSymbol::Backreference(distance, length) => {
-                let backreference_data_start = match result.len().checked_sub(*distance as usize) {
+                let backreference_data_start = match target.len().checked_sub(*distance as usize) {
                     Some(n) => n,
                     None => {
                         return Err(DeflateDecodeError(format!(
@@ -74,7 +75,7 @@ pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Result<Vec<u8>, DeflateDecode
 
                 //we must do this byte by byte in case there are repetitions
                 for i in backreference_data_start..backreference_data_start + *length as usize {
-                    result.push(result[i]);
+                    target.push(target[i]);
                 }
             }
             LzssSymbol::EndOfBlock => {
@@ -83,5 +84,5 @@ pub fn decode_lzss(lzss_symbols: &[LzssSymbol]) -> Result<Vec<u8>, DeflateDecode
         }
     }
 
-    Ok(result)
+    Ok(())
 }

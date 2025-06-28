@@ -1,15 +1,16 @@
 #![allow(dead_code)]
 
-use std::fs;
+use std::{fs, io::Read};
 
 use colors::{YCbCr, RGBA};
 use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
+use flate2::read::{DeflateDecoder, ZlibDecoder};
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
-    deflate::{self, decode::decode_deflate},
-    encode_png, ColorType, InterlaceMethod,
+    deflate::{decode::decode_deflate, zlib::decode_zlib},
+    encode_png,
 };
 use stream::Stream;
 
@@ -38,6 +39,7 @@ fn main() {
     //     Some(png::InterlaceMethod::Adam7),
     // );
     png_decode_test();
+    // deflate_test();
 }
 
 fn png_encode_test(
@@ -78,17 +80,34 @@ fn png_decode_test() {
 }
 
 fn deflate_test() {
-    let input = &fs::read("save.txt").unwrap();
+    let input = &fs::read("files/mountaindata.bin").unwrap();
+    let deflate_data = &input[2..][..input.len() - 4];
+
+    let mut buf = Vec::new();
+    let mut deflate_decoder = DeflateDecoder::new(deflate_data);
+    deflate_decoder.read_to_end(&mut buf).unwrap();
+    println!("Deflate uncompressed: {:?}", buf.len());
+
+    let my_data = decode_deflate(deflate_data).unwrap();
+    println!("My data {}", my_data.len());
+
+    // let mut zlib_decoder = ZlibDecoder::new(&input[..]);
+    // zlib_decoder.read_to_end(&mut buf).unwrap();
+    // println!("Decoded {:?}", &buf[..10]);
+
+    // let uncompressed = decode_zlib(&input).unwrap();
+    // println!("uncompressed: {}", uncompressed.len());
+
     // let input: Vec<u8> = repeat_n(1, 10000).collect();
     // let input = b"ABCDEABCD ABCDEABCD";
     // let input = b"AAC";
-    let mut my_encoder = deflate::DeflateEncoder::new(deflate::DeflateBlockType::DynamicHuffman);
-    my_encoder.write_bytes(&input[..]);
-    let mut out = my_encoder.finish();
-    let mut out_bytes = out.flush_to_bytes();
-    print_bytes(&out_bytes[..10]);
-    out_bytes[0] -= 8;
-    print_bytes(&out_bytes[..10]);
+    // let mut my_encoder = deflate::DeflateEncoder::new(deflate::DeflateBlockType::DynamicHuffman);
+    // my_encoder.write_bytes(&input[..]);
+    // let mut out = my_encoder.finish();
+    // let mut out_bytes = out.flush_to_bytes();
+    // print_bytes(&out_bytes[..10]);
+    // out_bytes[0] -= 8;
+    // print_bytes(&out_bytes[..10]);
 
     // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
     // let mut out_bytes = Vec::new();
@@ -103,7 +122,7 @@ fn deflate_test() {
     // decode.read_to_end(&mut out).unwrap();
     // println!("flate2 out {:?}", String::from_utf8(out).unwrap());
     //
-    let _decoded = decode_deflate(&out_bytes).unwrap();
+    // let _decoded = decode_deflate(&out_bytes).unwrap();
     // println!("my out {:?}", String::from_utf8(decoded).unwrap());
 }
 

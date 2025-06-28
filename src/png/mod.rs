@@ -1,3 +1,5 @@
+use std::fs;
+
 use binary_utils::read_bytes;
 use chunks::{
     idat::IDAT,
