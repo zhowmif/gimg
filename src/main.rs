@@ -56,12 +56,12 @@ fn png_encode_test() {
     //     rgba_pixels.push(pixel_row);
     // }
 
-    let png_file = fs::read("files/drawing.png").unwrap();
+    let png_file = fs::read("files/mountain.png").unwrap();
     let rgba_pixels = decode_png(&png_file).unwrap();
 
     let config = PartialPngConfig::new()
-        .color_type(png::ColorType::Greyscale)
-        .bit_depth(8)
+        .color_type(png::ColorType::IndexedColor)
+        .bit_depth(4)
         .interlace_method(png::InterlaceMethod::NoInterlace)
         .compression_level(png::CompressionLevel::Best);
     let png_bytes = encode_png(rgba_pixels, config);

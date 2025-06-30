@@ -21,18 +21,14 @@ pub fn create_pallete_from_colors_median_cut(
     unique_colors: &[RGBA],
     number_of_colors_log2: usize,
 ) -> HashMap<RGBA, (usize, RGBA)> {
-    let mut color_buckets: Vec<Vec<RGBA>> = vec![unique_colors.to_vec()];
-
-    if unique_colors.len() > u8::MAX.into() {
-        for _i in 0..number_of_colors_log2 {
-            color_buckets = color_buckets
-                .into_iter()
-                .map(median_cut_bucket)
-                .flatten()
-                .filter(|bucket| !bucket.is_empty())
-                .collect();
-        }
-    }
+    let color_buckets: Vec<Vec<RGBA>> = if unique_colors.len() > 1 << number_of_colors_log2 {
+        divide_into_buckets(unique_colors, number_of_colors_log2)
+    } else {
+        unique_colors
+            .iter()
+            .map(|color| vec![color.clone()])
+            .collect()
+    };
 
     color_buckets
         .into_iter()
@@ -49,6 +45,21 @@ pub fn create_pallete_from_colors_median_cut(
         })
         .flatten()
         .collect()
+}
+
+fn divide_into_buckets(unique_colors: &[RGBA], number_of_colors_log2: usize) -> Vec<Vec<RGBA>> {
+    let mut color_buckets: Vec<Vec<RGBA>> = vec![unique_colors.to_vec()];
+
+    for _i in 0..number_of_colors_log2 {
+        color_buckets = color_buckets
+            .into_iter()
+            .map(median_cut_bucket)
+            .flatten()
+            .filter(|bucket| !bucket.is_empty())
+            .collect();
+    }
+
+    color_buckets
 }
 
 fn median_cut_bucket(mut bucket: Vec<RGBA>) -> Vec<Vec<RGBA>> {
