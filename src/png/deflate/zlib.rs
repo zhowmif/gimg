@@ -1,4 +1,8 @@
-use crate::{algebra::align_up, deflate_read_bits, png::adler32::Adler32Calculator};
+use crate::{
+    algebra::align_up,
+    deflate_read_bits,
+    png::{adler32::Adler32Calculator, CompressionLevel},
+};
 
 use super::{
     bitsream::{ReadBitStream, WriteBitStream},
@@ -7,15 +11,17 @@ use super::{
 };
 
 pub struct ZlibEncoder {
+    compression_level: CompressionLevel,
     deflate_encoder: DeflateEncoder,
     adler32_calculator: Adler32Calculator,
 }
 
 impl ZlibEncoder {
-    pub fn new() -> Self {
+    pub fn new(compression_level: CompressionLevel) -> Self {
         Self {
             deflate_encoder: DeflateEncoder::new(DeflateBlockType::DynamicHuffman),
             adler32_calculator: Adler32Calculator::new(),
+            compression_level,
         }
     }
 
@@ -33,8 +39,8 @@ impl ZlibEncoder {
         let cminfo = 7;
         let cmf = (cminfo << 4) as u8 + cm as u8;
         let fdict = 0;
-        let flevel = 0;
-        let flg = (cmf as u32) << 8 + (flevel << 6) + (fdict << 5);
+        let flevel = self.compression_level.to_zlib_u8();
+        let flg = ((cmf as u32) << 8) + ((flevel as u32) << 6) + ((fdict as u32) << 5);
         let fcheck = (align_up(flg as usize, 31) - flg as usize) as u8;
 
         zlib_bitstream.push_u8_rtl(cm, 4);

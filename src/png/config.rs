@@ -2,10 +2,20 @@ use crate::colors::RGBA;
 
 use super::{color_type::InvalidBitDepthError, ColorType, InterlaceMethod};
 
+#[derive(Clone, Copy, Debug)]
 pub enum CompressionLevel {
     None,
     Best,
     Fast,
+}
+impl CompressionLevel {
+    pub fn to_zlib_u8(&self) -> u8 {
+        match self {
+            CompressionLevel::None => 0,
+            CompressionLevel::Best => 3,
+            CompressionLevel::Fast => 1,
+        }
+    }
 }
 
 impl Default for CompressionLevel {

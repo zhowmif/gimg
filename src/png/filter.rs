@@ -1,6 +1,6 @@
-use super::PngParseError;
+use super::{CompressionLevel, PngParseError};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum AdaptiveFilterType {
     None,
     Sub,
@@ -79,7 +79,7 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
     }
 }
 
-const FILTERS: [AdaptiveFilterType; 5] = [
+const ALL_FILTERS: [AdaptiveFilterType; 5] = [
     AdaptiveFilterType::None,
     AdaptiveFilterType::Sub,
     AdaptiveFilterType::Up,
@@ -89,14 +89,23 @@ const FILTERS: [AdaptiveFilterType; 5] = [
 
 type FilteredScenaline = (AdaptiveFilterType, Vec<u8>);
 
-pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>, bbp: usize) -> Vec<Vec<u8>> {
+pub fn filter_scanlines(
+    scanlines: &Vec<Vec<u8>>,
+    bbp: usize,
+    compression_level: CompressionLevel,
+) -> Vec<Vec<u8>> {
+    let filters_to_test = match compression_level {
+        CompressionLevel::None => vec![AdaptiveFilterType::None],
+        CompressionLevel::Best => ALL_FILTERS.to_vec(),
+        CompressionLevel::Fast => vec![AdaptiveFilterType::Paeth],
+    };
     let other_byte_offsets = if bbp <= 8 { 1 } else { (bbp >> 3) as i16 };
     let mut filtered_scanelines: Vec<Vec<u8>> = Vec::with_capacity(scanlines.len());
 
     for row in 0..scanlines.len() {
-        let mut filter_results: Vec<FilteredScenaline> = Vec::with_capacity(FILTERS.len());
+        let mut filter_results: Vec<FilteredScenaline> = Vec::with_capacity(ALL_FILTERS.len());
 
-        for filter in FILTERS {
+        for filter in filters_to_test.iter() {
             let mut current_filter_result: Vec<u8> = Vec::with_capacity(scanlines[row].len());
 
             for col in 0..scanlines[row].len() {
@@ -109,12 +118,19 @@ pub fn filter_scanlines(scanlines: &Vec<Vec<u8>>, bbp: usize) -> Vec<Vec<u8>> {
                 current_filter_result.push(filter.apply_filter(x, a, b, c));
             }
 
-            filter_results.push((filter, current_filter_result));
+            filter_results.push((filter.clone(), current_filter_result));
         }
 
         let (filter, mut scanline) = filter_results
             .into_iter()
-            .min_by_key(|filtered_row| filtered_row.1.iter().map(|x| *x as u32).sum::<u32>())
+            .min_by_key(|filtered_row| {
+                filtered_row
+                    .1
+                    .iter()
+                    .map(|x| *x as i8 as i32)
+                    .sum::<i32>()
+                    .abs()
+            })
             .unwrap();
         scanline.insert(0, filter.to_byte());
         filtered_scanelines.push(scanline);

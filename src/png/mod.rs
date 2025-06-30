@@ -7,7 +7,7 @@ use chunks::{
     Chunk,
 };
 pub use color_type::ColorType;
-pub use config::{PartialPngConfig, PngConfig, CompressionLevel};
+pub use config::{CompressionLevel, PartialPngConfig, PngConfig};
 use consts::{
     IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PLTE_CHUNK_TYPE, PNG_SIGNATURE,
 };
@@ -160,11 +160,15 @@ pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> V
         let scanlines = config
             .color_type
             .create_scanlines(reduced_image, ihdr.bit_depth, &palette);
-        let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
+        let filtered_scanlines = filter_scanlines(
+            &scanlines,
+            ihdr.get_bits_per_pixel(),
+            config.compression_level,
+        );
         all_filtered_scanlines.extend_from_slice(&filtered_scanlines);
     }
 
-    let compressed_data = compress_scanlines(&all_filtered_scanlines);
+    let compressed_data = compress_scanlines(&all_filtered_scanlines, config.compression_level);
 
     if let Some(ref palette) = palette {
         encoded_png.extend_from_slice(&PLTE::encode_palette(&palette, &mut crc));

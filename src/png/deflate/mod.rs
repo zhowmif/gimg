@@ -29,10 +29,13 @@ use zlib::{decode_zlib, ZlibEncoder};
 
 use crate::png_assert;
 
-use super::PngParseError;
+use super::{CompressionLevel, PngParseError};
 
-pub fn compress_scanlines(scanlines: &Vec<Vec<u8>>) -> Vec<u8> {
-    let mut encoder = ZlibEncoder::new();
+pub fn compress_scanlines(
+    scanlines: &Vec<Vec<u8>>,
+    compression_level: CompressionLevel,
+) -> Vec<u8> {
+    let mut encoder = ZlibEncoder::new(compression_level);
 
     for scanline in scanlines {
         encoder.write_bytes(&scanline);
@@ -47,13 +50,8 @@ pub fn uncompress_scanlines<'a>(
     width: usize,
     bits_per_pixel: usize,
 ) -> Result<Vec<Vec<u8>>, PngParseError> {
-    //TODO: find a better way to convert this error
-    let uncompressed_data = match decode_zlib(data) {
-        Ok(data) => data,
-        Err(deflate_error) => {
-            return Err(PngParseError(deflate_error.0));
-        }
-    };
+    let uncompressed_data =
+        decode_zlib(data).map_err(|deflate_err| PngParseError(deflate_err.0))?;
 
     let filter_byte_size = 1;
     let bytes_per_scanline = filter_byte_size + ((width * bits_per_pixel) >> 3);

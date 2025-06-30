@@ -1,21 +1,12 @@
 #![allow(dead_code)]
 
-use std::{fs, io::Read};
+use std::fs;
 
-use colors::{YCbCr, RGBA};
-use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
-use flate2::{
-    read::{DeflateEncoder, ZlibDecoder},
-    Compression,
-};
+use colors::YCbCr;
+use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
-use png::{
-    decode_png,
-    deflate::{decode::decode_deflate, zlib::decode_zlib},
-    encode_png, PartialPngConfig,
-};
-use stream::Stream;
+use png::{decode_png, encode_png, PartialPngConfig};
 
 mod algebra;
 mod binary;
@@ -60,10 +51,8 @@ fn png_encode_test() {
     let rgba_pixels = decode_png(&png_file).unwrap();
 
     let config = PartialPngConfig::new()
-        .color_type(png::ColorType::IndexedColor)
-        .bit_depth(4)
-        .interlace_method(png::InterlaceMethod::NoInterlace)
-        .compression_level(png::CompressionLevel::Best);
+        .color_type(png::ColorType::Truecolor)
+        .compression_level(png::CompressionLevel::Fast);
     let png_bytes = encode_png(rgba_pixels, config);
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
@@ -83,8 +72,8 @@ fn png_decode_test() {
 }
 
 fn deflate_test() {
-    let input = &fs::read("files/mountaindata.bin").unwrap();
-    let deflate_data = &input[2..][..input.len() - 4];
+    // let input = &fs::read("files/mountaindata.bin").unwrap();
+    // let deflate_data = &input[2..][..input.len() - 4];
 
     // let mut buf = Vec::new();
     // let mut deflate_decoder = DeflateDecoder::new(deflate_data);
@@ -112,7 +101,7 @@ fn deflate_test() {
     // out_bytes[0] -= 8;
     // print_bytes(&out_bytes[..10]);
 
-    let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
     // let mut out_bytes = Vec::new();
     // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
     // print_bytes(&out_bytes);
