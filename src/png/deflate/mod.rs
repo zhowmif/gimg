@@ -10,8 +10,8 @@ use std::collections::HashMap;
 
 use bitsream::WriteBitStream;
 use consts::{
-    CL_ALPHABET, COMPRESSION_TEST_CHUNK_SIZE, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE,
-    MAX_CL_CODE_LENGTH, MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
+    CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
+    MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
 use decode::DeflateDecodeError;
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
@@ -129,11 +129,11 @@ impl DeflateEncoder {
                     block_type: DeflateBlockType::None,
                     bitstream: WriteBitStream::new(),
                 };
+                let chunk_size = self.bytes.len() / 100;
 
-                for (chunk_num, chunk) in self.bytes.chunks(COMPRESSION_TEST_CHUNK_SIZE).enumerate()
-                {
-                    let chunk_start_index = chunk_num * COMPRESSION_TEST_CHUNK_SIZE;
-                    let is_last_chunk = chunk_num == self.bytes.len() / COMPRESSION_TEST_CHUNK_SIZE;
+                for (chunk_num, chunk) in self.bytes.chunks(chunk_size).enumerate() {
+                    let chunk_start_index = chunk_num * chunk_size;
+                    let is_last_chunk = chunk_num == self.bytes.len() / chunk_size;
                     let chunk_end_index = chunk_start_index + chunk.len();
                     let previous_and_current_data = &self.bytes[..chunk_end_index];
                     let chunk_encoded_alone = smaller_block(
