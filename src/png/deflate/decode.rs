@@ -10,7 +10,7 @@ use crate::png::deflate::{
 };
 
 use super::{
-    bitsream::{ReadBitStream, WriteBitStream},
+    bitstream::{ReadBitStream, WriteBitStream},
     consts::{CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE},
     lzss::{decode_lzss, LzssSymbol},
     prefix_table::{

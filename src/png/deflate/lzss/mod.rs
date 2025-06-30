@@ -13,7 +13,7 @@ use backreference::{
 };
 
 use super::{
-    bitsream::WriteBitStream, consts::END_OF_BLOCK_MARKER_VALUE, decode::DeflateDecodeError,
+    bitstream::WriteBitStream, consts::END_OF_BLOCK_MARKER_VALUE, decode::DeflateDecodeError,
 };
 
 #[derive(Debug, Clone)]

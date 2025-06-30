@@ -3,7 +3,7 @@ use std::{collections::HashMap, hash::Hash, iter::repeat_n};
 use crate::deflate_read_bits;
 
 use super::{
-    bitsream::{ReadBitStream, WriteBitStream},
+    bitstream::{ReadBitStream, WriteBitStream},
     decode::DeflateDecodeError,
 };
 

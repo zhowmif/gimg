@@ -1,4 +1,4 @@
-pub mod bitsream;
+pub mod bitstream;
 mod consts;
 pub mod decode;
 pub mod huffman;
@@ -8,7 +8,7 @@ pub mod zlib;
 
 use std::collections::HashMap;
 
-use bitsream::WriteBitStream;
+use bitstream::WriteBitStream;
 use consts::{
     CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
     MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,

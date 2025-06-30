@@ -5,7 +5,7 @@ use std::mem;
 
 use crate::queue::PriorityQueue;
 
-use super::bitsream::WriteBitStream;
+use super::bitstream::WriteBitStream;
 
 pub mod package_merge;
 

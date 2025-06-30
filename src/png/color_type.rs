@@ -3,7 +3,7 @@ use std::{collections::HashMap, u8};
 use crate::colors::{YCbCr, RGB, RGBA};
 
 use super::{
-    deflate::bitsream::{ReadBitStream, WriteBitStream},
+    deflate::bitstream::{ReadBitStream, WriteBitStream},
     PngParseError,
 };
 

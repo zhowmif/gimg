@@ -5,7 +5,7 @@ use crate::{
 };
 
 use super::{
-    bitsream::{ReadBitStream, WriteBitStream},
+    bitstream::{ReadBitStream, WriteBitStream},
     decode::{decode_deflate, DeflateDecodeError},
     DeflateEncoder,
 };
