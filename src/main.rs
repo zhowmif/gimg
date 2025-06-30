@@ -6,7 +6,7 @@ use colors::{YCbCr, RGBA};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
-use png::{decode_png, encode_png, PartialPngConfig};
+use png::{decode_png, deflate::bitstream::WriteBitStream, encode_png, PartialPngConfig};
 use ppm::decode_ppm;
 
 mod algebra;
@@ -28,6 +28,12 @@ mod stream;
 mod tree;
 
 fn main() {
+    // let mut x = WriteBitStream::new();
+    // x.push_u8_rtl_from_middle_new(0xff, 7);
+    // x.push_u8_rtl_from_middle_new(0b10000000, 3);
+    // println!("{:?}", x);
+    // println!("{x}");
+    // println!("{:width$b}")
     png_encode_test();
     // png_decode_test();
 }

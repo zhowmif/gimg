@@ -78,11 +78,11 @@ impl WriteBitStream {
 
     pub fn extend(&mut self, other: &Self) {
         for byte in other.stream.iter() {
-            self.push_u8_rtl_from_middle(*byte, 8);
+            self.push_u8_rtl_from_middle_new(*byte, 8);
         }
 
         if other.current_bit_number != 0 {
-            self.push_u8_rtl_from_middle(other.working_byte, other.current_bit_number);
+            self.push_u8_rtl_from_middle_new(other.working_byte, other.current_bit_number);
         }
     }
 
@@ -123,6 +123,32 @@ impl WriteBitStream {
 
             mask <<= 1;
         }
+    }
+
+    pub fn push_u8_rtl_from_middle_new(&mut self, num: u8, mut length: u8) {
+        if self.current_bit_number + length >= 8 {
+            let num_to_push_to_current_byte = (8 - self.current_bit_number).min(length);
+            let num_to_add =
+                (num << (length - num_to_push_to_current_byte)) << (8 - self.current_bit_number);
+            self.stream.push(self.working_byte + num_to_add);
+            self.working_byte = 0;
+            self.current_bit_number = 0;
+
+            length = length - num_to_push_to_current_byte;
+        }
+
+        if length != 0 {
+            self.push_u8_rtl_blah_blah_incomplete(num, length);
+        }
+
+        //left most bit to push is at (length + num_to_push_to_current_byte),
+    }
+
+    fn push_u8_rtl_blah_blah_incomplete(&mut self, num: u8, length: u8) {
+        // println!("pushing {length} from {:08b}", num);
+        let num_to_add = (num >> (8 - length)) << self.current_bit_number;
+        self.working_byte += num_to_add;
+        self.current_bit_number += length;
     }
 
     pub fn push_u16_rtl(&mut self, num: u16, len: u8) {
