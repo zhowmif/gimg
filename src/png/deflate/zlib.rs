@@ -7,7 +7,7 @@ use crate::{
 use super::{
     bitsream::{ReadBitStream, WriteBitStream},
     decode::{decode_deflate, DeflateDecodeError},
-    DeflateBlockType, DeflateEncoder,
+    DeflateEncoder,
 };
 
 pub struct ZlibEncoder {
@@ -19,7 +19,7 @@ pub struct ZlibEncoder {
 impl ZlibEncoder {
     pub fn new(compression_level: CompressionLevel) -> Self {
         Self {
-            deflate_encoder: DeflateEncoder::new(DeflateBlockType::DynamicHuffman),
+            deflate_encoder: DeflateEncoder::new(compression_level),
             adler32_calculator: Adler32Calculator::new(),
             compression_level,
         }
