@@ -13,13 +13,13 @@ pub struct PLTE;
 
 impl PLTE {
     pub fn encode_palette(
-        palette: &HashMap<RGB, (usize, RGB)>,
+        palette: &HashMap<RGBA, (usize, RGBA)>,
         crc_calculator: &mut CrcCalculator,
     ) -> Vec<u8> {
         let mut palette_colors: HashSet<(usize, RGB)> = HashSet::new();
 
-        for (_c, color_value) in palette {
-            palette_colors.insert(color_value.clone());
+        for (_c, (idx, color)) in palette {
+            palette_colors.insert((*idx, color.into()));
         }
 
         let mut palette_colors: Vec<(usize, RGB)> = palette_colors.into_iter().collect();

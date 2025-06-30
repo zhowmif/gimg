@@ -169,6 +169,12 @@ impl InterlaceMethod {
     }
 }
 
+impl Default for InterlaceMethod {
+    fn default() -> Self {
+        InterlaceMethod::NoInterlace
+    }
+}
+
 impl TryFrom<u8> for InterlaceMethod {
     type Error = PngParseError;
 

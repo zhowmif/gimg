@@ -7,6 +7,9 @@ use super::{
     PngParseError,
 };
 
+#[derive(Debug)]
+pub struct InvalidBitDepthError(pub ColorType, pub u8);
+
 #[derive(Debug, Clone, Copy)]
 pub enum ColorType {
     Greyscale,
@@ -21,7 +24,7 @@ impl ColorType {
         &self,
         pixels: &[Vec<RGBA>],
         bit_depth: u8,
-        palette: &Option<HashMap<RGB, (usize, RGB)>>,
+        palette: &Option<HashMap<RGBA, (usize, RGBA)>>,
     ) -> Vec<Vec<u8>> {
         if bit_depth < 8 {
             return self.create_scanlines_bit_aligned(pixels, bit_depth, palette);
@@ -36,9 +39,8 @@ impl ColorType {
                 match self {
                     ColorType::IndexedColor => match palette {
                         Some(palette) => {
-                            let rgb: RGB = pixel.into();
                             let idx = palette
-                                .get(&rgb)
+                                .get(&pixel)
                                 .expect("all unique image rgb values must be present in palette")
                                 .0 as u8;
 
@@ -90,7 +92,7 @@ impl ColorType {
         &self,
         pixels: &[Vec<RGBA>],
         bit_depth: u8,
-        palette: &Option<HashMap<RGB, (usize, RGB)>>,
+        palette: &Option<HashMap<RGBA, (usize, RGBA)>>,
     ) -> Vec<Vec<u8>> {
         let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
 
@@ -107,9 +109,8 @@ impl ColorType {
                     },
                     ColorType::IndexedColor => match palette {
                         Some(palette) => {
-                            let rgb: RGB = pixel.into();
                             let idx = palette
-                                .get(&rgb)
+                                .get(&pixel)
                                 .expect("all unique image rgb values must be present in palette")
                                 .0 as u8;
                             debug_assert!(idx < (1<<bit_depth));
@@ -193,6 +194,28 @@ impl ColorType {
         }
 
         Ok(pixels)
+    }
+
+    pub fn check_bit_depth_validty(&self, bit_depth: u8) -> Result<(), InvalidBitDepthError> {
+        match self {
+            ColorType::Greyscale => self.validate_bit_depth(&[1, 2, 4, 8, 16], bit_depth),
+            ColorType::Truecolor => self.validate_bit_depth(&[8, 16], bit_depth),
+            ColorType::IndexedColor => self.validate_bit_depth(&[1, 2, 4, 8], bit_depth),
+            ColorType::GreyscaleAlpha => self.validate_bit_depth(&[8, 16], bit_depth),
+            ColorType::TrueColorAlpha => self.validate_bit_depth(&[8, 16], bit_depth),
+        }
+    }
+
+    fn validate_bit_depth(
+        &self,
+        valid_bit_depths: &[u8],
+        bit_depth: u8,
+    ) -> Result<(), InvalidBitDepthError> {
+        if !valid_bit_depths.contains(&bit_depth) {
+            return Err(InvalidBitDepthError(*self, bit_depth));
+        }
+
+        Ok(())
     }
 
     fn read_channel_bytes(pixel_bytes: &[u8], bit_depth: u8, value_idx: usize) -> u8 {

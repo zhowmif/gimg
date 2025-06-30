@@ -140,24 +140,15 @@ impl IHDR {
     }
 
     pub fn check_bit_depth_validity(&self) -> Result<(), PngParseError> {
-        match self.color_type {
-            ColorType::Greyscale => Self::validate_bit_depth(&[1, 2, 4, 8, 16], self.bit_depth),
-            ColorType::Truecolor => Self::validate_bit_depth(&[8, 16], self.bit_depth),
-            ColorType::IndexedColor => Self::validate_bit_depth(&[1, 2, 4, 8], self.bit_depth),
-            ColorType::GreyscaleAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
-            ColorType::TrueColorAlpha => Self::validate_bit_depth(&[8, 16], self.bit_depth),
-        }
-    }
-
-    fn validate_bit_depth(valid_bit_depths: &[u8], bit_depth: u8) -> Result<(), PngParseError> {
-        if !valid_bit_depths.contains(&bit_depth) {
-            return Err(PngParseError(format!(
-                "Invalid bit depths {}, allowed bit depths for color type are {:?}",
-                bit_depth, valid_bit_depths,
-            )));
-        }
-
-        Ok(())
+        self.color_type
+            .check_bit_depth_validty(self.bit_depth)
+            .map_err(|err| {
+                PngParseError(format!(
+                    "Invalid bit depth {}, for color type {}",
+                    err.1,
+                    Into::<u8>::into(&err.0),
+                ))
+            })
     }
 
     pub fn check_compatibility(&self) -> Result<(), PngParseError> {

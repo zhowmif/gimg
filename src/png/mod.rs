@@ -1,5 +1,3 @@
-use std::fs;
-
 use binary_utils::read_bytes;
 use chunks::{
     idat::IDAT,
@@ -9,6 +7,7 @@ use chunks::{
     Chunk,
 };
 pub use color_type::ColorType;
+pub use config::{PartialPngConfig, PngConfig, CompressionLevel};
 use consts::{
     IDAT_CHUNK_MAX_SIZE, IDAT_CHUNK_TYPE, IEND_CHUNK_TYPE, PLTE_CHUNK_TYPE, PNG_SIGNATURE,
 };
@@ -25,13 +24,13 @@ mod adler32;
 mod binary_utils;
 mod chunks;
 mod color_type;
+mod config;
 mod consts;
 mod crc;
 pub mod deflate;
-pub mod filter;
+mod filter;
 mod interlace;
-pub mod palette;
-mod serialization;
+mod palette;
 
 #[derive(Debug)]
 pub struct PngParseError(String);
@@ -128,20 +127,13 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     Ok(image)
 }
 
-pub fn encode_png(
-    pixels: Vec<Vec<RGBA>>,
-    color_type: Option<ColorType>,
-    bit_depth: Option<u8>,
-    interlace_method: Option<InterlaceMethod>,
-) -> Vec<u8> {
-    let color_type = color_type.unwrap_or(ColorType::TrueColorAlpha);
-    let bit_depth = bit_depth.unwrap_or(8);
-    let interlace_method = interlace_method.unwrap_or(InterlaceMethod::NoInterlace);
-
-    let palette = match color_type {
+pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> Vec<u8> {
+    let unique_colors = get_unique_colors(&pixels[..]);
+    let config = PngConfig::create_from_partial(partial_config, &unique_colors[..]);
+    let palette = match config.color_type {
         ColorType::IndexedColor => {
-            let unique_colors = get_unique_colors(&pixels[..]);
-            let palette = create_pallete_from_colors_median_cut(&unique_colors, bit_depth as usize);
+            let palette =
+                create_pallete_from_colors_median_cut(&unique_colors, config.bit_depth as usize);
 
             Some(palette)
         }
@@ -152,21 +144,22 @@ pub fn encode_png(
     let ihdr = IHDR::new(
         pixels[0].len() as u32,
         pixels.len() as u32,
-        color_type,
-        bit_depth,
-        interlace_method,
+        config.color_type,
+        config.bit_depth,
+        config.interlace_method,
     );
-    ihdr.check_bit_depth_validity().unwrap();
     let mut encoded_png: Vec<u8> = Vec::new();
     encoded_png.extend_from_slice(PNG_SIGNATURE);
     encoded_png.extend_from_slice(&ihdr.to_bytes(&mut crc));
 
-    let reduced_images = interlace_method.perform_pass_extraction(pixels);
+    let reduced_images = config.interlace_method.perform_pass_extraction(pixels);
 
     let mut all_filtered_scanlines: Vec<Vec<u8>> = Vec::new();
 
     for reduced_image in reduced_images.iter() {
-        let scanlines = color_type.create_scanlines(reduced_image, ihdr.bit_depth, &palette);
+        let scanlines = config
+            .color_type
+            .create_scanlines(reduced_image, ihdr.bit_depth, &palette);
         let filtered_scanlines = filter_scanlines(&scanlines, ihdr.get_bits_per_pixel());
         all_filtered_scanlines.extend_from_slice(&filtered_scanlines);
     }

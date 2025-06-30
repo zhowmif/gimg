@@ -5,12 +5,12 @@ use std::{
 
 use crate::colors::{RGB, RGBA};
 
-pub fn get_unique_colors(pixels: &[Vec<RGBA>]) -> Vec<RGB> {
+pub fn get_unique_colors(pixels: &[Vec<RGBA>]) -> Vec<RGBA> {
     let mut colors = HashSet::new();
 
     for row in pixels {
         for pixel in row {
-            colors.insert(pixel.into());
+            colors.insert(pixel.clone());
         }
     }
 
@@ -18,18 +18,20 @@ pub fn get_unique_colors(pixels: &[Vec<RGBA>]) -> Vec<RGB> {
 }
 
 pub fn create_pallete_from_colors_median_cut(
-    colors: &[RGB],
+    unique_colors: &[RGBA],
     number_of_colors_log2: usize,
-) -> HashMap<RGB, (usize, RGB)> {
-    let mut color_buckets: Vec<Vec<RGB>> = vec![colors.to_vec()];
+) -> HashMap<RGBA, (usize, RGBA)> {
+    let mut color_buckets: Vec<Vec<RGBA>> = vec![unique_colors.to_vec()];
 
-    for _i in 0..number_of_colors_log2 {
-        color_buckets = color_buckets
-            .into_iter()
-            .map(median_cut_bucket)
-            .flatten()
-            .filter(|bucket| !bucket.is_empty())
-            .collect();
+    if unique_colors.len() > u8::MAX.into() {
+        for _i in 0..number_of_colors_log2 {
+            color_buckets = color_buckets
+                .into_iter()
+                .map(median_cut_bucket)
+                .flatten()
+                .filter(|bucket| !bucket.is_empty())
+                .collect();
+        }
     }
 
     color_buckets
@@ -38,7 +40,7 @@ pub fn create_pallete_from_colors_median_cut(
         .map(|(i, bucket)| {
             let avg_color = get_bucket_average_color(&bucket);
 
-            let avg_color_per_color: Vec<(RGB, (usize, RGB))> = bucket
+            let avg_color_per_color: Vec<(RGBA, (usize, RGBA))> = bucket
                 .into_iter()
                 .map(|color| (color, (i, avg_color.clone())))
                 .collect();
@@ -49,7 +51,7 @@ pub fn create_pallete_from_colors_median_cut(
         .collect()
 }
 
-fn median_cut_bucket(mut bucket: Vec<RGB>) -> Vec<Vec<RGB>> {
+fn median_cut_bucket(mut bucket: Vec<RGBA>) -> Vec<Vec<RGBA>> {
     let r_range = range_size(bucket.iter().map(|px| px.r).collect());
     let g_range = range_size(bucket.iter().map(|px| px.g).collect());
     let b_range = range_size(bucket.iter().map(|px| px.b).collect());
@@ -83,7 +85,7 @@ fn range_size(values: Vec<u8>) -> u8 {
     max - min
 }
 
-fn get_bucket_average_color(bucket: &[RGB]) -> RGB {
+fn get_bucket_average_color(bucket: &[RGBA]) -> RGBA {
     let mut r_sum: f32 = 0.;
     let mut g_sum: f32 = 0.;
     let mut b_sum: f32 = 0.;
@@ -98,7 +100,7 @@ fn get_bucket_average_color(bucket: &[RGB]) -> RGB {
     let g = (g_sum / bucket.len() as f32).round() as u8;
     let b = (b_sum / bucket.len() as f32).round() as u8;
 
-    RGB::new(r, g, b)
+    RGBA::new(r, g, b, u8::MAX)
 }
 
 pub fn index_palette(palette: HashMap<RGB, RGB>) -> HashMap<RGB, (RGB, usize)> {

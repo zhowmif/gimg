@@ -4,13 +4,16 @@ use std::{fs, io::Read};
 
 use colors::{YCbCr, RGBA};
 use demuxers::{image_demuxer::ImageDemuxer, raw_image_demuxer::RawImageDemuxer};
-use flate2::read::{DeflateDecoder, ZlibDecoder};
+use flate2::{
+    read::{DeflateEncoder, ZlibDecoder},
+    Compression,
+};
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
     deflate::{decode::decode_deflate, zlib::decode_zlib},
-    encode_png,
+    encode_png, PartialPngConfig,
 };
 use stream::Stream;
 
@@ -33,40 +36,40 @@ mod stream;
 mod tree;
 
 fn main() {
-    // png_encode_test(
-    //     Some(png::ColorType::Truecolor),
-    //     Some(16),
-    //     Some(png::InterlaceMethod::Adam7),
-    // );
-    png_decode_test();
+    png_encode_test();
+    // png_decode_test();
     // deflate_test();
 }
 
-fn png_encode_test(
-    color_type: Option<png::ColorType>,
-    bit_depth: Option<u8>,
-    interlace_method: Option<png::InterlaceMethod>,
-) {
-    let mut dx = ImageDemuxer::new("files/mountain.png", "rgb24");
-    let img = dx.get_next_image().unwrap();
+fn png_encode_test() {
+    // let mut dx = ImageDemuxer::new("files/drawing.png", "rgb24");
+    // let img = dx.get_next_image().unwrap();
+    //
+    // let mut rgba_pixels: Vec<Vec<RGBA>> = Vec::with_capacity(img.resolution.height);
+    // for row in img.pixels {
+    //     let mut pixel_row: Vec<RGBA> = Vec::with_capacity(img.resolution.width);
+    //
+    //     for pixel in row {
+    //         pixel_row.push(pixel.into());
+    //     }
+    //
+    //     rgba_pixels.push(pixel_row);
+    // }
 
-    let mut rgba_pixels: Vec<Vec<RGBA>> = Vec::with_capacity(img.resolution.height);
-    for row in img.pixels {
-        let mut pixel_row: Vec<RGBA> = Vec::with_capacity(img.resolution.width);
+    let png_file = fs::read("files/drawing.png").unwrap();
+    let rgba_pixels = decode_png(&png_file).unwrap();
 
-        for pixel in row {
-            pixel_row.push(pixel.into());
-        }
-
-        rgba_pixels.push(pixel_row);
-    }
-
-    let png_bytes = encode_png(rgba_pixels, color_type, bit_depth, interlace_method);
+    let config = PartialPngConfig::new()
+        .color_type(png::ColorType::Greyscale)
+        .bit_depth(8)
+        .interlace_method(png::InterlaceMethod::NoInterlace)
+        .compression_level(png::CompressionLevel::Best);
+    let png_bytes = encode_png(rgba_pixels, config);
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
 }
 
 fn png_decode_test() {
-    let png_file = fs::read("files/mymountain.png").unwrap();
+    let png_file = fs::read("files/drawing.png").unwrap();
     let decoded_png = decode_png(&png_file).unwrap();
     let ycbcr_pixels: Vec<Vec<YCbCr>> = decoded_png
         .into_iter()
@@ -83,13 +86,13 @@ fn deflate_test() {
     let input = &fs::read("files/mountaindata.bin").unwrap();
     let deflate_data = &input[2..][..input.len() - 4];
 
-    let mut buf = Vec::new();
-    let mut deflate_decoder = DeflateDecoder::new(deflate_data);
-    deflate_decoder.read_to_end(&mut buf).unwrap();
-    println!("Deflate uncompressed: {:?}", buf.len());
-
-    let my_data = decode_deflate(deflate_data).unwrap();
-    println!("My data {}", my_data.len());
+    // let mut buf = Vec::new();
+    // let mut deflate_decoder = DeflateDecoder::new(deflate_data);
+    // deflate_decoder.read_to_end(&mut buf).unwrap();
+    // println!("Deflate uncompressed: {:?}", buf.len());
+    //
+    // let my_data = decode_deflate(deflate_data).unwrap();
+    // println!("My data {}", my_data.len());
 
     // let mut zlib_decoder = ZlibDecoder::new(&input[..]);
     // zlib_decoder.read_to_end(&mut buf).unwrap();
@@ -109,7 +112,7 @@ fn deflate_test() {
     // out_bytes[0] -= 8;
     // print_bytes(&out_bytes[..10]);
 
-    // let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
+    let mut flate2_encoder = DeflateEncoder::new(&input[..], Compression::best());
     // let mut out_bytes = Vec::new();
     // flate2_encoder.read_to_end(&mut out_bytes).unwrap();
     // print_bytes(&out_bytes);

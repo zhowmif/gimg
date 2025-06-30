@@ -128,7 +128,7 @@ impl From<&YCbCr> for RGB {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RGBA {
     pub r: u8,
     pub g: u8,
@@ -139,6 +139,14 @@ pub struct RGBA {
 impl RGBA {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
+    }
+
+    pub fn is_opaque(&self) -> bool {
+        self.a == u8::MAX
+    }
+
+    pub fn is_greyscale(&self) -> bool {
+        self.r == self.g && self.r == self.b
     }
 }
 
@@ -160,4 +168,4 @@ impl Into<RGB> for &RGBA {
             b: self.b,
         }
     }
-    }
+}
