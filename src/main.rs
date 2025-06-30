@@ -2,11 +2,12 @@
 
 use std::{fs, iter::once};
 
-use colors::YCbCr;
+use colors::{YCbCr, RGBA};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{decode_png, encode_png, PartialPngConfig};
+use ppm::decode_ppm;
 
 mod algebra;
 mod binary;
@@ -32,13 +33,22 @@ fn main() {
 }
 
 fn png_encode_test() {
-    let png_file = fs::read("files/mountain.png").unwrap();
-    let rgba_pixels = decode_png(&png_file).unwrap();
+    // let png_file = fs::read("files/mountain.png").unwrap();
+    // let rgba_pixels = decode_png(&png_file).unwrap();
+    let ppm_file = fs::read("files/mountain.ppm").unwrap();
+    let rgba_pixels = decode_ppm(&ppm_file)
+        .unwrap()
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .map(|p| RGBA::new(p.r, p.g, p.b, u8::MAX))
+                .collect()
+        })
+        .collect();
 
     let config = PartialPngConfig::new()
-        .color_type(png::ColorType::IndexedColor)
-        .bit_depth(4)
-        .compression_level(png::CompressionLevel::Best);
+        .color_type(png::ColorType::Truecolor)
+        .compression_level(png::CompressionLevel::Fast);
     let png_bytes = encode_png(rgba_pixels, config);
     println!("Size {}", png_bytes.len());
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");

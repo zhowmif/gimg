@@ -1,12 +1,16 @@
 pub mod backreference;
-mod hash;
+// mod hash;
+// use hash::LzssHashTable;
+// mod old_hash;
+// use old_hash::LzssHashTable;
+mod new_old_hash;
+use new_old_hash::LzssHashTable;
 
 use std::collections::HashMap;
 
 use backreference::{
     DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
 };
-use hash::LzssHashTable;
 
 use super::{
     bitsream::WriteBitStream, consts::END_OF_BLOCK_MARKER_VALUE, decode::DeflateDecodeError,
@@ -55,8 +59,7 @@ fn find_backreference_with_table(
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {
-        let key = (bytes[cursor], bytes[cursor + 1], bytes[cursor + 2]);
-        table.insert(key, cursor);
+        table.insert(cursor, bytes[cursor], bytes[cursor + 1], bytes[cursor + 2]);
     }
 
     best_match

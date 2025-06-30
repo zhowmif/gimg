@@ -20,7 +20,7 @@ impl CompressionLevel {
 
 impl Default for CompressionLevel {
     fn default() -> Self {
-        Self::Best
+        Self::Fast
     }
 }
 
