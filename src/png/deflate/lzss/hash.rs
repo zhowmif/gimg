@@ -1,5 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
+#[derive(Clone)]
 pub struct LzssHashTable {
     map: HashMap<u32, VecDeque<usize>>,
 }

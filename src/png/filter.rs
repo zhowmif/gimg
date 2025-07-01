@@ -1,4 +1,4 @@
-use super::{CompressionLevel, PngParseError};
+use super::{deflate::DeflateEncoder, CompressionLevel, PngParseError};
 
 #[derive(Debug, Clone)]
 enum AdaptiveFilterType {
@@ -13,13 +13,12 @@ impl AdaptiveFilterType {
     fn apply_filter(&self, x: u8, a: u8, b: u8, c: u8) -> u8 {
         match self {
             AdaptiveFilterType::None => x,
-            AdaptiveFilterType::Sub => x.overflowing_sub(a).0,
-            AdaptiveFilterType::Up => x.overflowing_sub(b).0,
+            AdaptiveFilterType::Sub => x.wrapping_sub(a),
+            AdaptiveFilterType::Up => x.wrapping_sub(b),
             AdaptiveFilterType::Average => {
-                x.overflowing_sub(((a as f32 + b as f32) / 2.).floor() as u8)
-                    .0
+                x.wrapping_sub(((a as f32 + b as f32) / 2.).floor() as u8)
             }
-            AdaptiveFilterType::Paeth => x.overflowing_sub(paeth_predictor(a, b, c)).0,
+            AdaptiveFilterType::Paeth => x.wrapping_sub(paeth_predictor(a, b, c)),
         }
     }
 
@@ -121,17 +120,19 @@ pub fn filter_scanlines(
             filter_results.push((filter.clone(), current_filter_result));
         }
 
-        let (filter, mut scanline) = filter_results
-            .into_iter()
-            .min_by_key(|filtered_row| {
-                filtered_row
-                    .1
-                    .iter()
-                    .map(|x| *x as i8 as i32)
-                    .sum::<i32>()
-                    .abs()
-            })
-            .unwrap();
+        let (filter, mut scanline) = if filter_results.len() == 1 {
+            filter_results.into_iter().next().unwrap()
+        } else {
+            filter_results
+                .into_iter()
+                .min_by_key(|filtered_row| {
+                    let mut encoder = DeflateEncoder::new(CompressionLevel::Fast);
+                    encoder.write_bytes(&filtered_row.1);
+                    encoder.finish().len()
+                })
+                .unwrap()
+        };
+
         scanline.insert(0, filter.to_byte());
         filtered_scanelines.push(scanline);
     }

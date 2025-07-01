@@ -137,6 +137,8 @@ impl DeflateEncoder {
                 };
 
                 for (chunk_num, chunk) in self.bytes.chunks(chunk_size).enumerate() {
+                    let mut alone_lzss_table = lzss_table.clone();
+
                     let chunk_start_index = chunk_num * chunk_size;
                     let is_last_chunk = (chunk_num + 1) * chunk_size >= self.bytes.len();
                     let chunk_end_index = chunk_start_index + chunk.len();
@@ -144,13 +146,13 @@ impl DeflateEncoder {
                     let chunk_encoded_alone = smaller_block(
                         encode_block_type_two(
                             &previous_and_current_data,
-                            &mut lzss_table,
+                            &mut alone_lzss_table,
                             chunk_start_index,
                             is_last_chunk,
                         ),
                         encode_block_type_one(
                             &previous_and_current_data,
-                            &mut lzss_table,
+                            &mut alone_lzss_table,
                             chunk_start_index,
                             is_last_chunk,
                         ),
@@ -181,6 +183,7 @@ impl DeflateEncoder {
                         compressed.extend(&last_block.bitstream);
                         last_block = chunk_encoded_alone;
                         last_block.start_index = chunk_start_index;
+                        lzss_table = alone_lzss_table;
                     } else {
                         last_block = added_to_last_block;
                     }

@@ -62,6 +62,7 @@ fn find_backreference_with_table(
         table.insert(cursor, bytes[cursor], bytes[cursor + 1], bytes[cursor + 2]);
     }
 
+
     best_match
 }
 

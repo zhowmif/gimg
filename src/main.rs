@@ -35,7 +35,7 @@ fn main() {
 fn png_encode_test() {
     // let png_file = fs::read("files/mountain.png").unwrap();
     // let rgba_pixels = decode_png(&png_file).unwrap();
-    let ppm_file = fs::read("files/mountain.ppm").unwrap();
+    let ppm_file = fs::read("files/snow.ppm").unwrap();
     let rgba_pixels = decode_ppm(&ppm_file)
         .unwrap()
         .into_iter()
