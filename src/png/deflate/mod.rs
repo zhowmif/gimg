@@ -17,7 +17,7 @@ use decode::DeflateDecodeError;
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{DISTANCE_TO_CODE, LENGTH_TO_CODE},
-    encode_lzss, encode_lzss_to_bitstream, LzssSymbol,
+    encode_lzss, encode_lzss_to_bitstream, LzssHashTable, LzssSymbol,
 };
 use prefix_table::{
     generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
@@ -123,6 +123,7 @@ impl DeflateEncoder {
         match self.compression_level {
             CompressionLevel::None => encode_block_type_zero(&self.bytes, 0, true).bitstream,
             CompressionLevel::Best => {
+                let mut lzss_table = LzssHashTable::new();
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
                     start_index: 0,
@@ -143,11 +144,13 @@ impl DeflateEncoder {
                     let chunk_encoded_alone = smaller_block(
                         encode_block_type_two(
                             &previous_and_current_data,
+                            &mut lzss_table,
                             chunk_start_index,
                             is_last_chunk,
                         ),
                         encode_block_type_one(
                             &previous_and_current_data,
+                            &mut lzss_table,
                             chunk_start_index,
                             is_last_chunk,
                         ),
@@ -160,11 +163,13 @@ impl DeflateEncoder {
                         ),
                         DeflateBlockType::FixedHuffman => encode_block_type_one(
                             &previous_and_current_data,
+                            &mut lzss_table,
                             last_block.start_index,
                             is_last_chunk,
                         ),
                         DeflateBlockType::DynamicHuffman => encode_block_type_two(
                             &previous_and_current_data,
+                            &mut lzss_table,
                             last_block.start_index,
                             is_last_chunk,
                         ),
@@ -185,7 +190,9 @@ impl DeflateEncoder {
 
                 compressed
             }
-            CompressionLevel::Fast => encode_block_type_two(&self.bytes, 0, true).bitstream,
+            CompressionLevel::Fast => {
+                encode_block_type_two(&self.bytes, &mut LzssHashTable::new(), 0, true).bitstream
+            }
         }
     }
 }
@@ -217,12 +224,17 @@ fn encode_block_type_zero(bytes: &[u8], start_index: usize, is_last: bool) -> En
     }
 }
 
-fn encode_block_type_one(bytes: &[u8], start_index: usize, is_last: bool) -> EncodedBlock {
+fn encode_block_type_one(
+    bytes: &[u8],
+    lzss_table: &mut lzss::LzssHashTable,
+    start_index: usize,
+    is_last: bool,
+) -> EncodedBlock {
     let mut result = WriteBitStream::new();
     push_is_last(&mut result, is_last);
     result.push_u8_rtl(DeflateBlockType::FixedHuffman.to_number().into(), 2);
 
-    let mut lzss = encode_lzss(bytes, start_index, LZSS_WINDOW_SIZE);
+    let mut lzss = encode_lzss(bytes, lzss_table, start_index, LZSS_WINDOW_SIZE);
     lzss.push(lzss::LzssSymbol::EndOfBlock);
 
     let literal_length_table = generate_static_lit_len_table();
@@ -237,12 +249,17 @@ fn encode_block_type_one(bytes: &[u8], start_index: usize, is_last: bool) -> Enc
     }
 }
 
-fn encode_block_type_two(bytes: &[u8], start_index: usize, is_last: bool) -> EncodedBlock {
+fn encode_block_type_two(
+    bytes: &[u8],
+    lzss_table: &mut lzss::LzssHashTable,
+    start_index: usize,
+    is_last: bool,
+) -> EncodedBlock {
     let mut result = WriteBitStream::new();
     push_is_last(&mut result, is_last);
     result.push_u8_rtl(DeflateBlockType::DynamicHuffman.to_number().into(), 2);
 
-    let mut lzss = encode_lzss(bytes, start_index, LZSS_WINDOW_SIZE);
+    let mut lzss = encode_lzss(bytes, lzss_table, start_index, LZSS_WINDOW_SIZE);
     lzss.push(lzss::LzssSymbol::EndOfBlock);
     let (ll_code_lengths, distance_code_lengths) = generate_prefix_codes_from_lzss_stream(&lzss);
     let ll_codes = construct_canonical_tree_from_lengths(&ll_code_lengths);

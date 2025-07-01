@@ -1,7 +1,7 @@
-use std::{collections::VecDeque, iter::repeat_n};
+use std::collections::{HashMap, VecDeque};
 
 pub struct LzssHashTable {
-    map: Vec<Option<VecDeque<usize>>>,
+    map: HashMap<u32, VecDeque<usize>>,
 }
 
 const MAX_CHAIN_SIZE: usize = 10;
@@ -9,7 +9,7 @@ const MAX_CHAIN_SIZE: usize = 10;
 impl LzssHashTable {
     pub fn new() -> Self {
         Self {
-            map: repeat_n(None, 1 << 24).collect(),
+            map: HashMap::new(),
         }
     }
 
@@ -22,7 +22,7 @@ impl LzssHashTable {
         let chain = self.get_chain(&whole_input[cursor..])?;
         let (index, length) = chain
             .iter()
-            .filter(|idx| **idx >= window_start_index)
+            .filter(|idx| **idx < cursor && **idx >= window_start_index)
             .map(|idx| {
                 (
                     idx,
@@ -33,33 +33,35 @@ impl LzssHashTable {
                 )
             })
             .max_by_key(|(_idx, length)| *length)?;
+
         let backreference = ((cursor - index) as u16, length as u16);
 
         Some(backreference)
     }
 
     fn get_chain(&self, byte_sequence: &[u8]) -> Option<&VecDeque<usize>> {
-        if byte_sequence.len() < 3 {
-            None
-        } else {
-            let index = Self::get_index(byte_sequence[0], byte_sequence[1], byte_sequence[2]);
+        let key = Self::get_key(
+            *byte_sequence.get(0)?,
+            *byte_sequence.get(1)?,
+            *byte_sequence.get(2)?,
+        );
 
-            unsafe { self.map.get_unchecked(index).as_ref() }
-        }
+        self.map.get(&key)
     }
 
     #[inline(always)]
-    fn get_index(byte1: u8, byte2: u8, byte3: u8) -> usize {
-        ((byte1 as usize) << 16) + ((byte2 as usize) << 8) + byte3 as usize
+    fn get_key(b1: u8, b2: u8, b3: u8) -> u32 {
+        ((b1 as u32) << 16) + ((b2 as u32) << 8) + (b3 as u32)
     }
 
     pub fn insert(&mut self, cursor: usize, byte1: u8, byte2: u8, byte3: u8) {
-        let index = Self::get_index(byte1, byte2, byte3);
-        let chain = &mut self.map[index];
+        let key = Self::get_key(byte1, byte2, byte3);
+        let chain = self.map.get_mut(&key);
+
         match chain {
             None => {
                 let chain = VecDeque::from([cursor]);
-                self.map[index] = Some(chain);
+                self.map.insert(key, chain);
             }
             Some(chain) => {
                 chain.push_back(cursor);
@@ -69,11 +71,6 @@ impl LzssHashTable {
                 }
             }
         }
-        // chain.push_back(cursor);
-        //
-        // if chain.len() > MAX_CHAIN_SIZE {
-        //     chain.pop_front();
-        // }
     }
 }
 

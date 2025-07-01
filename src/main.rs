@@ -47,9 +47,8 @@ fn png_encode_test() {
         .collect();
 
     let config = PartialPngConfig::new()
-        .color_type(png::ColorType::IndexedColor)
-        .bit_depth(2)
-        .compression_level(png::CompressionLevel::Fast);
+        // .color_type(png::ColorType::TrueColorAlpha)
+        .compression_level(png::CompressionLevel::Best);
     let png_bytes = encode_png(rgba_pixels, config);
     println!("Size {}", png_bytes.len());
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");

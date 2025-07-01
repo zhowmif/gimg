@@ -1,10 +1,6 @@
 pub mod backreference;
-// mod hash;
-// use hash::LzssHashTable;
-// mod old_hash;
-// use old_hash::LzssHashTable;
-mod new_old_hash;
-use new_old_hash::LzssHashTable;
+mod hash;
+pub use hash::LzssHashTable;
 
 use std::collections::HashMap;
 
@@ -23,14 +19,18 @@ pub enum LzssSymbol {
     EndOfBlock,
 }
 
-pub fn encode_lzss(bytes: &[u8], cursor_start: usize, window_size: usize) -> Vec<LzssSymbol> {
+pub fn encode_lzss(
+    bytes: &[u8],
+    table: &mut LzssHashTable,
+    cursor_start: usize,
+    window_size: usize,
+) -> Vec<LzssSymbol> {
     let mut cursor = cursor_start;
     let mut stream = Vec::with_capacity(bytes.len() / 2);
-    let mut table = LzssHashTable::new();
 
     while cursor < bytes.len() {
         stream.push(
-            match find_backreference_with_table(bytes, cursor, window_size, &mut table) {
+            match find_backreference_with_table(bytes, cursor, window_size, table) {
                 Some(backreference) => {
                     let symbol = LzssSymbol::Backreference(backreference.0, backreference.1);
                     cursor += backreference.1 as usize;
