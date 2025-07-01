@@ -129,11 +129,15 @@ impl DeflateEncoder {
                     block_type: DeflateBlockType::None,
                     bitstream: WriteBitStream::new(),
                 };
-                let chunk_size = self.bytes.len() / 100;
+                let chunk_size = if self.bytes.len() > 1000 {
+                    self.bytes.len() / 100
+                } else {
+                    self.bytes.len()
+                };
 
                 for (chunk_num, chunk) in self.bytes.chunks(chunk_size).enumerate() {
                     let chunk_start_index = chunk_num * chunk_size;
-                    let is_last_chunk = chunk_num == self.bytes.len() / chunk_size;
+                    let is_last_chunk = (chunk_num + 1) * chunk_size >= self.bytes.len();
                     let chunk_end_index = chunk_start_index + chunk.len();
                     let previous_and_current_data = &self.bytes[..chunk_end_index];
                     let chunk_encoded_alone = smaller_block(
@@ -300,6 +304,7 @@ fn encode_block_type_two(bytes: &[u8], start_index: usize, is_last: bool) -> Enc
     }
 }
 
+#[derive(Debug)]
 struct EncodedBlock {
     start_index: usize,
     block_type: DeflateBlockType,

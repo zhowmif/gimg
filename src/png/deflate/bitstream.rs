@@ -3,7 +3,7 @@ use std::fmt::Display;
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct WriteBitStream {
     pub stream: Vec<u8>,
-    pub working_byte: u8,
+    pub buffer: u64,
     pub current_bit_number: u8,
 }
 
@@ -11,7 +11,7 @@ impl WriteBitStream {
     pub fn new() -> Self {
         Self {
             stream: Vec::new(),
-            working_byte: 0,
+            buffer: 0,
             current_bit_number: 0,
         }
     }
@@ -21,44 +21,35 @@ impl WriteBitStream {
     }
 
     pub fn from_u32_ltr_with_offset(num: u32, start_index: usize, length: u8) -> Self {
-        let mut bitstream = WriteBitStream::new();
-
-        if start_index == 0 {
-            return bitstream;
-        }
-
-        let mut mask = 1 << (start_index - 1);
-
-        for _i in 0..length {
-            match num & mask {
-                0 => bitstream.push_zero(),
-                _ => bitstream.push_one(),
-            };
-
-            mask >>= 1;
-        }
-
-        bitstream
+        let buffer =
+            u64::reverse_bits((num >> (start_index - length as usize)) as u64) >> (64 - length);
+        let mut res = Self {
+            stream: Vec::new(),
+            buffer,
+            current_bit_number: length,
+        };
+        res.flush_buffer();
+        res
     }
 
-    fn flush_working_byte(&mut self) {
-        if self.current_bit_number == 8 {
-            self.stream.push(self.working_byte);
-            self.current_bit_number = 0;
-            self.working_byte = 0;
+    fn flush_buffer(&mut self) {
+        while self.current_bit_number >= 8 {
+            let last_byte = (self.buffer & 0xff) as u8;
+            self.stream.push(last_byte);
+            self.buffer >>= 8;
+            self.current_bit_number -= 8;
         }
     }
 
     pub fn push_zero(&mut self) {
-        self.working_byte >>= 1;
         self.current_bit_number += 1;
-        self.flush_working_byte();
+        self.flush_buffer();
     }
 
     pub fn push_one(&mut self) {
-        self.working_byte = (self.working_byte >> 1) | 0b10000000;
+        self.buffer |= 1 << self.current_bit_number;
         self.current_bit_number += 1;
-        self.flush_working_byte();
+        self.flush_buffer();
     }
 
     pub fn push_byte_ltr(&mut self, byte: u8) {
@@ -76,92 +67,32 @@ impl WriteBitStream {
         self.push_byte_ltr((n >> 8) as u8);
     }
 
+    //assumes other is flushed
     pub fn extend(&mut self, other: &Self) {
+        self.flush_buffer();
         for byte in other.stream.iter() {
-            self.push_u8_rtl_from_middle_new(*byte, 8);
+            self.push_u8_rtl_from_middle(*byte, 8);
         }
 
         if other.current_bit_number != 0 {
-            self.push_u8_rtl_from_middle_new(other.working_byte, other.current_bit_number);
-        }
-    }
-
-    pub fn push_u8_ltr(&mut self, num: u8, length: u8) {
-        let mut mask = 1 << (length - 1);
-
-        while mask > 0 {
-            match num & mask {
-                0 => self.push_zero(),
-                _ => self.push_one(),
-            };
-
-            mask >>= 1;
+            self.push_u8_rtl(other.buffer as u8, other.current_bit_number);
         }
     }
 
     pub fn push_u8_rtl(&mut self, num: u8, length: u8) {
-        let mut mask = 1u16;
-
-        while mask <= 1 << (length - 1) {
-            match num as u16 & mask {
-                0 => self.push_zero(),
-                _ => self.push_one(),
-            };
-
-            mask <<= 1;
-        }
+        self.push_u16_rtl(num as u16, length);
     }
 
     pub fn push_u8_rtl_from_middle(&mut self, num: u8, length: u8) {
-        let mut mask = 1 << (8 - length);
-
-        for _i in 0..length {
-            match num & mask {
-                0 => self.push_zero(),
-                _ => self.push_one(),
-            };
-
-            mask <<= 1;
-        }
+        let n = num >> (8 - length);
+        self.push_u8_rtl(n, length);
     }
 
-    pub fn push_u8_rtl_from_middle_new(&mut self, num: u8, mut length: u8) {
-        if self.current_bit_number + length >= 8 {
-            let num_to_push_to_current_byte = (8 - self.current_bit_number).min(length);
-            let num_to_add =
-                (num << (length - num_to_push_to_current_byte)) << (8 - self.current_bit_number);
-            self.stream.push(self.working_byte + num_to_add);
-            self.working_byte = 0;
-            self.current_bit_number = 0;
-
-            length = length - num_to_push_to_current_byte;
-        }
-
-        if length != 0 {
-            self.push_u8_rtl_blah_blah_incomplete(num, length);
-        }
-
-        //left most bit to push is at (length + num_to_push_to_current_byte),
-    }
-
-    fn push_u8_rtl_blah_blah_incomplete(&mut self, num: u8, length: u8) {
-        // println!("pushing {length} from {:08b}", num);
-        let num_to_add = (num >> (8 - length)) << self.current_bit_number;
-        self.working_byte += num_to_add;
+    pub fn push_u16_rtl(&mut self, num: u16, length: u8) {
+        let sanitized_num = (num & ((1 << length) - 1)) as u64;
+        self.buffer |= sanitized_num << self.current_bit_number;
         self.current_bit_number += length;
-    }
-
-    pub fn push_u16_rtl(&mut self, num: u16, len: u8) {
-        let mut mask = 1u16;
-
-        for _i in 0..len {
-            match num & mask {
-                0 => self.push_zero(),
-                _ => self.push_one(),
-            };
-
-            mask <<= 1;
-        }
+        self.flush_buffer();
     }
 
     pub fn len(&self) -> usize {
@@ -173,13 +104,11 @@ impl WriteBitStream {
     }
 
     pub fn flush_to_bytes(&mut self) -> Vec<u8> {
+        self.flush_buffer();
         let mut bytes = std::mem::replace(&mut self.stream, Vec::new());
 
         if self.current_bit_number != 0 {
-            bytes.push(self.working_byte >> (8 - self.current_bit_number));
-
-            self.current_bit_number = 0;
-            self.working_byte = 0;
+            bytes.push(self.buffer as u8);
         }
 
         bytes
@@ -188,16 +117,19 @@ impl WriteBitStream {
 
 impl Display for WriteBitStream {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for byte in self.stream.iter() {
+        let mut n = self.clone();
+        n.flush_buffer();
+        for byte in n.stream.iter() {
             write!(f, "{:08b}", u8::reverse_bits(*byte))?
         }
 
-        if self.current_bit_number != 0 {
+        if n.current_bit_number != 0 {
+            let last_byte = u8::reverse_bits(n.buffer as u8) >> (8 - n.current_bit_number);
             write!(
                 f,
                 "{:0width$b}",
-                u8::reverse_bits(self.working_byte),
-                width = self.current_bit_number as usize
+                last_byte,
+                width = n.current_bit_number as usize
             )?;
         }
 
