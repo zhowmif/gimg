@@ -1,3 +1,13 @@
+use std::{
+    iter::{self, repeat_n},
+    ops::Sub,
+    process,
+    simd::u8x16,
+    time::Instant,
+};
+
+use crate::simd_utils::subtract_simd;
+
 use super::{deflate::DeflateEncoder, CompressionLevel, PngParseError};
 
 #[derive(Debug, Clone)]
@@ -19,6 +29,15 @@ impl AdaptiveFilterType {
                 x.wrapping_sub(((a as f32 + b as f32) / 2.).floor() as u8)
             }
             AdaptiveFilterType::Paeth => x.wrapping_sub(paeth_predictor(a, b, c)),
+        }
+    }
+
+    fn apply_filter_simd(&self, x: &[u8], a: &[u8], b: &[u8]) -> Vec<u8> {
+        match self {
+            AdaptiveFilterType::None => x.to_vec(),
+            AdaptiveFilterType::Sub => subtract_simd(x, a),
+            AdaptiveFilterType::Up => subtract_simd(x, b),
+            _ => panic!(""),
         }
     }
 
@@ -78,12 +97,12 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
     }
 }
 
-const ALL_FILTERS: [AdaptiveFilterType; 5] = [
-    AdaptiveFilterType::None,
-    AdaptiveFilterType::Sub,
+const ALL_FILTERS: [AdaptiveFilterType; 1] = [
+    // AdaptiveFilterType::None,
+    // AdaptiveFilterType::Sub,
     AdaptiveFilterType::Up,
-    AdaptiveFilterType::Average,
-    AdaptiveFilterType::Paeth,
+    // AdaptiveFilterType::Average,
+    // AdaptiveFilterType::Paeth,
 ];
 
 type FilteredScenaline = (AdaptiveFilterType, Vec<u8>);
@@ -100,13 +119,25 @@ pub fn filter_scanlines(
     };
     let other_byte_offsets = if bbp <= 8 { 1 } else { (bbp >> 3) as i16 };
     let mut filtered_scanelines: Vec<Vec<u8>> = Vec::with_capacity(scanlines.len());
+    let start = Instant::now();
 
     for row in 0..scanlines.len() {
         let mut filter_results: Vec<FilteredScenaline> = Vec::with_capacity(ALL_FILTERS.len());
 
         for filter in filters_to_test.iter() {
-            let mut current_filter_result: Vec<u8> = Vec::with_capacity(scanlines[row].len());
 
+            // let b = if row == 0 {
+            //     &repeat_n(0u8, scanlines[row].len()).collect::<Vec<_>>()[..]
+            // } else {
+            //     &scanlines[row - 1][..]
+            // };
+            // let x = &scanlines[row][..];
+            // let g = &x[..x.len() - other_byte_offsets as usize];
+            // let mut a: Vec<u8> = iter::repeat_n(0u8, other_byte_offsets as usize).collect();
+            // a.extend_from_slice(&g);
+            // let current_filter_result = filter.apply_filter_simd(x, &a, b);
+
+            let mut current_filter_result: Vec<u8> = Vec::with_capacity(scanlines[row].len());
             for col in 0..scanlines[row].len() {
                 let x = scanlines[row][col];
                 let (row, col) = (row as i16, col as i16);
@@ -136,6 +167,9 @@ pub fn filter_scanlines(
         scanline.insert(0, filter.to_byte());
         filtered_scanelines.push(scanline);
     }
+    let end = Instant::now();
+    println!("{:?}", end - start);
+    // process::exit(0);
 
     filtered_scanelines
 }
