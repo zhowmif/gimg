@@ -6,7 +6,7 @@ pub mod lzss;
 pub mod prefix_table;
 pub mod zlib;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, iter};
 
 use bitstream::WriteBitStream;
 use consts::{
@@ -17,7 +17,7 @@ use decode::DeflateDecodeError;
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{DISTANCE_TO_CODE, LENGTH_TO_CODE},
-    encode_lzss, encode_lzss_to_bitstream, LzssHashTable, LzssSymbol,
+    encode_lzss, encode_lzss_to_bitstream, LzssSymbol,
 };
 use prefix_table::{
     generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
@@ -123,58 +123,48 @@ impl DeflateEncoder {
         match self.compression_level {
             CompressionLevel::None => encode_block_type_zero(&self.bytes, 0, true).bitstream,
             CompressionLevel::Best => {
-                let mut lzss_table = LzssHashTable::new();
+                let lzss_symbols = encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE);
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
                     start_index: 0,
-                    block_type: DeflateBlockType::None,
+                    block_type: DeflateBlockType::DynamicHuffman,
                     bitstream: WriteBitStream::new(),
                 };
-                let chunk_size = if self.bytes.len() > 1000 {
-                    self.bytes.len() / 100
+                let chunk_size = if lzss_symbols.len() > 1000 {
+                    lzss_symbols.len() / 100
                 } else {
-                    self.bytes.len()
+                    lzss_symbols.len()
                 };
 
-                for (chunk_num, chunk) in self.bytes.chunks(chunk_size).enumerate() {
-                    let mut alone_lzss_table = lzss_table.clone();
-
+                for (chunk_num, chunk) in lzss_symbols.chunks(chunk_size).enumerate() {
                     let chunk_start_index = chunk_num * chunk_size;
-                    let is_last_chunk = (chunk_num + 1) * chunk_size >= self.bytes.len();
+                    let is_last_chunk = (chunk_num + 1) * chunk_size >= lzss_symbols.len();
                     let chunk_end_index = chunk_start_index + chunk.len();
-                    let previous_and_current_data = &self.bytes[..chunk_end_index];
                     let chunk_encoded_alone = smaller_block(
                         encode_block_type_two(
-                            &previous_and_current_data,
-                            &mut alone_lzss_table,
+                            &lzss_symbols[chunk_start_index..chunk_end_index],
                             chunk_start_index,
                             is_last_chunk,
                         ),
                         encode_block_type_one(
-                            &previous_and_current_data,
-                            &mut alone_lzss_table,
+                            &lzss_symbols[chunk_start_index..chunk_end_index],
                             chunk_start_index,
                             is_last_chunk,
                         ),
                     );
                     let added_to_last_block = match last_block.block_type {
-                        DeflateBlockType::None => encode_block_type_zero(
-                            &previous_and_current_data,
-                            last_block.start_index,
-                            is_last_chunk,
-                        ),
                         DeflateBlockType::FixedHuffman => encode_block_type_one(
-                            &previous_and_current_data,
-                            &mut lzss_table,
+                            &lzss_symbols[last_block.start_index..chunk_end_index],
                             last_block.start_index,
                             is_last_chunk,
                         ),
                         DeflateBlockType::DynamicHuffman => encode_block_type_two(
-                            &previous_and_current_data,
-                            &mut lzss_table,
+                            &lzss_symbols[last_block.start_index..chunk_end_index],
                             last_block.start_index,
                             is_last_chunk,
                         ),
+                        //TODO: sometimes it should
+                        _ => panic!("Block type should never be 0"),
                     };
 
                     if added_to_last_block.bitstream.len() - last_block.bitstream.len()
@@ -183,7 +173,6 @@ impl DeflateEncoder {
                         compressed.extend(&last_block.bitstream);
                         last_block = chunk_encoded_alone;
                         last_block.start_index = chunk_start_index;
-                        lzss_table = alone_lzss_table;
                     } else {
                         last_block = added_to_last_block;
                     }
@@ -194,7 +183,8 @@ impl DeflateEncoder {
                 compressed
             }
             CompressionLevel::Fast => {
-                encode_block_type_two(&self.bytes, &mut LzssHashTable::new(), 0, true).bitstream
+                let lzss_symbols = encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE);
+                encode_block_type_two(&lzss_symbols, 0, true).bitstream
             }
         }
     }
@@ -228,8 +218,7 @@ fn encode_block_type_zero(bytes: &[u8], start_index: usize, is_last: bool) -> En
 }
 
 fn encode_block_type_one(
-    bytes: &[u8],
-    lzss_table: &mut lzss::LzssHashTable,
+    lzzs_symbols: &[LzssSymbol],
     start_index: usize,
     is_last: bool,
 ) -> EncodedBlock {
@@ -237,13 +226,15 @@ fn encode_block_type_one(
     push_is_last(&mut result, is_last);
     result.push_u8_rtl(DeflateBlockType::FixedHuffman.to_number().into(), 2);
 
-    let mut lzss = encode_lzss(bytes, lzss_table, start_index, LZSS_WINDOW_SIZE);
-    lzss.push(lzss::LzssSymbol::EndOfBlock);
-
     let literal_length_table = generate_static_lit_len_table();
     let distance_table = generate_static_distance_table();
 
-    encode_lzss_to_bitstream(&lzss, &literal_length_table, &distance_table, &mut result);
+    encode_lzss_to_bitstream(
+        append_end_of_block(lzzs_symbols),
+        &literal_length_table,
+        &distance_table,
+        &mut result,
+    );
 
     EncodedBlock {
         block_type: DeflateBlockType::FixedHuffman,
@@ -253,8 +244,7 @@ fn encode_block_type_one(
 }
 
 fn encode_block_type_two(
-    bytes: &[u8],
-    lzss_table: &mut lzss::LzssHashTable,
+    lzss_stream: &[LzssSymbol],
     start_index: usize,
     is_last: bool,
 ) -> EncodedBlock {
@@ -262,9 +252,8 @@ fn encode_block_type_two(
     push_is_last(&mut result, is_last);
     result.push_u8_rtl(DeflateBlockType::DynamicHuffman.to_number().into(), 2);
 
-    let mut lzss = encode_lzss(bytes, lzss_table, start_index, LZSS_WINDOW_SIZE);
-    lzss.push(lzss::LzssSymbol::EndOfBlock);
-    let (ll_code_lengths, distance_code_lengths) = generate_prefix_codes_from_lzss_stream(&lzss);
+    let (ll_code_lengths, distance_code_lengths) =
+        generate_prefix_codes_from_lzss_stream(append_end_of_block(lzss_stream));
     let ll_codes = construct_canonical_tree_from_lengths(&ll_code_lengths);
     let distance_codes = construct_canonical_tree_from_lengths(&distance_code_lengths);
 
@@ -315,7 +304,12 @@ fn encode_block_type_two(
         cl_code.encode(&cl_codes, &mut result);
     }
 
-    encode_lzss_to_bitstream(&lzss, &ll_codes, &distance_codes, &mut result);
+    encode_lzss_to_bitstream(
+        append_end_of_block(lzss_stream),
+        &ll_codes,
+        &distance_codes,
+        &mut result,
+    );
 
     EncodedBlock {
         block_type: DeflateBlockType::DynamicHuffman,
@@ -339,8 +333,8 @@ fn smaller_block(block1: EncodedBlock, block2: EncodedBlock) -> EncodedBlock {
     }
 }
 
-fn generate_prefix_codes_from_lzss_stream(
-    lzss_stream: &[LzssSymbol],
+fn generate_prefix_codes_from_lzss_stream<'a>(
+    lzss_stream: impl Iterator<Item = &'a LzssSymbol>,
 ) -> (HashMap<u16, u32>, HashMap<u16, u32>) {
     let mut ll_encoder = PackageMergeEncoder::new();
     let mut distance_encoder = PackageMergeEncoder::new();
@@ -371,4 +365,10 @@ fn push_is_last(bitstream: &mut WriteBitStream, is_last: bool) {
     } else {
         bitstream.push_zero();
     }
+}
+
+fn append_end_of_block(lzss_stream: &[LzssSymbol]) -> impl Iterator<Item = &LzssSymbol> {
+    lzss_stream
+        .iter()
+        .chain(iter::once(&LzssSymbol::EndOfBlock))
 }

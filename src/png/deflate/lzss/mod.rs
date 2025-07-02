@@ -21,16 +21,16 @@ pub enum LzssSymbol {
 
 pub fn encode_lzss(
     bytes: &[u8],
-    table: &mut LzssHashTable,
     cursor_start: usize,
     window_size: usize,
 ) -> Vec<LzssSymbol> {
+    let mut table = LzssHashTable::new();
     let mut cursor = cursor_start;
     let mut stream = Vec::with_capacity(bytes.len() / 2);
 
     while cursor < bytes.len() {
         stream.push(
-            match find_backreference_with_table(bytes, cursor, window_size, table) {
+            match find_backreference_with_table(bytes, cursor, window_size, &mut table) {
                 Some(backreference) => {
                     let symbol = LzssSymbol::Backreference(backreference.0, backreference.1);
                     cursor += backreference.1 as usize;
@@ -61,7 +61,6 @@ fn find_backreference_with_table(
     if cursor + 2 < bytes.len() {
         table.insert(cursor, bytes[cursor], bytes[cursor + 1], bytes[cursor + 2]);
     }
-
 
     best_match
 }
@@ -98,8 +97,8 @@ pub fn decode_lzss(
     Ok(())
 }
 
-pub fn encode_lzss_to_bitstream(
-    lzss_stream: &[LzssSymbol],
+pub fn encode_lzss_to_bitstream<'a>(
+    lzss_stream: impl Iterator<Item = &'a LzssSymbol>,
     ll_table: &HashMap<u16, WriteBitStream>,
     distance_table: &HashMap<u16, WriteBitStream>,
     target: &mut WriteBitStream,
