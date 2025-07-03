@@ -1,9 +1,4 @@
-use std::simd::{
-    cmp::SimdPartialOrd,
-    i16x64,
-    num::{SimdInt, SimdUint},
-    u16x64, u8x64,
-};
+use std::simd::{cmp::SimdPartialOrd, i16x64, num::SimdInt, u8x64};
 
 macro_rules! simd_operation {
     ($lhs:expr, $rhs:expr, $op:tt) => {

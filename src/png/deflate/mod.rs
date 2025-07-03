@@ -123,7 +123,8 @@ impl DeflateEncoder {
         match self.compression_level {
             CompressionLevel::None => encode_block_type_zero(&self.bytes, 0, true).bitstream,
             CompressionLevel::Best => {
-                let lzss_symbols = encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE);
+                let lzss_symbols =
+                    encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE, self.compression_level);
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
                     start_index: 0,
@@ -183,7 +184,8 @@ impl DeflateEncoder {
                 compressed
             }
             CompressionLevel::Fast => {
-                let lzss_symbols = encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE);
+                let lzss_symbols =
+                    encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE, self.compression_level);
                 encode_block_type_two(&lzss_symbols, 0, true).bitstream
             }
         }

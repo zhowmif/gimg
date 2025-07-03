@@ -8,6 +8,8 @@ use backreference::{
     DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
 };
 
+use crate::png::CompressionLevel;
+
 use super::{
     bitstream::WriteBitStream, consts::END_OF_BLOCK_MARKER_VALUE, decode::DeflateDecodeError,
 };
@@ -23,8 +25,9 @@ pub fn encode_lzss(
     bytes: &[u8],
     cursor_start: usize,
     window_size: usize,
+    compression_level: CompressionLevel,
 ) -> Vec<LzssSymbol> {
-    let mut table = LzssHashTable::new();
+    let mut table = LzssHashTable::new(compression_level);
     let mut cursor = cursor_start;
     let mut stream = Vec::with_capacity(bytes.len() / 2);
 

@@ -1,16 +1,22 @@
 use std::collections::{HashMap, VecDeque};
 
+use crate::png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel};
+
+use super::backreference::DISTANCE_TO_EXTRA_BITS;
+
 #[derive(Clone)]
 pub struct LzssHashTable {
     map: HashMap<u32, VecDeque<usize>>,
+    compression_level: CompressionLevel,
 }
 
-const MAX_CHAIN_SIZE: usize = 10;
+const MAX_SMALL_CHAIN_SIZE: usize = 10;
 
 impl LzssHashTable {
-    pub fn new() -> Self {
+    pub fn new(compression_level: CompressionLevel) -> Self {
         Self {
             map: HashMap::new(),
+            compression_level,
         }
     }
 
@@ -33,7 +39,15 @@ impl LzssHashTable {
                     ),
                 )
             })
-            .max_by_key(|(_idx, length)| *length)?;
+            .max_by_key(|(idx, length)| match self.compression_level {
+                CompressionLevel::Best => {
+                    let distance = cursor - *idx;
+                    let penalty = if distance > 2048 { 1 } else { 0 };
+
+                    *length - penalty
+                }
+                _ => *length,
+            })?;
 
         let backreference = ((cursor - index) as u16, length as u16);
 
@@ -67,8 +81,13 @@ impl LzssHashTable {
             Some(chain) => {
                 chain.push_back(cursor);
 
-                if chain.len() > MAX_CHAIN_SIZE {
-                    chain.pop_front();
+                match self.compression_level {
+                    CompressionLevel::Best => chain.retain(|idx| cursor - idx <= LZSS_WINDOW_SIZE),
+                    _ => {
+                        if chain.len() > MAX_SMALL_CHAIN_SIZE {
+                            chain.pop_front();
+                        }
+                    }
                 }
             }
         }

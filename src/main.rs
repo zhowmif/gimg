@@ -1,10 +1,7 @@
 #![feature(portable_simd)]
 #![allow(dead_code)]
 
-use std::{
-    fs,
-    simd::{cmp::SimdPartialOrd, mask8x2, u8x2},
-};
+use std::fs;
 
 use colors::{YCbCr, RGBA};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
