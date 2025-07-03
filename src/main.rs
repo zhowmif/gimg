@@ -1,9 +1,10 @@
 #![feature(portable_simd)]
 #![allow(dead_code)]
 
-use std::fs;
-use std::simd;
-use std::simd::u8x64;
+use std::{
+    fs,
+    simd::{cmp::SimdPartialOrd, mask8x2, u8x2},
+};
 
 use colors::{YCbCr, RGBA};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
@@ -11,7 +12,6 @@ use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{decode_png, encode_png, PartialPngConfig};
 use ppm::decode_ppm;
-use simd_utils::subtract_simd;
 
 mod algebra;
 mod binary;
