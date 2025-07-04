@@ -2,8 +2,6 @@ use std::collections::{HashMap, VecDeque};
 
 use crate::png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel};
 
-use super::backreference::DISTANCE_TO_EXTRA_BITS;
-
 #[derive(Clone)]
 pub struct LzssHashTable {
     map: HashMap<u32, VecDeque<usize>>,
@@ -69,7 +67,15 @@ impl LzssHashTable {
         ((b1 as u32) << 16) + ((b2 as u32) << 8) + (b3 as u32)
     }
 
-    pub fn insert(&mut self, cursor: usize, byte1: u8, byte2: u8, byte3: u8) {
+    pub fn insert(
+        &mut self,
+        cursor: usize,
+        byte1: u8,
+        byte2: u8,
+        byte3: u8,
+        window_start: usize,
+        window_end: usize,
+    ) {
         let key = Self::get_key(byte1, byte2, byte3);
         let chain = self.map.get_mut(&key);
 
@@ -82,7 +88,9 @@ impl LzssHashTable {
                 chain.push_back(cursor);
 
                 match self.compression_level {
-                    CompressionLevel::Best => chain.retain(|idx| cursor - idx <= LZSS_WINDOW_SIZE),
+                    CompressionLevel::Best => {
+                        chain.retain(|idx| *idx >= window_start && *idx <= window_end)
+                    }
                     _ => {
                         if chain.len() > MAX_SMALL_CHAIN_SIZE {
                             chain.pop_front();
@@ -91,6 +99,30 @@ impl LzssHashTable {
                 }
             }
         }
+    }
+
+    pub fn get_all_backreferences(
+        &self,
+        whole_input: &[u8],
+        cursor: usize,
+    ) -> Option<Vec<(u16, u16)>> {
+        let window_start_index = cursor.max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE;
+        let chain = self.get_chain(&whole_input[cursor..])?;
+        let backreferences: Vec<_> = chain
+            .iter()
+            .filter(|idx| **idx < cursor && **idx >= window_start_index)
+            .map(|idx| {
+                (
+                    (cursor - *idx) as u16,
+                    number_of_matching_bytes(
+                        &whole_input[cursor..(cursor + 258).min(whole_input.len())],
+                        &whole_input[*idx..(cursor + 258).min(whole_input.len())],
+                    ) as u16,
+                )
+            })
+            .collect();
+
+        Some(backreferences)
     }
 }
 

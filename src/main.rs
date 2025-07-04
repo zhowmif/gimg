@@ -7,7 +7,11 @@ use colors::{YCbCr, RGBA};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
-use png::{decode_png, encode_png, PartialPngConfig};
+use png::{
+    decode_png,
+    deflate::{decode::decode_deflate, DeflateEncoder},
+    encode_png, CompressionLevel, PartialPngConfig,
+};
 use ppm::decode_ppm;
 
 mod algebra;
@@ -33,6 +37,36 @@ fn main() {
     // println!("{:?}", subtract_simd(&vec![10, 5, 12], &vec![1, 2, 3]));
     png_encode_test();
     // png_decode_test();
+    // deflate_test();
+}
+
+fn deflate_test() {
+    let input = &fs::read("files/text.txt").unwrap();
+    // let input = b"it was, it was";
+
+    // let mut enc = DeflateEncoder::new(png::CompressionLevel::None);
+    // enc.write_bytes(input);
+    // let out = enc.finish().flush_to_bytes();
+    // println!("Out len - {}", out.len());
+
+
+    let n = compress(input, CompressionLevel::Fast);
+    println!("None - {n}");
+    let b = compress(input, CompressionLevel::Best);
+    println!("Fast - {b}");
+
+    // let decoded = String::from_utf8(decode_deflate(&out).unwrap()).expect("utf8 failed");
+    // if decoded.len() < 100 {
+    //     println!("{}", decoded);
+    // } else {
+    //     println!("{}", &decoded[..100]);
+    // }
+}
+
+fn compress(input: &[u8], compression_level: CompressionLevel) -> usize {
+    let mut enc = DeflateEncoder::new(compression_level);
+    enc.write_bytes(input);
+    enc.finish().flush_to_bytes().len()
 }
 
 fn png_encode_test() {

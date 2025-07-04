@@ -10,14 +10,14 @@ use std::{collections::HashMap, iter};
 
 use bitstream::WriteBitStream;
 use consts::{
-    CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE, MAX_CL_CODE_LENGTH,
-    MAX_SYMBOL_CODE_LENGTH, MAX_UNCOMPRESSED_BLOCK_SIZE,
+    CL_ALPHABET, END_OF_BLOCK_MARKER_VALUE, MAX_CL_CODE_LENGTH, MAX_SYMBOL_CODE_LENGTH,
+    MAX_UNCOMPRESSED_BLOCK_SIZE,
 };
 use decode::DeflateDecodeError;
 use huffman::{construct_canonical_tree_from_lengths, package_merge::PackageMergeEncoder};
 use lzss::{
     backreference::{DISTANCE_TO_CODE, LENGTH_TO_CODE},
-    encode_lzss, encode_lzss_to_bitstream, LzssSymbol,
+    encode_lzss_greedy, encode_lzss_optimized, encode_lzss_to_bitstream, LzssSymbol,
 };
 use prefix_table::{
     generate_static_distance_table, generate_static_lit_len_table, get_cl_codes_for_code_lengths,
@@ -123,8 +123,8 @@ impl DeflateEncoder {
         match self.compression_level {
             CompressionLevel::None => encode_block_type_zero(&self.bytes, 0, true).bitstream,
             CompressionLevel::Best => {
-                let lzss_symbols =
-                    encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE, self.compression_level);
+                let lzss_symbols = encode_lzss_optimized(&self.bytes);
+                // println!("lzss symbols {:?}", lzss_symbols);
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
                     start_index: 0,
@@ -184,8 +184,7 @@ impl DeflateEncoder {
                 compressed
             }
             CompressionLevel::Fast => {
-                let lzss_symbols =
-                    encode_lzss(&self.bytes, 0, LZSS_WINDOW_SIZE, self.compression_level);
+                let lzss_symbols = encode_lzss_greedy(&self.bytes, self.compression_level);
                 encode_block_type_two(&lzss_symbols, 0, true).bitstream
             }
         }
