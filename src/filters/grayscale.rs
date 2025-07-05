@@ -1,5 +1,5 @@
 use crate::{
-    colors::{YCbCr, RGB},
+    colors::{YCbCr, Rgb},
     image::{Image, Resolution},
     stream::Stream,
 };
@@ -21,7 +21,7 @@ impl Stream for GrayScaleFilter {
                 .map(|row| {
                     row.into_iter()
                         .map(|pixel| {
-                            YCbCr::from(&RGB::new(pixel.y, pixel.y, pixel.y))
+                            YCbCr::from(&Rgb::new(pixel.y, pixel.y, pixel.y))
                         })
                         .collect()
                 })

@@ -1,4 +1,4 @@
-use crate::colors::RGBA;
+use crate::colors::Rgba;
 
 use super::{color_type::InvalidBitDepthError, ColorType, InterlaceMethod};
 
@@ -84,7 +84,7 @@ impl PngConfig {
         }
     }
 
-    pub fn create_from_partial(partial_config: PartialPngConfig, unique_colors: &[RGBA]) -> Self {
+    pub fn create_from_partial(partial_config: PartialPngConfig, unique_colors: &[Rgba]) -> Self {
         let number_of_unique_colors = unique_colors.len();
         let should_colors_be_indexed = number_of_unique_colors <= u8::MAX.into();
         let has_alpha = unique_colors.iter().any(|color| !color.is_opaque());

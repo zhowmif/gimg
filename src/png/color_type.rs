@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::colors::{YCbCr, RGB, RGBA};
+use crate::colors::{YCbCr, Rgb, Rgba};
 
 use super::{
     deflate::bitstream::{ReadBitStream, WriteBitStream},
@@ -22,9 +22,9 @@ pub enum ColorType {
 impl ColorType {
     pub fn create_scanlines(
         &self,
-        pixels: &[Vec<RGBA>],
+        pixels: &[Vec<Rgba>],
         bit_depth: u8,
-        palette: &Option<HashMap<RGBA, (usize, RGBA)>>,
+        palette: &Option<HashMap<Rgba, (usize, Rgba)>>,
     ) -> Vec<Vec<u8>> {
         if bit_depth < 8 {
             return self.create_scanlines_bit_aligned(pixels, bit_depth, palette);
@@ -90,9 +90,9 @@ impl ColorType {
 
     fn create_scanlines_bit_aligned(
         &self,
-        pixels: &[Vec<RGBA>],
+        pixels: &[Vec<Rgba>],
         bit_depth: u8,
-        palette: &Option<HashMap<RGBA, (usize, RGBA)>>,
+        palette: &Option<HashMap<Rgba, (usize, Rgba)>>,
     ) -> Vec<Vec<u8>> {
         let mut scanlines: Vec<Vec<u8>> = Vec::with_capacity(pixels.len());
 
@@ -134,8 +134,8 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-        palette: &Option<Vec<RGBA>>,
-    ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
+        palette: &Option<Vec<Rgba>>,
+    ) -> Result<Vec<Vec<Rgba>>, PngParseError> {
         if bit_depth < 8 {
             return self.scanline_to_pixels_bit_aligned(scanlines, bit_depth, width, palette);
         }
@@ -159,7 +159,7 @@ impl ColorType {
                         let g = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
                         let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
 
-                        RGBA::new(r, g, b, u8::MAX)
+                        Rgba::new(r, g, b, u8::MAX)
                     }
                     ColorType::IndexedColor => {
                         let color = &palette
@@ -173,9 +173,9 @@ impl ColorType {
                         let gamma = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
                         let alpha = Self::read_channel_bytes(pixel_bytes, bit_depth, 1);
                         let ycbcr = YCbCr::new(gamma, 127, 127);
-                        let rgb: RGB = RGB::from(&ycbcr);
+                        let rgb: Rgb = Rgb::from(&ycbcr);
 
-                        RGBA::new(rgb.r, rgb.g, rgb.b, alpha)
+                        Rgba::new(rgb.r, rgb.g, rgb.b, alpha)
                     }
                     ColorType::TrueColorAlpha => {
                         let r = Self::read_channel_bytes(pixel_bytes, bit_depth, 0);
@@ -183,7 +183,7 @@ impl ColorType {
                         let b = Self::read_channel_bytes(pixel_bytes, bit_depth, 2);
                         let a = Self::read_channel_bytes(pixel_bytes, bit_depth, 3);
 
-                        RGBA::new(r, g, b, a)
+                        Rgba::new(r, g, b, a)
                     }
                 };
 
@@ -244,8 +244,8 @@ impl ColorType {
         scanlines: &[Vec<u8>],
         bit_depth: u8,
         width: usize,
-        palette: &Option<Vec<RGBA>>,
-    ) -> Result<Vec<Vec<RGBA>>, PngParseError> {
+        palette: &Option<Vec<Rgba>>,
+    ) -> Result<Vec<Vec<Rgba>>, PngParseError> {
         let mut pixels = Vec::with_capacity(scanlines.len());
 
         for scanline in scanlines {

@@ -6,7 +6,7 @@ pub struct Bits {
 
 impl Debug for Bits {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.bits.iter().map(char::from).collect::<String>())
     }
 }
 
@@ -39,9 +39,9 @@ impl Bits {
         let mut curr_byte: u8 = 0;
 
         for bit in self.bits.iter() {
-            curr_byte = curr_byte << 1;
+            curr_byte <<= 1;
             if let Bit::One = *bit {
-                curr_byte = curr_byte | 1
+                curr_byte |= 1
             }
             bit_offset += 1;
 
@@ -61,15 +61,9 @@ impl Bits {
 
     pub fn print_bin(&self) {
         for byte in self.to_bytes() {
-            print!("{:08b}", byte);
+            print!("{byte:08b}");
         }
         println!();
-    }
-}
-
-impl ToString for Bits {
-    fn to_string(&self) -> String {
-        self.bits.iter().map(|b| char::from(b)).collect()
     }
 }
 

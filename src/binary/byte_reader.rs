@@ -20,7 +20,7 @@ impl<'a> ByteReader<'a> {
         let byte = self.bytes.get(self.offset);
         self.offset += 1;
 
-        byte.map(|b| *b)
+        byte.copied()
     }
 
     pub fn read_bytes(&mut self, size: usize) -> Option<&'a [u8]> {

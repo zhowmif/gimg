@@ -3,7 +3,7 @@
 
 use std::{fs, time::Instant};
 
-use colors::{YCbCr, RGBA};
+use colors::{YCbCr, Rgba};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
@@ -68,7 +68,7 @@ fn png_encode_test() {
         .into_iter()
         .map(|row| {
             row.into_iter()
-                .map(|p| RGBA::new(p.r, p.g, p.b, u8::MAX))
+                .map(|p| Rgba::new(p.r, p.g, p.b, u8::MAX))
                 .collect()
         })
         .collect();

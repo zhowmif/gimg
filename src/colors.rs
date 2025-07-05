@@ -1,27 +1,27 @@
 use crate::algebra::{Matrix3, Vec3};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RGB {
+pub struct Rgb {
     pub r: u8,
     pub g: u8,
     pub b: u8,
 }
 
-impl RGB {
+impl Rgb {
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
 }
 
-impl Into<Vec3> for &RGB {
-    fn into(self) -> Vec3 {
-        Vec3([self.r as f32, self.g as f32, self.b as f32])
+impl From<&Rgb> for Vec3 {
+    fn from(val: &Rgb) -> Self {
+        Vec3([val.r as f32, val.g as f32, val.b as f32])
     }
 }
 
-impl From<Vec3> for RGB {
+impl From<Vec3> for Rgb {
     fn from(value: Vec3) -> Self {
-        RGB {
+        Rgb {
             r: value.0[0].round() as u8,
             g: value.0[1].round() as u8,
             b: value.0[2].round() as u8,
@@ -29,8 +29,8 @@ impl From<Vec3> for RGB {
     }
 }
 
-impl From<&RGB> for Vec<u8> {
-    fn from(rgb: &RGB) -> Self {
+impl From<&Rgb> for Vec<u8> {
+    fn from(rgb: &Rgb) -> Self {
         vec![rgb.r, rgb.g, rgb.b]
     }
 }
@@ -48,9 +48,9 @@ impl YCbCr {
     }
 }
 
-impl Into<Vec3> for &YCbCr {
-    fn into(self) -> Vec3 {
-        Vec3([self.y as f32, self.cb as f32, self.cr as f32])
+impl From<&YCbCr> for Vec3 {
+    fn from(val: &YCbCr) -> Self {
+        Vec3([val.y as f32, val.cb as f32, val.cr as f32])
     }
 }
 
@@ -64,17 +64,17 @@ impl From<Vec3> for YCbCr {
     }
 }
 
-impl From<RGBA> for YCbCr {
-    fn from(value: RGBA) -> Self {
-        let rgb: RGB = value.into();
+impl From<Rgba> for YCbCr {
+    fn from(value: Rgba) -> Self {
+        let rgb: Rgb = value.into();
 
         (&rgb).into()
     }
 }
 
-impl From<&RGBA> for YCbCr {
-    fn from(value: &RGBA) -> Self {
-        let rgb: RGB = value.into();
+impl From<&Rgba> for YCbCr {
+    fn from(value: &Rgba) -> Self {
+        let rgb: Rgb = value.into();
 
         (&rgb).into()
     }
@@ -93,50 +93,50 @@ const YCBCR_TO_RGB_CONVERSION_TABLE: Matrix3 = Matrix3::new(
     [1.402524, -0.714401, 0.],
 );
 
-impl From<&RGB> for YCbCr {
-    fn from(rgb: &RGB) -> Self {
+impl From<&Rgb> for YCbCr {
+    fn from(rgb: &Rgb) -> Self {
         let rgb_vec: Vec3 = rgb.into();
 
         Self::from(RGB_TO_YCBCR_CONVERION_OFFSET + rgb_vec * RGB_TO_YCBCR_CONVERSION_TABLE)
     }
 }
 
-impl Into<RGBA> for RGB {
-    fn into(self) -> RGBA {
-        RGBA {
-            r: self.r,
-            g: self.g,
-            b: self.b,
+impl From<Rgb> for Rgba {
+    fn from(val: Rgb) -> Self {
+        Rgba {
+            r: val.r,
+            g: val.g,
+            b: val.b,
             a: 255,
         }
     }
 }
 
-impl Into<RGBA> for YCbCr {
-    fn into(self) -> RGBA {
-        let rgb: RGB = RGB::from(&self);
+impl From<YCbCr> for Rgba {
+    fn from(val: YCbCr) -> Self {
+        let rgb: Rgb = Rgb::from(&val);
 
         rgb.into()
     }
 }
 
-impl From<&YCbCr> for RGB {
+impl From<&YCbCr> for Rgb {
     fn from(ycbcr: &YCbCr) -> Self {
         let vec: Vec3 = ycbcr.into();
 
-        RGB::from((vec - RGB_TO_YCBCR_CONVERION_OFFSET) * YCBCR_TO_RGB_CONVERSION_TABLE)
+        Rgb::from((vec - RGB_TO_YCBCR_CONVERION_OFFSET) * YCBCR_TO_RGB_CONVERSION_TABLE)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RGBA {
+pub struct Rgba {
     pub r: u8,
     pub g: u8,
     pub b: u8,
     pub a: u8,
 }
 
-impl RGBA {
+impl Rgba {
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
@@ -150,22 +150,22 @@ impl RGBA {
     }
 }
 
-impl Into<RGB> for RGBA {
-    fn into(self) -> RGB {
-        RGB {
-            r: self.r,
-            g: self.g,
-            b: self.b,
+impl From<Rgba> for Rgb {
+    fn from(val: Rgba) -> Self {
+        Rgb {
+            r: val.r,
+            g: val.g,
+            b: val.b,
         }
     }
 }
 
-impl Into<RGB> for &RGBA {
-    fn into(self) -> RGB {
-        RGB {
-            r: self.r,
-            g: self.g,
-            b: self.b,
+impl From<&Rgba> for Rgb {
+    fn from(val: &Rgba) -> Self {
+        Rgb {
+            r: val.r,
+            g: val.g,
+            b: val.b,
         }
     }
 }

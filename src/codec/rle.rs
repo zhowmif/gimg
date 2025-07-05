@@ -3,7 +3,7 @@ use crate::dct::NUM_DCT_SIGNALS;
 //if value is zero, a byte (u8) will follow to indicate how many
 //any other value is encoded as is
 
-pub fn encode_rle(values: &Vec<Vec<i8>>) -> Vec<u8> {
+pub fn encode_rle(values: &[Vec<i8>]) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::new();
     let mut current_number_of_zeros: u8 = 0;
     for (y, x) in MACROBLOCK_DIAGONAL_INDEXES {
@@ -69,7 +69,72 @@ pub fn decode_rle(bytes: &[u8]) -> Vec<Vec<i8>> {
 }
 
 //8x8
-const MACROBLOCK_DIAGONAL_INDEXES: [(usize, usize); NUM_DCT_SIGNALS * NUM_DCT_SIGNALS] = [(0, 0), (0, 1), (1, 0), (0, 2), (1, 1), (2, 0), (0, 3), (1, 2), (2, 1), (3, 0), (0, 4), (1, 3), (2, 2), (3, 1), (4, 0), (0, 5), (1, 4), (2, 3), (3, 2), (4, 1), (5, 0), (0, 6), (1, 5), (2, 4), (3, 3), (4, 2), (5, 1), (6, 0), (0, 7), (1, 6), (2, 5), (3, 4), (4, 3), (5, 2), (6, 1), (7, 0), (1, 7), (2, 6), (3, 5), (4, 4), (5, 3), (6, 2), (7, 1), (2, 7), (3, 6), (4, 5), (5, 4), (6, 3), (7, 2), (3, 7), (4, 6), (5, 5), (6, 4), (7, 3), (4, 7), (5, 6), (6, 5), (7, 4), (5, 7), (6, 6), (7, 5), (6, 7), (7, 6), (7, 7)];
+const MACROBLOCK_DIAGONAL_INDEXES: [(usize, usize); NUM_DCT_SIGNALS * NUM_DCT_SIGNALS] = [
+    (0, 0),
+    (0, 1),
+    (1, 0),
+    (0, 2),
+    (1, 1),
+    (2, 0),
+    (0, 3),
+    (1, 2),
+    (2, 1),
+    (3, 0),
+    (0, 4),
+    (1, 3),
+    (2, 2),
+    (3, 1),
+    (4, 0),
+    (0, 5),
+    (1, 4),
+    (2, 3),
+    (3, 2),
+    (4, 1),
+    (5, 0),
+    (0, 6),
+    (1, 5),
+    (2, 4),
+    (3, 3),
+    (4, 2),
+    (5, 1),
+    (6, 0),
+    (0, 7),
+    (1, 6),
+    (2, 5),
+    (3, 4),
+    (4, 3),
+    (5, 2),
+    (6, 1),
+    (7, 0),
+    (1, 7),
+    (2, 6),
+    (3, 5),
+    (4, 4),
+    (5, 3),
+    (6, 2),
+    (7, 1),
+    (2, 7),
+    (3, 6),
+    (4, 5),
+    (5, 4),
+    (6, 3),
+    (7, 2),
+    (3, 7),
+    (4, 6),
+    (5, 5),
+    (6, 4),
+    (7, 3),
+    (4, 7),
+    (5, 6),
+    (6, 5),
+    (7, 4),
+    (5, 7),
+    (6, 6),
+    (7, 5),
+    (6, 7),
+    (7, 6),
+    (7, 7),
+];
 
 //16x16
 // const MACROBLOCK_DIAGONAL_INDEXES: [(usize, usize); NUM_DCT_SIGNALS * NUM_DCT_SIGNALS] = [

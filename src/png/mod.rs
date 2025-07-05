@@ -18,7 +18,7 @@ use ihdr::Ihdr;
 pub use interlace::InterlaceMethod;
 use palette::{create_pallete_from_colors_median_cut, get_unique_colors};
 
-use crate::colors::RGBA;
+use crate::colors::Rgba;
 
 mod adler32;
 mod binary_utils;
@@ -44,7 +44,7 @@ macro_rules! png_assert {
     };
 }
 
-pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
+pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<Rgba>>, PngParseError> {
     let mut offset: usize = 0;
     let siganture = read_bytes(&mut offset, bytes, PNG_SIGNATURE.len());
 
@@ -55,7 +55,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     }
     let ihdr_chunk = Ihdr::from_chunk(Chunk::from_bytes(bytes, &mut offset)?)?;
     ihdr_chunk.check_compatibility()?;
-    let mut palette: Option<Vec<RGBA>> = None;
+    let mut palette: Option<Vec<Rgba>> = None;
     let mut compressed_data: Vec<u8> = Vec::new();
 
     loop {
@@ -117,7 +117,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
 
             Ok(reduced_image_pixels)
         })
-        .collect::<Result<Vec<Vec<Vec<RGBA>>>, PngParseError>>()?;
+        .collect::<Result<Vec<Vec<Vec<Rgba>>>, PngParseError>>()?;
     let image = ihdr_chunk.interlace_method.deinterlace_image(
         reduced_images,
         ihdr_chunk.height as usize,
@@ -127,7 +127,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     Ok(image)
 }
 
-pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> Vec<u8> {
+pub fn encode_png(pixels: Vec<Vec<Rgba>>, partial_config: PartialPngConfig) -> Vec<u8> {
     let unique_colors = get_unique_colors(&pixels[..]);
     let config = PngConfig::create_from_partial(partial_config, &unique_colors[..]);
     let palette = match config.color_type {

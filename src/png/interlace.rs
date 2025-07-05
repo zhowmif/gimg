@@ -1,6 +1,6 @@
 use std::iter::repeat_n;
 
-use crate::{binary::byte_reader::ByteReader, colors::RGBA, png_assert};
+use crate::{binary::byte_reader::ByteReader, colors::Rgba, png_assert};
 
 use super::PngParseError;
 
@@ -12,14 +12,14 @@ pub enum InterlaceMethod {
 }
 
 impl InterlaceMethod {
-    pub fn perform_pass_extraction(&self, pixels: Vec<Vec<RGBA>>) -> Vec<Vec<Vec<RGBA>>> {
+    pub fn perform_pass_extraction(&self, pixels: Vec<Vec<Rgba>>) -> Vec<Vec<Vec<Rgba>>> {
         match self {
             InterlaceMethod::NoInterlace => vec![pixels],
             InterlaceMethod::Adam7 => {
-                let mut reduced_images: Vec<Vec<Vec<RGBA>>> = Vec::new();
+                let mut reduced_images: Vec<Vec<Vec<Rgba>>> = Vec::new();
 
                 for pass in ADAM7_PASSES.iter() {
-                    let mut reduced_image: Vec<Vec<RGBA>> = Vec::new();
+                    let mut reduced_image: Vec<Vec<Rgba>> = Vec::new();
 
                     for subset_top in (0..pixels.len()).step_by(8) {
                         for (row_num, pass_row) in *pass {
@@ -28,7 +28,7 @@ impl InterlaceMethod {
                                 break;
                             }
 
-                            let mut row: Vec<RGBA> = Vec::new();
+                            let mut row: Vec<Rgba> = Vec::new();
 
                             for subset_left in (0..pixels[y].len()).step_by(8) {
                                 for col in *pass_row {
@@ -127,14 +127,14 @@ impl InterlaceMethod {
 
     pub fn deinterlace_image(
         &self,
-        mut reduced_images: Vec<Vec<Vec<RGBA>>>,
+        mut reduced_images: Vec<Vec<Vec<Rgba>>>,
         image_height: usize,
         image_width: usize,
-    ) -> Vec<Vec<RGBA>> {
+    ) -> Vec<Vec<Rgba>> {
         match self {
             InterlaceMethod::NoInterlace => reduced_images.pop().unwrap(),
             InterlaceMethod::Adam7 => {
-                let mut image: Vec<Vec<RGBA>> = Vec::with_capacity(image_height);
+                let mut image: Vec<Vec<Rgba>> = Vec::with_capacity(image_height);
                 let mut pass_indexes: Vec<Option<((usize, usize), usize)>> =
                     repeat_n(None, ADAM7_PASSES.len()).collect();
 

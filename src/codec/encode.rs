@@ -72,7 +72,7 @@ fn get_channel_macroblocks(macroblocks: &Vec4<YCbCr>, get_channel: fn(&YCbCr) ->
         .collect()
 }
 
-fn get_cb_macroblock(macroblock: &Vec<Vec<YCbCr>>, get_channel: fn(&YCbCr) -> u8) -> Vec<Vec<u8>> {
+fn get_cb_macroblock(macroblock: &[Vec<YCbCr>], get_channel: fn(&YCbCr) -> u8) -> Vec<Vec<u8>> {
     macroblock
         .iter()
         .map(|row| row.iter().map(get_channel).collect())

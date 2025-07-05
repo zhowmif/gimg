@@ -1,4 +1,4 @@
-use crate::colors::{YCbCr, RGB};
+use crate::colors::{YCbCr, Rgb};
 
 use super::{utils::assset_bytestream_size_fits_resolution, PixelFormat};
 
@@ -20,7 +20,7 @@ impl PixelFormat for RGB24 {
             .chunks(resolution.width * 3)
             .map(|row| {
                 row.chunks(3)
-                    .map(|vec| YCbCr::from(&RGB::new(vec[0], vec[1], vec[2])))
+                    .map(|vec| YCbCr::from(&Rgb::new(vec[0], vec[1], vec[2])))
                     .collect()
             })
             .collect();
@@ -33,7 +33,7 @@ impl PixelFormat for RGB24 {
             .iter()
             .flat_map(|line| {
                 line.iter().flat_map(|px| {
-                    let rgb = RGB::from(px);
+                    let rgb = Rgb::from(px);
                     vec![rgb.r, rgb.g, rgb.b]
                 })
             })

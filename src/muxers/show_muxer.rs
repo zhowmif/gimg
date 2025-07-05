@@ -1,7 +1,7 @@
 use std::{fs, process::Command};
 
 use crate::{
-    colors::RGB,
+    colors::Rgb,
     pixel_formats::{get_pixel_format, PixelFormat},
     ppm::encode_ppm,
     stream::Stream,
@@ -29,7 +29,7 @@ impl Muxer for ShowMuxer {
             let rgb_pixels: Vec<_> = image
                 .pixels
                 .into_iter()
-                .map(|row| row.into_iter().map(|pix| RGB::from(&pix)).collect())
+                .map(|row| row.into_iter().map(|pix| Rgb::from(&pix)).collect())
                 .collect();
             let ppm_bytes = encode_ppm(&rgb_pixels);
 
