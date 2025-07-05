@@ -9,7 +9,7 @@ pub enum CompressionLevel {
     Fast,
 }
 impl CompressionLevel {
-    pub fn to_zlib_u8(&self) -> u8 {
+    pub fn to_zlib_u8(self) -> u8 {
         match self {
             CompressionLevel::None => 0,
             CompressionLevel::Best => 3,

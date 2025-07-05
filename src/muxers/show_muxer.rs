@@ -35,7 +35,7 @@ impl Muxer for ShowMuxer {
 
             fs::write(tmp_filename, ppm_bytes).unwrap();
             Command::new("feh")
-                .args(&["--force-aliasing", tmp_filename])
+                .args(["--force-aliasing", tmp_filename])
                 .status()
                 .expect("failed to run feh");
             fs::remove_file(tmp_filename).unwrap();

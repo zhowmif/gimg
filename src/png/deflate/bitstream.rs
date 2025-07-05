@@ -105,7 +105,7 @@ impl WriteBitStream {
 
     pub fn flush_to_bytes(&mut self) -> Vec<u8> {
         self.flush_buffer();
-        let mut bytes = std::mem::replace(&mut self.stream, Vec::new());
+        let mut bytes = std::mem::take(&mut self.stream);
 
         if self.current_bit_number != 0 {
             bytes.push(self.buffer as u8);
@@ -166,7 +166,7 @@ impl<'a> ReadBitStream<'a> {
         let mut number: u16 = 0;
 
         for shift in 0..length {
-            number |= ((self.read_bit()? as u16) << shift) as u16;
+            number |= (self.read_bit()? << shift) as u16;
         }
 
         Some(number)

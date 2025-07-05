@@ -1,4 +1,4 @@
-use std::{collections::HashMap, u8};
+use std::collections::HashMap;
 
 use crate::colors::{YCbCr, RGB, RGBA};
 
@@ -40,7 +40,7 @@ impl ColorType {
                     ColorType::IndexedColor => match palette {
                         Some(palette) => {
                             let idx = palette
-                                .get(&pixel)
+                                .get(pixel)
                                 .expect("all unique image rgb values must be present in palette")
                                 .0 as u8;
 
@@ -110,7 +110,7 @@ impl ColorType {
                     ColorType::IndexedColor => match palette {
                         Some(palette) => {
                             let idx = palette
-                                .get(&pixel)
+                                .get(pixel)
                                 .expect("all unique image rgb values must be present in palette")
                                 .0 as u8;
                             debug_assert!(idx < (1<<bit_depth));
@@ -312,9 +312,9 @@ impl TryFrom<u8> for ColorType {
     }
 }
 
-impl Into<u8> for &ColorType {
-    fn into(self) -> u8 {
-        match self {
+impl From<&ColorType> for u8 {
+    fn from(value: &ColorType) -> Self {
+        match value {
             ColorType::Greyscale => 0,
             ColorType::Truecolor => 2,
             ColorType::IndexedColor => 3,

@@ -174,24 +174,22 @@ pub fn decode_compressed_block(
                 ));
                 read_distance = false;
             }
-        } else {
-            if let Some(value) = literal_length_table.get(&code) {
-                if *value < END_OF_BLOCK_MARKER_VALUE {
-                    lzss_stream.push(LzssSymbol::Literal(*value as u8));
-                } else if *value == END_OF_BLOCK_MARKER_VALUE {
-                    break;
-                } else {
-                    let base_length = LENGTH_CODE_TO_BASE_LENGTH[*value as usize];
-                    let num_extra_bits = LENGTH_CODE_TO_EXTRA_BITS[*value as usize];
-                    let extra_bits = deflate_read_bits!(
-                        reader.read_number_lsb(num_extra_bits),
-                        "data ended before end of block marker"
-                    );
-                    read_distance = true;
-                    current_length = base_length + extra_bits;
-                }
-                code.reset();
+        } else if let Some(value) = literal_length_table.get(&code) {
+            if *value < END_OF_BLOCK_MARKER_VALUE {
+                lzss_stream.push(LzssSymbol::Literal(*value as u8));
+            } else if *value == END_OF_BLOCK_MARKER_VALUE {
+                break;
+            } else {
+                let base_length = LENGTH_CODE_TO_BASE_LENGTH[*value as usize];
+                let num_extra_bits = LENGTH_CODE_TO_EXTRA_BITS[*value as usize];
+                let extra_bits = deflate_read_bits!(
+                    reader.read_number_lsb(num_extra_bits),
+                    "data ended before end of block marker"
+                );
+                read_distance = true;
+                current_length = base_length + extra_bits;
             }
+            code.reset();
         }
     }
 

@@ -1,9 +1,9 @@
 use binary_utils::read_bytes;
 use chunks::{
-    idat::IDAT,
-    iend::IEND,
+    idat::Idat,
+    iend::Iend,
     ihdr::{self},
-    plte::PLTE,
+    plte::Plte,
     Chunk,
 };
 pub use color_type::ColorType;
@@ -14,7 +14,7 @@ use consts::{
 use crc::CrcCalculator;
 use deflate::{compress_scanlines, zlib::decode_zlib};
 use filter::{filter_scanlines, remove_scanlines_filter};
-use ihdr::IHDR;
+use ihdr::Ihdr;
 pub use interlace::InterlaceMethod;
 use palette::{create_pallete_from_colors_median_cut, get_unique_colors};
 
@@ -53,7 +53,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
             "File does not appear to be a png file (signature missing)".to_string(),
         ));
     }
-    let ihdr_chunk = IHDR::from_chunk(Chunk::from_bytes(bytes, &mut offset)?)?;
+    let ihdr_chunk = Ihdr::from_chunk(Chunk::from_bytes(bytes, &mut offset)?)?;
     ihdr_chunk.check_compatibility()?;
     let mut palette: Option<Vec<RGBA>> = None;
     let mut compressed_data: Vec<u8> = Vec::new();
@@ -72,7 +72,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
                         "PLTE chunks appears more than once".to_string(),
                     ))
                 }
-                None => palette = Some(PLTE::decode_palette(chunk.chunk_data)?),
+                None => palette = Some(Plte::decode_palette(chunk.chunk_data)?),
             },
             chunk_type => {
                 if chunk_type[0] & 32 == 0 {
@@ -141,7 +141,7 @@ pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> V
     };
 
     let mut crc = CrcCalculator::new();
-    let ihdr = IHDR::new(
+    let ihdr = Ihdr::new(
         pixels[0].len() as u32,
         pixels.len() as u32,
         config.color_type,
@@ -171,18 +171,18 @@ pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> V
     let compressed_data = compress_scanlines(&all_filtered_scanlines, config.compression_level);
 
     if let Some(ref palette) = palette {
-        encoded_png.extend_from_slice(&PLTE::encode_palette(palette, &mut crc));
+        encoded_png.extend_from_slice(&Plte::encode_palette(palette, &mut crc));
     }
 
     compressed_data
         .chunks(IDAT_CHUNK_MAX_SIZE as usize)
         .for_each(|chunk_data| {
-            let chunk = IDAT::encode_bytes(chunk_data, &mut crc);
+            let chunk = Idat::encode_bytes(chunk_data, &mut crc);
 
             encoded_png.extend_from_slice(&chunk);
         });
 
-    encoded_png.extend_from_slice(&IEND::to_bytes(&mut crc));
+    encoded_png.extend_from_slice(&Iend::to_bytes(&mut crc));
 
     encoded_png
 }

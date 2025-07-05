@@ -31,7 +31,7 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
 
     fn build_priority_queue(&mut self) -> PriorityQueue<Vec<(T, u32)>> {
         let mut queue = PriorityQueue::new();
-        let symbol_frequencies = mem::replace(&mut self.symbol_frequencies, HashMap::new());
+        let symbol_frequencies = mem::take(&mut self.symbol_frequencies);
 
         for (symbol, frequency) in symbol_frequencies.into_iter() {
             queue.enqueue(vec![(symbol, 0)], frequency);
@@ -64,7 +64,7 @@ impl<T: Eq + Hash + Clone> HuffmanEncoder<T> {
 pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone + Debug + Ord>(
     symbol_lengths: &HashMap<T, u32>,
 ) -> HashMap<T, WriteBitStream> {
-    let mut symbol_lengths: Vec<_> = symbol_lengths.into_iter().collect();
+    let mut symbol_lengths: Vec<_> = symbol_lengths.iter().collect();
     symbol_lengths.sort_by(|(symbol1, len1), (symbol2, len2)| {
         if **len1 == **len2 {
             symbol1.cmp(symbol2)
@@ -87,11 +87,11 @@ pub fn construct_canonical_tree_from_lengths<T: Eq + Hash + Clone + Debug + Ord>
 
 pub fn calc_kraft_mcmillen_value<T>(symbol_lengths: &HashMap<T, u32>) -> f64 {
     symbol_lengths
-        .iter()
-        .map(|(_s, length)| 2f64.powf(-(*length as f64)))
+        .values()
+        .map(|length| 2f64.powf(-(*length as f64)))
         .sum()
 }
 
 fn saturating_shl(lhs: u32, rhs: u32) -> u32 {
-    lhs.checked_shl(rhs as u32).unwrap_or(0)
+    lhs.checked_shl(rhs).unwrap_or(0)
 }

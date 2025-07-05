@@ -41,7 +41,7 @@ impl CLCode {
                 repeat_count: Self::read_repeat_count(bitstream, 7)?,
             },
             n => {
-                return Err(DeflateDecodeError(format!("Unrecognized cl code {}", n)));
+                return Err(DeflateDecodeError(format!("Unrecognized cl code {n}")));
             }
         })
     }
@@ -81,8 +81,8 @@ pub fn get_cl_codes_for_code_lengths<T: Eq + Hash>(
     symbol_code_lengths: &HashMap<T, u32>,
 ) -> Vec<CLCode> {
     let all_symbol_lengths: Vec<_> = sorted_alphabet
-        .into_iter()
-        .map(|symbol| symbol_code_lengths.get(&symbol).map(|l| *l).unwrap_or(0))
+        .iter()
+        .map(|symbol| symbol_code_lengths.get(symbol).copied().unwrap_or(0))
         .collect();
     let mut cl_codes = Vec::new();
 

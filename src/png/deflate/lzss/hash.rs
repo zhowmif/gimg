@@ -54,7 +54,7 @@ impl LzssHashTable {
 
     fn get_chain(&self, byte_sequence: &[u8]) -> Option<&VecDeque<usize>> {
         let key = Self::get_key(
-            *byte_sequence.get(0)?,
+            *byte_sequence.first()?,
             *byte_sequence.get(1)?,
             *byte_sequence.get(2)?,
         );

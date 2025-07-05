@@ -7,7 +7,7 @@ impl CrcCalculator {
     pub fn new() -> Self {
         let mut table = [0; 256];
 
-        for n in 0..256 {
+        for (n, item) in table.iter_mut().enumerate() {
             let mut c = n as u32;
 
             for _k in 0..8 {
@@ -18,7 +18,7 @@ impl CrcCalculator {
                 }
             }
 
-            table[n] = c;
+            *item = c;
         }
 
         Self {

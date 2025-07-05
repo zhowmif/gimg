@@ -14,7 +14,7 @@ impl PixelFormat for RGB24 {
         bytes: &[u8],
         resolution: crate::image::Resolution,
     ) -> Vec<Vec<YCbCr>> {
-        assset_bytestream_size_fits_resolution(&bytes, resolution);
+        assset_bytestream_size_fits_resolution(bytes, resolution);
 
         let pixels = bytes
             .chunks(resolution.width * 3)

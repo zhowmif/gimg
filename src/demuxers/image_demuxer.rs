@@ -17,7 +17,7 @@ pub(crate) struct ImageDemuxer {
 
 impl ImageDemuxer {
     pub fn new(filename: &str, pixel_format: &str) -> Self {
-        let resolution = ImageDemuxer::calculate_resolotion(&filename);
+        let resolution = ImageDemuxer::calculate_resolotion(filename);
 
         Self {
             filename: filename.to_string(),
@@ -30,7 +30,7 @@ impl ImageDemuxer {
     fn calculate_resolotion(filename: &str) -> Resolution {
         let ffprobe_output = String::from_utf8(
             Command::new("ffprobe")
-                .args(&[
+                .args([
                     "-v",
                     "error",
                     "-select_streams",
@@ -42,14 +42,14 @@ impl ImageDemuxer {
                     filename,
                 ])
                 .output()
-                .expect(&format!("Failed to read resolution for file {}", filename))
+                .unwrap_or_else(|_| panic!("Failed to read resolution for file {filename}"))
                 .stdout,
         )
         .unwrap();
 
         let (width, height) = ffprobe_output
             .split_once("x")
-            .expect(&format!("Failed to read resolution for file {}", filename));
+            .unwrap_or_else(|| panic!("Failed to read resolution for file {filename}"));
         Resolution::new(
             str::parse(width.trim()).unwrap(),
             str::parse(height.trim()).unwrap(),
@@ -59,13 +59,13 @@ impl ImageDemuxer {
     fn get_image_raw_pixels(&self) -> Vec<u8> {
         let output_file_name = "tmp/some_random_uuid";
         Command::new("ffmpeg")
-            .args(&[
+            .args([
                 "-i",
                 &self.filename,
                 "-vf",
                 &format!("scale={}:{}", self.resolution.width, self.resolution.height),
                 "-pix_fmt",
-                &self.pixel_format.get_name(),
+                self.pixel_format.get_name(),
                 "-f",
                 "rawvideo",
                 output_file_name,
@@ -87,13 +87,11 @@ impl Stream for ImageDemuxer {
 
         self.is_consumed = true;
 
-        let value = Some(Image::new(
+        Some(Image::new(
             self.resolution,
             self.pixel_format
                 .parse_bytestream(&self.get_image_raw_pixels(), self.resolution),
-        ));
-
-        value
+        ))
     }
 
     fn get_resolution(&self) -> Resolution {

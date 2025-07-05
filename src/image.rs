@@ -11,7 +11,7 @@ impl Resolution {
         Self { width, height }
     }
 
-    pub fn from_vec<T>(vec: &Vec<Vec<T>>) -> Self {
+    pub fn from_vec<T>(vec: &[Vec<T>]) -> Self {
         Self {
             height: vec.len(),
             width: vec[0].len(),
@@ -76,9 +76,7 @@ impl Image {
                         .map(|row| {
                             let mut macroblock_row = row
                                 [col_nr..(col_nr + block_size).min(self.pixels[row_nr].len())]
-                                .iter()
-                                .map(|p| p.clone())
-                                .collect::<Vec<YCbCr>>();
+                                .to_vec();
                             macroblock_row.resize(MACROBLOCKS_SIZE, YCbCr::new(0, 0, 0));
 
                             macroblock_row

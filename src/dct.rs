@@ -13,6 +13,7 @@ impl DiscreteCosineTransformer {
         let zero_normilization = 1. / (MACROBLOCKS_SIZE as f32).sqrt();
         let non_zero_normilization = (2. / (MACROBLOCKS_SIZE as f32)).sqrt();
 
+        #[allow(clippy::needless_range_loop)]
         for p in 0..NUM_DCT_SIGNALS {
             for q in 0..NUM_DCT_SIGNALS {
                 for row in 0..MACROBLOCKS_SIZE {
@@ -44,8 +45,10 @@ impl DiscreteCosineTransformer {
         Self { dct_signals }
     }
 
-    pub fn dct(&self, signal: &Vec<Vec<u8>>) -> Vec<Vec<f32>> {
+    pub fn dct(&self, signal: &[Vec<u8>]) -> Vec<Vec<f32>> {
         let mut amplitudes = vec![vec![0.; NUM_DCT_SIGNALS]; NUM_DCT_SIGNALS];
+
+        #[allow(clippy::needless_range_loop)]
         for p in 0..NUM_DCT_SIGNALS {
             for q in 0..NUM_DCT_SIGNALS {
                 let curr_dct_signal = self.dct_signals[p][q];
@@ -61,12 +64,13 @@ impl DiscreteCosineTransformer {
         amplitudes
     }
 
-    pub fn idct(&self, amplitudes: &Vec<Vec<f32>>) -> Vec<Vec<u8>> {
+    pub fn idct(&self, amplitudes: &[Vec<f32>]) -> Vec<Vec<u8>> {
         assert_eq!(amplitudes.len(), NUM_DCT_SIGNALS);
         assert_eq!(amplitudes[0].len(), NUM_DCT_SIGNALS);
 
         let mut result = vec![vec![0.; MACROBLOCKS_SIZE]; MACROBLOCKS_SIZE];
 
+        #[allow(clippy::needless_range_loop)]
         for p in 0..NUM_DCT_SIGNALS {
             for q in 0..NUM_DCT_SIGNALS {
                 let curr_amplitude = amplitudes[p][q];
@@ -90,11 +94,11 @@ impl DiscreteCosineTransformer {
             .collect()
     }
 
-    pub fn normalize_amplitudes(amplitudes: &Vec<Vec<f32>>) -> (Vec<Vec<i8>>, f32) {
+    pub fn normalize_amplitudes(amplitudes: &[Vec<f32>]) -> (Vec<Vec<i8>>, f32) {
         let normalization_factor = (amplitudes
             .iter()
             .map(|row| {
-                row.into_iter()
+                row.iter()
                     .max_by(|x, y| x.abs().total_cmp(&y.abs()))
                     .unwrap()
             })
@@ -105,9 +109,9 @@ impl DiscreteCosineTransformer {
 
         (
             amplitudes
-                .into_iter()
+                .iter()
                 .map(|row| {
-                    row.into_iter()
+                    row.iter()
                         .map(|amplitude| (amplitude / normalization_factor) as i8)
                         .collect()
                 })
@@ -117,13 +121,13 @@ impl DiscreteCosineTransformer {
     }
 
     pub fn inverse_normalization(
-        normalized_amplitudes: &Vec<Vec<i8>>,
+        normalized_amplitudes: &[Vec<i8>],
         normalization_factor: f32,
     ) -> Vec<Vec<f32>> {
         normalized_amplitudes
-            .into_iter()
+            .iter()
             .map(|row| {
-                row.into_iter()
+                row.iter()
                     .map(|amp| *amp as f32 * normalization_factor)
                     .collect()
             })

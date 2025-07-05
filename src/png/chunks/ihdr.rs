@@ -27,9 +27,9 @@ impl From<u8> for CompressionMethod {
     }
 }
 
-impl Into<u8> for &CompressionMethod {
-    fn into(self) -> u8 {
-        match self {
+impl From<&CompressionMethod> for u8 {
+    fn from(value: &CompressionMethod) -> Self {
+        match value {
             CompressionMethod::Deflate => 0,
             CompressionMethod::Other => 1,
         }
@@ -51,9 +51,9 @@ impl From<u8> for FilterMethod {
     }
 }
 
-impl Into<u8> for &FilterMethod {
-    fn into(self) -> u8 {
-        match self {
+impl From<&FilterMethod> for u8 {
+    fn from(value: &FilterMethod) -> Self {
+        match value {
             FilterMethod::Adaptive => 0,
             FilterMethod::NoFilter => 1,
         }
@@ -61,7 +61,7 @@ impl Into<u8> for &FilterMethod {
 }
 
 #[derive(Debug)]
-pub struct IHDR {
+pub struct Ihdr {
     pub width: u32,
     pub height: u32,
     pub bit_depth: u8,
@@ -71,7 +71,7 @@ pub struct IHDR {
     filter_method: FilterMethod,
 }
 
-impl IHDR {
+impl Ihdr {
     pub fn new(
         width: u32,
         height: u32,

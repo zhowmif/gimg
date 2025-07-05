@@ -116,14 +116,12 @@ pub fn encode_lzss_iteration(
     }
     let ll_default: u32 = ll_code_lengths
         .iter()
-        .filter(|l| l.is_some())
-        .map(|l| l.unwrap())
+        .flatten()
         .sum::<u32>()
         / (ll_code_lengths.len() as u32);
     let distance_default: u32 = (distance_code_lengths
         .iter()
-        .filter(|l| l.is_some())
-        .map(|l| l.unwrap())
+        .flatten()
         .sum::<u32>()
         .checked_div(distance_code_lengths.len() as u32)
         .unwrap_or(0))
@@ -140,8 +138,8 @@ pub fn encode_lzss_iteration(
                 .unwrap_or(0);
 
         let backreferences: Vec<(u16, u16)> = lzss_table
-            .get_all_backreferences(&bytes, bytes_index)
-            .unwrap_or(Vec::new());
+            .get_all_backreferences(bytes, bytes_index)
+            .unwrap_or_default();
 
         let (bf, bf_cost) = backreferences
             .into_iter()
@@ -267,9 +265,8 @@ pub fn decode_lzss(
                     Some(n) => n,
                     None => {
                         return Err(DeflateDecodeError(format!(
-                            "Invalid backreference for lzss symbol {}, distance {} is too big",
-                            i, distance
-                        )))
+                        "Invalid backreference for lzss symbol {i}, distance {distance} is too big"
+                    )))
                     }
                 };
 
@@ -308,7 +305,7 @@ pub fn encode_lzss_to_bitstream<'a>(
 
                 let distance_code = DISTANCE_TO_CODE[*dist as usize];
                 let encoded_distance_code = distance_table.get(&distance_code).unwrap();
-                target.extend(&encoded_distance_code);
+                target.extend(encoded_distance_code);
 
                 let (dist_extra_bits, dist_num_extra_bits) = DISTANCE_TO_EXTRA_BITS[*dist as usize];
                 target.push_u16_rtl(dist_extra_bits, dist_num_extra_bits);

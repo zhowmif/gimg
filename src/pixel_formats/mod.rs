@@ -19,5 +19,5 @@ pub fn get_pixel_format(name: &str) -> Box<dyn PixelFormat> {
     pixels_formats
         .into_iter()
         .find(|pix_fmt| pix_fmt.get_name() == name)
-        .expect(&format!("Unrecognized pixel format {}", name))
+        .unwrap_or_else(|| panic!("Unrecognized pixel format {name}"))
 }

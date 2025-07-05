@@ -3,7 +3,7 @@ pub fn read_u32(offset: &mut usize, bytes: &[u8]) -> u32 {
 }
 
 pub fn read_byte(offset: &mut usize, bytes: &[u8]) -> u8 {
-    let byte = bytes[*offset as usize];
+    let byte = bytes[*offset];
     *offset += 1;
 
     byte

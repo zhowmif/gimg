@@ -28,10 +28,9 @@ impl<T: Eq + Hash + Clone + Debug + Ord> PackageMergeEncoder<T> {
             )
         }
 
-        let mut symbol_frequencies: Vec<(T, u32)> =
-            mem::replace(&mut self.symbol_frequencies, HashMap::new())
-                .into_iter()
-                .collect();
+        let mut symbol_frequencies: Vec<(T, u32)> = mem::take(&mut self.symbol_frequencies)
+            .into_iter()
+            .collect();
         symbol_frequencies.sort();
 
         if symbol_frequencies.len() == 1 {
@@ -62,8 +61,7 @@ impl<T: Eq + Hash + Clone + Debug + Ord> PackageMergeEncoder<T> {
         }
         let all_used_coins: Vec<T> = last_coin_queue_packages
             .into_iter()
-            .map(|queue| queue.0)
-            .flatten()
+            .flat_map(|queue| queue.0)
             .collect();
         let symbol_lengths = symbol_frequencies
             .into_iter()

@@ -21,9 +21,7 @@ impl Stream for GrayScaleFilter {
                 .map(|row| {
                     row.into_iter()
                         .map(|pixel| {
-                            let new_value = YCbCr::from(&RGB::new(pixel.y, pixel.y, pixel.y));
-
-                            new_value
+                            YCbCr::from(&RGB::new(pixel.y, pixel.y, pixel.y))
                         })
                         .collect()
                 })
