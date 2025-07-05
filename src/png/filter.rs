@@ -1,7 +1,4 @@
-use std::{
-    iter::{self, repeat_n},
-    time::Instant,
-};
+use std::iter::{self, repeat_n};
 
 use crate::simd_utils::{paeth_predictor_simd, png_average_simd, subtract_simd};
 
@@ -97,7 +94,6 @@ pub fn filter_scanlines(
     bbp: usize,
     compression_level: CompressionLevel,
 ) -> Vec<Vec<u8>> {
-    let start = Instant::now();
     let filters_to_test = match compression_level {
         CompressionLevel::None => vec![AdaptiveFilterType::None],
         CompressionLevel::Best => ALL_FILTERS.to_vec(),
@@ -139,8 +135,6 @@ pub fn filter_scanlines(
         scanline.insert(0, filter.to_byte());
         filtered_scanelines.push(scanline);
     }
-    let end = Instant::now();
-    println!("Total filter selection time: {:?}", end - start);
 
     filtered_scanelines
 }

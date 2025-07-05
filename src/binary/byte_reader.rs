@@ -54,6 +54,13 @@ impl<'a> ByteReader<'a> {
         self.bytes.len().saturating_sub(self.offset)
     }
 
+    fn skip_line(&mut self) -> Option<()> {
+        while !Self::is_newline(self.read_byte()?) {}
+        self.offset -= 1;
+
+        Some(())
+    }
+
     fn read_until_whitespace(&mut self) -> Option<&'a [u8]> {
         //should also read until end of file
         while Self::is_whitespace(self.read_byte()?) {}
@@ -70,19 +77,26 @@ impl<'a> ByteReader<'a> {
     }
 
     pub fn read_ppm_symbol(&mut self) -> Option<&'a [u8]> {
-        let mut symbol: &[u8] = &[PPM_COMMENT_START_BYTE];
+        loop {
+            let symbol = self.read_until_whitespace()?;
 
-        while symbol.starts_with(&[PPM_COMMENT_START_BYTE]) {
-            symbol = self.read_until_whitespace()?;
+            if symbol[0] != PPM_COMMENT_START_BYTE {
+                return Some(symbol);
+            }
+
+            self.skip_line();
         }
-
-        Some(symbol)
     }
 
     fn is_whitespace(byte: u8) -> bool {
         WHITESPACE_SYMBOLS.contains(&byte)
     }
+
+    fn is_newline(byte: u8) -> bool {
+        NEWLINE_SYMBOLS.contains(&byte)
+    }
 }
 
 const WHITESPACE_SYMBOLS: [u8; 6] = [10, 32, 13, 9, 11, 12];
+const NEWLINE_SYMBOLS: [u8; 2] = [13, 10];
 const PPM_COMMENT_START_BYTE: u8 = 35;

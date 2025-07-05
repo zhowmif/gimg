@@ -1,31 +1,23 @@
 use std::simd::{cmp::SimdPartialOrd, i16x64, num::SimdInt, u8x64};
 
-macro_rules! simd_operation {
-    ($lhs:expr, $rhs:expr, $op:tt) => {
-        {
-            let chunk_size = u8x64::LEN;
-            let mut result = Vec::with_capacity($lhs.len());
-            let mut i = 0;
-
-            while i + chunk_size < $lhs.len() {
-                let left_chunk = u8x64::from_slice(&$lhs[i..(i + chunk_size)]);
-                let right_chunk = u8x64::from_slice(&$rhs[i..(i + chunk_size)]);
-                let res = left_chunk $op right_chunk;
-                result.extend_from_slice(&res.to_array());
-                i += chunk_size;
-            }
-
-            for j in i..$lhs.len() {
-                result.push($lhs[j] $op $rhs[j]);
-            }
-
-            result
-        }
-    };
-}
-
 pub fn subtract_simd(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-    simd_operation!(lhs, rhs, -)
+    let chunk_size = u8x64::LEN;
+    let mut result = Vec::with_capacity(lhs.len());
+    let mut i = 0;
+
+    while i + chunk_size < lhs.len() {
+        let lhs_chunk = u8x64::from_slice(&lhs[i..(i + chunk_size)]);
+        let rhs_chunk = u8x64::from_slice(&rhs[i..(i + chunk_size)]);
+        let res = lhs_chunk - rhs_chunk;
+        result.extend_from_slice(&res.to_array());
+        i += chunk_size;
+    }
+
+    for j in i..lhs.len() {
+        result.push(lhs[j].wrapping_sub(rhs[j]));
+    }
+
+    result
 }
 
 pub fn png_average_simd(x: &[u8], a: &[u8], b: &[u8]) -> Vec<u8> {
@@ -46,7 +38,7 @@ pub fn png_average_simd(x: &[u8], a: &[u8], b: &[u8]) -> Vec<u8> {
     }
 
     for j in i..x.len() {
-        result.push(x[j] - (a[j] / 2 + b[j] / 2 + (a[j] & b[j] & 1)));
+        result.push(x[j].wrapping_sub(a[j] / 2 + b[j] / 2 + (a[j] & b[j] & 1)));
     }
 
     result
@@ -115,34 +107,3 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
         c as u8
     }
 }
-
-//TODO: try doing it in a more generic way
-//
-// macro_rules! simd_operation {
-//     ($operands:expr, $vector_operation:tt, $scalar_operation:tt) => {{
-//         let data_len = $operands[0].len();
-//         let chunk_size = u8x64::LEN;
-//         let mut result = Vec::with_capacity(data_len);
-//         let mut i = 0;
-//
-//         while i + chunk_size < data_len {
-//             let ops = $operands
-//                 .iter()
-//                 .map(|operand| u8x64::from_slice(&operand[i..(i + chunk_size)]));
-//             let res = ($vector_operation);
-//             result.extend_from_slice(&res.to_array());
-//             i += chunk_size;
-//         }
-//
-//         for j in i..data_len {
-//             let ops = $operands.iter().map(|operand| operand[j]);
-//             result.push($scalar_operation);
-//         }
-//
-//         result
-//     }};
-// }
-//
-// pub fn subtract_simd(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
-//     simd_operation!(vec![lhs, rhs], (ops[0] - ops[1]), (ops[0] - ops[1]))
-// }

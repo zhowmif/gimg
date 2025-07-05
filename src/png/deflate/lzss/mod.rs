@@ -114,11 +114,8 @@ pub fn encode_lzss_iteration(
     for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
         lzss_table.insert(i, bytes[i], bytes[i + 1], bytes[i + 2], 0, bytes.len());
     }
-    let ll_default: u32 = ll_code_lengths
-        .iter()
-        .flatten()
-        .sum::<u32>()
-        / (ll_code_lengths.len() as u32);
+    let ll_default: u32 =
+        ll_code_lengths.iter().flatten().sum::<u32>() / (ll_code_lengths.len() as u32);
     let distance_default: u32 = (distance_code_lengths
         .iter()
         .flatten()

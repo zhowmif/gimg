@@ -62,7 +62,7 @@ fn compress(input: &[u8], compression_level: CompressionLevel) {
 fn png_encode_test() {
     // let png_file = fs::read("files/mountain.png").unwrap();
     // let rgba_pixels = decode_png(&png_file).unwrap();
-    let ppm_file = fs::read("files/mountain.ppm").unwrap();
+    let ppm_file = fs::read("files/small.ppm").unwrap();
     let rgba_pixels = decode_ppm(&ppm_file)
         .unwrap()
         .into_iter()
@@ -75,8 +75,7 @@ fn png_encode_test() {
 
     let config = PartialPngConfig::new()
         // .color_type(png::ColorType::TrueColorAlpha)
-        .interlace_method(png::InterlaceMethod::Adam7)
-        .compression_level(png::CompressionLevel::Fast);
+        .compression_level(png::CompressionLevel::Best);
     let png_bytes = encode_png(rgba_pixels, config);
     println!("Size {}", png_bytes.len());
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");

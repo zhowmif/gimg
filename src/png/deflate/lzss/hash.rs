@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+use std::{collections::{HashMap, VecDeque}, iter};
 
 use crate::png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel};
 
@@ -126,12 +126,21 @@ impl LzssHashTable {
     }
 }
 
-fn number_of_matching_bytes(a: &[u8], b: &[u8]) -> usize {
-    let mut res = 0;
-    let m = a.len().min(b.len());
-    while res < m && a[res] == b[res] {
-        res += 1;
-    }
 
-    res
+//this will hint to the compiler to use simd
+//https://users.rust-lang.org/t/how-to-find-common-prefix-of-two-byte-slices-effectively/25815/4
+#[inline(always)]
+pub fn number_of_matching_bytes(xs: &[u8], ys: &[u8]) -> usize {
+    chunked_number_of_matching_bytes::<128>(xs, ys)
+}
+
+#[inline(always)]
+fn chunked_number_of_matching_bytes<const N: usize>(xs: &[u8], ys: &[u8]) -> usize {
+    let off = iter::zip(xs.chunks_exact(N), ys.chunks_exact(N))
+        .take_while(|(x, y)| x == y)
+        .count()
+        * N;
+    off + iter::zip(&xs[off..], &ys[off..])
+        .take_while(|(x, y)| x == y)
+        .count()
 }
