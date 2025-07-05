@@ -4,8 +4,9 @@ use crate::{binary::byte_reader::ByteReader, colors::RGBA, png_assert};
 
 use super::PngParseError;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum InterlaceMethod {
+    #[default]
     NoInterlace,
     Adam7,
 }
@@ -86,9 +87,9 @@ impl InterlaceMethod {
                 let scanline_dimensions_by_pass = adam7_scanlines_dimensions_by_pass(height, width);
                 let mut all_scanlines = Vec::new();
 
-                for pass in 0..ADAM7_PASSES.len() {
-                    let (number_of_scanlines, scanline_number_of_pixels) =
-                        scanline_dimensions_by_pass[pass];
+                for (pass, (number_of_scanlines, scanline_number_of_pixels)) in
+                    scanline_dimensions_by_pass.into_iter().enumerate()
+                {
                     let scanline_width_bytes = filter_byte_size
                         + ((scanline_number_of_pixels as f32 * bits_per_pixel as f32) / 8.).ceil()
                             as usize;
@@ -169,12 +170,6 @@ impl InterlaceMethod {
     }
 }
 
-impl Default for InterlaceMethod {
-    fn default() -> Self {
-        InterlaceMethod::NoInterlace
-    }
-}
-
 impl TryFrom<u8> for InterlaceMethod {
     type Error = PngParseError;
 
@@ -189,9 +184,9 @@ impl TryFrom<u8> for InterlaceMethod {
     }
 }
 
-impl Into<u8> for &InterlaceMethod {
-    fn into(self) -> u8 {
-        match self {
+impl From<&InterlaceMethod> for u8 {
+    fn from(value: &InterlaceMethod) -> Self {
+        match value {
             InterlaceMethod::NoInterlace => 0,
             InterlaceMethod::Adam7 => 1,
         }

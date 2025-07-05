@@ -72,7 +72,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
                         "PLTE chunks appears more than once".to_string(),
                     ))
                 }
-                None => palette = Some(PLTE::decode_palette(&chunk.chunk_data)?),
+                None => palette = Some(PLTE::decode_palette(chunk.chunk_data)?),
             },
             chunk_type => {
                 if chunk_type[0] & 32 == 0 {
@@ -86,7 +86,7 @@ pub fn decode_png(bytes: &[u8]) -> Result<Vec<Vec<RGBA>>, PngParseError> {
     }
 
     png_assert!(
-        !(matches!(ihdr_chunk.color_type, ColorType::IndexedColor) && matches!(palette, None)),
+        !(matches!(ihdr_chunk.color_type, ColorType::IndexedColor) && palette.is_none()),
         "No PLTE chunk for indexed color".to_string()
     );
 
@@ -171,7 +171,7 @@ pub fn encode_png(pixels: Vec<Vec<RGBA>>, partial_config: PartialPngConfig) -> V
     let compressed_data = compress_scanlines(&all_filtered_scanlines, config.compression_level);
 
     if let Some(ref palette) = palette {
-        encoded_png.extend_from_slice(&PLTE::encode_palette(&palette, &mut crc));
+        encoded_png.extend_from_slice(&PLTE::encode_palette(palette, &mut crc));
     }
 
     compressed_data

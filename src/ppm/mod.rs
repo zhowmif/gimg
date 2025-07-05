@@ -101,11 +101,11 @@ fn rgb48_from_bytes(rgb_bytes: &[u8], normalization_factor: f32) -> RGB {
 }
 
 fn read_ascii_integer(reader: &mut ByteReader, field_name: &str) -> Result<u32, PpmParseError> {
-    let bytes = ppm_read_bytes!(reader.read_ppm_symbol(), format!("expected {}", field_name));
+    let bytes = ppm_read_bytes!(reader.read_ppm_symbol(), format!("expected {field_name}"));
     let number = String::from_utf8(bytes.to_vec())
-        .map_err(|_e| PpmParseError(format!("{} is not valid utf8", field_name)))?
+        .map_err(|_e| PpmParseError(format!("{field_name} is not valid utf8")))?
         .parse::<u32>()
-        .map_err(|_e| PpmParseError(format!("{} is not a valid unsigned integer", field_name)))?;
+        .map_err(|_e| PpmParseError(format!("{field_name} is not a valid unsigned integer")))?;
 
     Ok(number)
 }

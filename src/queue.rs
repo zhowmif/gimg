@@ -1,7 +1,5 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::tree::BinaryTree;
-
 pub struct PriorityQueue<T> {
     queue: VecDeque<(T, u32)>,
 }
@@ -42,32 +40,6 @@ impl<T> PriorityQueue<T> {
 
     pub fn len(&self) -> usize {
         self.queue.len()
-    }
-
-    pub fn to_huffman_tree(self) -> BinaryTree<Option<T>> {
-        let as_binary_trees = PriorityQueue::from_vec(
-            self.queue
-                .into_iter()
-                .map(|(elem, frequency)| (BinaryTree::new(Some(elem)), frequency))
-                .collect(),
-        );
-
-        PriorityQueue::_to_huffman_tree(as_binary_trees)
-    }
-
-    fn _to_huffman_tree(
-        mut binary_tree_queue: PriorityQueue<BinaryTree<Option<T>>>,
-    ) -> BinaryTree<Option<T>> {
-        if binary_tree_queue.queue.len() == 1 {
-            return binary_tree_queue.dequeue().unwrap().0;
-        }
-
-        let (fst, fp) = binary_tree_queue.dequeue_front().unwrap();
-        let (snd, sp) = binary_tree_queue.dequeue_front().unwrap();
-        let x: BinaryTree<Option<T>> = BinaryTree::new_branch(None, fst, snd);
-        binary_tree_queue.enqueue(x, fp + sp);
-
-        PriorityQueue::_to_huffman_tree(binary_tree_queue)
     }
 }
 

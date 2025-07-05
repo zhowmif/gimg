@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    u8,
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::colors::{RGB, RGBA};
 
@@ -33,7 +30,7 @@ pub fn create_pallete_from_colors_median_cut(
     color_buckets
         .into_iter()
         .enumerate()
-        .map(|(i, bucket)| {
+        .flat_map(|(i, bucket)| {
             let avg_color = get_bucket_average_color(&bucket);
 
             let avg_color_per_color: Vec<(RGBA, (usize, RGBA))> = bucket
@@ -43,7 +40,6 @@ pub fn create_pallete_from_colors_median_cut(
 
             avg_color_per_color
         })
-        .flatten()
         .collect()
 }
 
@@ -53,8 +49,7 @@ fn divide_into_buckets(unique_colors: &[RGBA], number_of_colors_log2: usize) -> 
     for _i in 0..number_of_colors_log2 {
         color_buckets = color_buckets
             .into_iter()
-            .map(median_cut_bucket)
-            .flatten()
+            .flat_map(median_cut_bucket)
             .filter(|bucket| !bucket.is_empty())
             .collect();
     }

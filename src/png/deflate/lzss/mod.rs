@@ -2,13 +2,14 @@ pub mod backreference;
 mod hash;
 pub use hash::LzssHashTable;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, iter::repeat_n};
 
 use backreference::{
-    DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS,
+    DISTANCE_TABLE_SIZE, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE,
+    LENGTH_TO_EXTRA_BITS, LL_TABLE_SIZE,
 };
 
-use crate::png::{deflate::encode_block_type_two, CompressionLevel};
+use crate::png::CompressionLevel;
 
 use super::{
     append_end_of_block,
@@ -67,12 +68,26 @@ pub fn encode_lzss_optimized(bytes: &[u8]) -> Vec<LzssSymbol> {
         //     distance_code_lengths.len(),
         //     compressed.bitstream.len() / 8
         // );
-        lzss_symbols = encode_lzss_iteration(bytes, ll_code_lengths, distance_code_lengths);
+        lzss_symbols = encode_lzss_iteration(
+            bytes,
+            table_to_vec(&ll_code_lengths, LL_TABLE_SIZE),
+            table_to_vec(&distance_code_lengths, DISTANCE_TABLE_SIZE),
+        );
         // print!("Round {_i} ");
         // symbol_stats(&lzss_symbols);
     }
 
     lzss_symbols
+}
+
+fn table_to_vec(t: &HashMap<u16, u32>, size: usize) -> Vec<Option<u32>> {
+    let mut result: Vec<Option<u32>> = repeat_n(None, size).collect();
+
+    for (k, v) in t {
+        result[*k as usize] = Some(*v);
+    }
+
+    result
 }
 
 pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
@@ -90,8 +105,8 @@ pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
 
 pub fn encode_lzss_iteration(
     bytes: &[u8],
-    ll_code_lengths: HashMap<u16, u32>,
-    distance_code_lengths: HashMap<u16, u32>,
+    ll_code_lengths: Vec<Option<u32>>,
+    distance_code_lengths: Vec<Option<u32>>,
 ) -> Vec<LzssSymbol> {
     //this is in reverse order
     let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
@@ -99,24 +114,31 @@ pub fn encode_lzss_iteration(
     for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
         lzss_table.insert(i, bytes[i], bytes[i + 1], bytes[i + 2], 0, bytes.len());
     }
-    let ll_default: u32 =
-        ll_code_lengths.iter().map(|(_code, l)| *l).sum::<u32>() / (ll_code_lengths.len() as u32);
+    let ll_default: u32 = ll_code_lengths
+        .iter()
+        .filter(|l| l.is_some())
+        .map(|l| l.unwrap())
+        .sum::<u32>()
+        / (ll_code_lengths.len() as u32);
     let distance_default: u32 = (distance_code_lengths
         .iter()
-        .map(|(_code, l)| *l)
+        .filter(|l| l.is_some())
+        .map(|l| l.unwrap())
         .sum::<u32>()
         .checked_div(distance_code_lengths.len() as u32)
         .unwrap_or(0))
         * 2;
-    let (mut chose_bf, mut chose_lit) = (0, 0);
 
-    for (cost_list_index, byte) in bytes.iter().rev().enumerate() {
+    for cost_list_index in 0..bytes.len() {
         let bytes_index = bytes.len() - cost_list_index - 1;
-        let literal_cost = *ll_code_lengths.get(&(*byte as u16)).unwrap_or(&ll_default)
+        let byte = &bytes[bytes_index];
+
+        let literal_cost = ll_code_lengths[*byte as usize].unwrap_or(ll_default)
             + cost_list_index
                 .checked_sub(1)
                 .map(|idx| best_symbol_costs[idx].0)
                 .unwrap_or(0);
+
         let backreferences: Vec<(u16, u16)> = lzss_table
             .get_all_backreferences(&bytes, bytes_index)
             .unwrap_or(Vec::new());
@@ -131,37 +153,20 @@ pub fn encode_lzss_iteration(
                     ll_default,
                     distance_default,
                 );
-                // println!(
-                //     "(char {}) Currently lookin at bf {:?}",
-                //     char::from_u32(*byte as u32).unwrap(),
-                //     bf,
-                // );
                 let bf_end_cost = cost_list_index
                     .checked_sub(bf.1 as usize)
-                    .map(|idx| best_symbol_costs.get(idx).map(|(cost, _sym)| *cost))
-                    .flatten()
+                    .map(|idx| best_symbol_costs[idx].0)
                     .unwrap_or(0);
-                // println!(
-                //     "{} {:?} - cost {}",
-                //     best_symbol_costs.len(),
-                //     bf,
-                //     bf_encode_cost + bf_end_cost
-                // );
 
-                // (bf, bf_encode_cost + bf_end_cost)
                 (bf, bf_encode_cost + bf_end_cost)
             })
             .min_by_key(|(_bf, cost)| *cost)
             .unwrap_or(((0, 0), literal_cost));
 
         if bf_cost < literal_cost {
-            // println!("chose bf {chose_bf}");
-            chose_bf += 1;
             let symbol = LzssSymbol::Backreference(bf.0, bf.1);
             best_symbol_costs.push((bf_cost, symbol));
         } else {
-            // println!("chose lit {chose_lit}");
-            chose_lit += 1;
             best_symbol_costs.push((literal_cost, LzssSymbol::Literal(*byte)));
         }
 
@@ -177,46 +182,52 @@ pub fn encode_lzss_iteration(
             );
         }
     }
-    // println!("Costs {:?}", best_symbol_costs);
-    // println!("Chose bf {chose_bf}, chose lit {chose_lit}");
     let mut lzss_symbols: Vec<LzssSymbol> = Vec::new();
-    let mut i = 0;
-    let best_symbols: Vec<_> = best_symbol_costs.into_iter().rev().collect();
+    let mut i = best_symbol_costs.len() - 1;
 
-    while i < bytes.len() {
-        let symbol = &best_symbols[i].1;
+    loop {
+        let symbol = &best_symbol_costs[i].1;
         lzss_symbols.push(symbol.clone());
-        // println!("{i}");
-        i += match symbol {
+        let jump = match symbol {
             LzssSymbol::Backreference(_, len) => *len as usize,
             _ => 1,
         };
+
+        if jump > i {
+            break;
+        } else {
+            i -= jump;
+        }
     }
 
-    lzss_symbols
+    // let mut i = 0;
+    // let best_symbols: Vec<_> = best_symbol_costs.into_iter().rev().collect();
+    //
+    // while i < bytes.len() {
+    //     let symbol = &best_symbols[i].1;
+    //     lzss_symbols.push(symbol.clone());
+    //     i += match symbol {
+    //         LzssSymbol::Backreference(_, len) => *len as usize,
+    //         _ => 1,
+    //     };
+    // }
 
-    // best_symbol_costs
-    //     .into_iter()
-    //     .rev()
-    //     .map(|(_cost, symbol)| symbol)
-    //     .collect()
+    lzss_symbols
 }
 
 pub fn cost_of_encoding_backreference(
     (distance, length): (u16, u16),
-    ll_code_lengths: &HashMap<u16, u32>,
-    distance_code_lengths: &HashMap<u16, u32>,
+    ll_code_lengths: &[Option<u32>],
+    distance_code_lengths: &[Option<u32>],
     ll_default: u32,
     distance_defualt: u32,
 ) -> u32 {
     let length_code = LENGTH_TO_CODE[length as usize];
-    let length_code_bits = *ll_code_lengths.get(&length_code).unwrap_or(&ll_default);
+    let length_code_bits = ll_code_lengths[length_code as usize].unwrap_or(ll_default);
     let length_extra_bits = LENGTH_TO_EXTRA_BITS[length as usize].1 as u32;
 
     let distance_code = DISTANCE_TO_CODE[distance as usize];
-    let dist_code_bits = *distance_code_lengths
-        .get(&distance_code)
-        .unwrap_or(&distance_defualt);
+    let dist_code_bits = distance_code_lengths[distance_code as usize].unwrap_or(distance_defualt);
     let dist_extra_bits = DISTANCE_TO_EXTRA_BITS[distance as usize].1 as u32;
 
     length_code_bits + length_extra_bits + dist_code_bits + dist_extra_bits

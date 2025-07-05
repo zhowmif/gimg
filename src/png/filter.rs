@@ -59,8 +59,7 @@ impl AdaptiveFilterType {
             4 => AdaptiveFilterType::Paeth,
             f => {
                 return Err(PngParseError(format!(
-                    "Unrecognized adaptive filter type {}",
-                    f
+                    "Unrecognized adaptive filter type {f}",
                 )));
             }
         })
@@ -94,7 +93,7 @@ const ALL_FILTERS: [AdaptiveFilterType; 5] = [
 type FilteredScenaline = (AdaptiveFilterType, Vec<u8>);
 
 pub fn filter_scanlines(
-    scanlines: &Vec<Vec<u8>>,
+    scanlines: &[Vec<u8>],
     bbp: usize,
     compression_level: CompressionLevel,
 ) -> Vec<Vec<u8>> {
@@ -110,9 +109,8 @@ pub fn filter_scanlines(
     let mut b = &empty_row[..];
     let mut c: Vec<u8> = empty_row.clone();
 
-    for row in 0..scanlines.len() {
+    for x in scanlines.iter() {
         let mut filter_results: Vec<FilteredScenaline> = Vec::with_capacity(ALL_FILTERS.len());
-        let x = &scanlines[row][..];
         let mut a: Vec<u8> = iter::repeat_n(0u8, other_byte_offsets as usize).collect();
 
         for filter in filters_to_test.iter() {
@@ -147,31 +145,29 @@ pub fn filter_scanlines(
     filtered_scanelines
 }
 
-fn get_byte(scanlines: &Vec<Vec<u8>>, row: i16, col: i16) -> u8 {
+fn get_byte(scanlines: &[Vec<u8>], row: i16, col: i16) -> u8 {
     if row < 0 || col < 0 {
         return 0;
     }
 
     scanlines
         .get(row as usize)
-        .map(|scanline| scanline.get(col as usize).map(|val| val.clone()))
-        .flatten()
+        .and_then(|scanline| scanline.get(col as usize).cloned())
         .unwrap_or(0)
 }
 
 pub fn remove_scanlines_filter(
-    scanlines: &Vec<Vec<u8>>,
+    scanlines: &[Vec<u8>],
     bbp: usize,
 ) -> Result<Vec<Vec<u8>>, PngParseError> {
     let mut unfiltered_scanlines = Vec::with_capacity(scanlines.len());
     let other_byte_offsets = if bbp <= 8 { 1 } else { (bbp >> 3) as i16 };
 
-    for row in 0..scanlines.len() {
-        let filter_type = AdaptiveFilterType::from_byte(scanlines[row][0])?;
-        unfiltered_scanlines.push(Vec::with_capacity(scanlines[row].len()));
+    for (row, scanline) in scanlines.iter().enumerate() {
+        let filter_type = AdaptiveFilterType::from_byte(scanline[0])?;
+        unfiltered_scanlines.push(Vec::with_capacity(scanline.len()));
 
-        for col in 1..scanlines[row].len() {
-            let x = scanlines[row][col];
+        for (col, &x) in scanline.iter().enumerate() {
             //subtract 1 from col because there is no filter type byte in unfiltered_scanlines
             let (row, col) = (row as i16, col as i16 - 1);
 

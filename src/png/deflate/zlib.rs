@@ -37,7 +37,7 @@ impl ZlibEncoder {
         let mut zlib_bitstream = WriteBitStream::new();
         let cm = 8;
         let cminfo = 7;
-        let cmf = (cminfo << 4) as u8 + cm as u8;
+        let cmf = (cminfo << 4) + cm;
         let fdict = 0;
         let flevel = self.compression_level.to_zlib_u8();
         let flg = ((cmf as u32) << 8) + ((flevel as u32) << 6) + ((fdict as u32) << 5);
@@ -75,8 +75,7 @@ pub fn decode_zlib_header(bytes: &[u8]) -> Result<usize, DeflateDecodeError> {
 
     if cm != 8 {
         return Err(DeflateDecodeError(format!(
-            "Unsupported compression method in ZLIB header {}",
-            cm
+            "Unsupported compression method in ZLIB header {cm}"
         )));
     }
 
@@ -87,8 +86,7 @@ pub fn decode_zlib_header(bytes: &[u8]) -> Result<usize, DeflateDecodeError> {
 
     if cminfo > 7 {
         return Err(DeflateDecodeError(format!(
-            "Unsupported compression info value in ZLIB header: {}",
-            cminfo
+            "Unsupported compression info value in ZLIB header: {cminfo}"
         )));
     }
     let cmf = (cminfo << 4) as u8 + cm as u8;
@@ -98,10 +96,10 @@ pub fn decode_zlib_header(bytes: &[u8]) -> Result<usize, DeflateDecodeError> {
     let flevel = deflate_read_bits!(header_bitstream.read_number_lsb(2), "expected ZLIB FLEVEL");
     let flg = (flevel << 6) + ((fdict as u16) << 5) + fcheck;
 
-    if (((cmf as u16) << 8) + flg) % 31 != 0 {
-        return Err(DeflateDecodeError(format!(
-            "ZLIB CMF + FLG is not a multiple of 31"
-        )));
+    if !(((cmf as u16) << 8) + flg).is_multiple_of(31) {
+        return Err(DeflateDecodeError(
+            "ZLIB CMF + FLG is not a multiple of 31".to_string(),
+        ));
     }
 
     let data_start_index = 2 + if fdict == 1 { 4 } else { 0 };

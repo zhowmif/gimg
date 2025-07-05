@@ -1,0 +1,716 @@
+img   34541/34541    4541.197774:     500500 cycles:Pu: 
+	    7ef6fbd8a651 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554381681 img::png::deflate::lzss::hash::LzssHashTable::insert+0xf1 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.197955:     500500 cycles:Pu: 
+	    571554380493 hashbrown::map::HashMap<K,V,S,A>::insert+0x73 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.198217:     812883 cycles:Pu: 
+	    571554383937 core::hash::BuildHasher::hash_one+0x47 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.198585:    1101363 cycles:Pu: 
+	    5715543806bb core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut+0xab (/home/guy/programs/rust/gimg/target/release/img)
+	    571593057268 [unknown] ([unknown])
+
+img   34541/34541    4541.198992:    1338442 cycles:Pu: 
+	    57155438068b core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut+0x7b (/home/guy/programs/rust/gimg/target/release/img)
+	    571593056fa0 [unknown] ([unknown])
+
+img   34541/34541    4541.199556:    1777522 cycles:Pu: 
+	    5715543816f1 img::png::deflate::lzss::hash::LzssHashTable::insert+0x161 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.200179:    1949158 cycles:Pu: 
+	    57155438069e core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut+0x8e (/home/guy/programs/rust/gimg/target/release/img)
+	    57159305ccc8 [unknown] ([unknown])
+
+img   34541/34541    4541.200897:    2225898 cycles:Pu: 
+	    571554380655 core::ops::function::impls::<impl core::ops::function::FnMut<A> for &mut F>::call_mut+0x45 (/home/guy/programs/rust/gimg/target/release/img)
+	    571593064550 [unknown] ([unknown])
+
+img   34541/34541    4541.201741:    2434961 cycles:Pu: 
+	    57155437cf52 _ZN9hashbrown3raw21RawTable$LT$T$C$A$GT$14reserve_rehash17h2ee7b5e7083f7878E.llvm.3176709775483504059+0x272 (/home/guy/programs/rust/gimg/target/release/img)
+	245fffff30ffffff [unknown] ([unknown])
+
+img   34541/34541    4541.202588:    2491749 cycles:Pu: 
+	    57155438aec0 _RNvCs78KD1z0vSAp_7___rustc14___rust_dealloc+0x0 (/home/guy/programs/rust/gimg/target/release/img)
+	    5715930462f0 [unknown] ([unknown])
+	    7ef60069006e [unknown] ([unknown])
+
+img   34541/34541    4541.203474:    2580722 cycles:Pu: 
+	    5715543817a2 img::png::deflate::lzss::hash::LzssHashTable::insert+0x212 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.204319:    2679297 cycles:Pu: 
+	    571554381702 img::png::deflate::lzss::hash::LzssHashTable::insert+0x172 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.205267:    2770363 cycles:Pu: 
+	    571554381eb4 alloc::collections::vec_deque::VecDeque<T,A>::retain+0x54 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.206164:    2834403 cycles:Pu: 
+	    7ef6fbe53f84 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.207092:    2886558 cycles:Pu: 
+	    571554381e94 alloc::collections::vec_deque::VecDeque<T,A>::retain+0x34 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.208029:    2945970 cycles:Pu: 
+	    7ef6fbd8a82f [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d280 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            afd9 [unknown] ([unknown])
+
+img   34541/34541    4541.208972:    2987140 cycles:Pu: 
+	    57155437ece8 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x88 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.209935:    3030524 cycles:Pu: 
+	    5715543732f0 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x280 (/home/guy/programs/rust/gimg/target/release/img)
+	            77c1 [unknown] ([unknown])
+
+img   34541/34541    4541.210902:    3058627 cycles:Pu: 
+	    7ef6fbd8a67d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d81d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.211886:    3084753 cycles:Pu: 
+	    5715543732fb <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28b (/home/guy/programs/rust/gimg/target/release/img)
+	            a90d [unknown] ([unknown])
+
+img   34541/34541    4541.212864:    3097344 cycles:Pu: 
+	    57155437318e <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x11e (/home/guy/programs/rust/gimg/target/release/img)
+	            5896 [unknown] ([unknown])
+
+img   34541/34541    4541.213841:    3114139 cycles:Pu: 
+	    57155437ecf3 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x93 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.214826:    3123600 cycles:Pu: 
+	    7ef6fbd8f168 realloc+0x78 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            6bd4 [unknown] ([unknown])
+
+img   34541/34541    4541.215815:    3135010 cycles:Pu: 
+	    5715543816f1 img::png::deflate::lzss::hash::LzssHashTable::insert+0x161 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.216814:    3143746 cycles:Pu: 
+	    57155437331e <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x2ae (/home/guy/programs/rust/gimg/target/release/img)
+	            a14c [unknown] ([unknown])
+
+img   34541/34541    4541.217811:    3147207 cycles:Pu: 
+	    5715543732f5 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x285 (/home/guy/programs/rust/gimg/target/release/img)
+	            7e14 [unknown] ([unknown])
+
+img   34541/34541    4541.218804:    3149247 cycles:Pu: 
+	    7ef6fbd8cc7e [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            6677 [unknown] ([unknown])
+
+img   34541/34541    4541.219799:    3154277 cycles:Pu: 
+	    5715543732fe <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28e (/home/guy/programs/rust/gimg/target/release/img)
+	            ba54 [unknown] ([unknown])
+
+img   34541/34541    4541.220794:    3159031 cycles:Pu: 
+	    57155437ed7c <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x11c (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.221792:    3162388 cycles:Pu: 
+	    5715543732fb <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28b (/home/guy/programs/rust/gimg/target/release/img)
+	            b94a [unknown] ([unknown])
+
+img   34541/34541    4541.222800:    3165457 cycles:Pu: 
+	    57155437ecf3 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x93 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.223799:    3163403 cycles:Pu: 
+	    57155437ed84 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x124 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.224717:    3162165 cycles:Pu: 
+	    5715543732aa <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x23a (/home/guy/programs/rust/gimg/target/release/img)
+	            5721 [unknown] ([unknown])
+
+img   34541/34541    4541.225638:    3199118 cycles:Pu: 
+	    571554373248 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x1d8 (/home/guy/programs/rust/gimg/target/release/img)
+	            70d6 [unknown] ([unknown])
+
+img   34541/34541    4541.226552:    3265197 cycles:Pu: 
+	    7ef6fbd8ddf7 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            599f [unknown] ([unknown])
+
+img   34541/34541    4541.227487:    3328002 cycles:Pu: 
+	    7ef6fbd8a85c [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8ba90 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8ee52 cfree+0xf2 (/usr/lib/libc.so.6)
+	    57155437ee20 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x1c0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.228438:    3384131 cycles:Pu: 
+	    57155437329e <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x22e (/home/guy/programs/rust/gimg/target/release/img)
+	            7180 [unknown] ([unknown])
+
+img   34541/34541    4541.229372:    3426106 cycles:Pu: 
+	    7ef6fbd8f0f0 realloc+0x0 (/usr/lib/libc.so.6)
+	            6a05 [unknown] ([unknown])
+
+img   34541/34541    4541.230246:    3471120 cycles:Pu: 
+	    57155437ece8 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x88 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.231148:    3577971 cycles:Pu: 
+	    571554381892 img::png::deflate::lzss::hash::LzssHashTable::get_all_backreferences+0xd2 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.232072:    3670977 cycles:Pu: 
+	    5715543732f5 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x285 (/home/guy/programs/rust/gimg/target/release/img)
+	            7a22 [unknown] ([unknown])
+
+img   34541/34541    4541.233017:    3742752 cycles:Pu: 
+	    7ef6fbd8de28 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            6b12 [unknown] ([unknown])
+
+img   34541/34541    4541.233974:    3795928 cycles:Pu: 
+	    571554373306 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x296 (/home/guy/programs/rust/gimg/target/release/img)
+	            5ee1 [unknown] ([unknown])
+
+img   34541/34541    4541.234908:    3835942 cycles:Pu: 
+	    57155437ed56 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0xf6 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.235841:    3902919 cycles:Pu: 
+	    5715543732e0 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x270 (/home/guy/programs/rust/gimg/target/release/img)
+	            4f05 [unknown] ([unknown])
+
+img   34541/34541    4541.236785:    3938193 cycles:Pu: 
+	    57155437ed79 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x119 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.237757:    3988616 cycles:Pu: 
+	    571554381ea5 alloc::collections::vec_deque::VecDeque<T,A>::retain+0x45 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.238771:    4024336 cycles:Pu: 
+	    5715543732fb <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28b (/home/guy/programs/rust/gimg/target/release/img)
+	            8c9b [unknown] ([unknown])
+
+img   34541/34541    4541.239761:    4026250 cycles:Pu: 
+	    571554373185 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x115 (/home/guy/programs/rust/gimg/target/release/img)
+	              20 [unknown] ([unknown])
+
+img   34541/34541    4541.240775:    4026756 cycles:Pu: 
+	    7ef6fbd8ccf6 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            5fb5 [unknown] ([unknown])
+
+img   34541/34541    4541.241772:    4025107 cycles:Pu: 
+	    7ef6fbd8dfc6 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            6e4f [unknown] ([unknown])
+
+img   34541/34541    4541.242806:    4021180 cycles:Pu: 
+	    5715543732ce <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x25e (/home/guy/programs/rust/gimg/target/release/img)
+	            6ecf [unknown] ([unknown])
+
+img   34541/34541    4541.243850:    4007655 cycles:Pu: 
+	    5715543732fb <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28b (/home/guy/programs/rust/gimg/target/release/img)
+	            3b10 [unknown] ([unknown])
+
+img   34541/34541    4541.244902:    3972866 cycles:Pu: 
+	    5715543732fe <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28e (/home/guy/programs/rust/gimg/target/release/img)
+	            719c [unknown] ([unknown])
+
+img   34541/34541    4541.245937:    3925726 cycles:Pu: 
+	    5715543732f5 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x285 (/home/guy/programs/rust/gimg/target/release/img)
+	            459b [unknown] ([unknown])
+
+img   34541/34541    4541.246973:    3887379 cycles:Pu: 
+	    571554381f50 alloc::collections::vec_deque::VecDeque<T,A>::retain+0xf0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.247953:    3860729 cycles:Pu: 
+	    5715543847d4 alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle+0x94 (/home/guy/programs/rust/gimg/target/release/img)
+	            651c [unknown] ([unknown])
+
+img   34541/34541    4541.248899:    3881242 cycles:Pu: 
+	    571554381ea1 alloc::collections::vec_deque::VecDeque<T,A>::retain+0x41 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.249905:    3923048 cycles:Pu: 
+	    7ef6fbd8f17e realloc+0x8e (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            2b73 [unknown] ([unknown])
+
+img   34541/34541    4541.250856:    3919705 cycles:Pu: 
+	    57155437edbf <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x15f (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.251829:    3952304 cycles:Pu: 
+	    571554373357 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x2e7 (/home/guy/programs/rust/gimg/target/release/img)
+	            3288 [unknown] ([unknown])
+
+img   34541/34541    4541.252808:    3976310 cycles:Pu: 
+	    5715543732fe <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28e (/home/guy/programs/rust/gimg/target/release/img)
+	            41a4 [unknown] ([unknown])
+
+img   34541/34541    4541.253821:    3997268 cycles:Pu: 
+	    57155437ece5 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x85 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.254809:    3999252 cycles:Pu: 
+	    57155437edb2 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x152 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.255807:    4000327 cycles:Pu: 
+	    57155438808b img::png::deflate::lzss::encode_lzss_optimized+0x70b (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.256769:    4009268 cycles:Pu: 
+	    7ef6fbd8f0f0 realloc+0x0 (/usr/lib/libc.so.6)
+	            37bd [unknown] ([unknown])
+
+img   34541/34541    4541.257735:    4028288 cycles:Pu: 
+	    57155437ed9d <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x13d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.258710:    4062337 cycles:Pu: 
+	    7ef6fbd8bd77 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e120 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            5cf8 [unknown] ([unknown])
+
+img   34541/34541    4541.259691:    4092325 cycles:Pu: 
+	    57155437ed66 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x106 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.260729:    4111726 cycles:Pu: 
+	    57155437ed73 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x113 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.261725:    4100632 cycles:Pu: 
+	    57155437330d <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x29d (/home/guy/programs/rust/gimg/target/release/img)
+	            44c9 [unknown] ([unknown])
+
+img   34541/34541    4541.262719:    4076298 cycles:Pu: 
+	    571554384773 alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle+0x33 (/home/guy/programs/rust/gimg/target/release/img)
+	            55c3 [unknown] ([unknown])
+
+img   34541/34541    4541.263730:    4090290 cycles:Pu: 
+	    57155437eda0 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x140 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.264792:    4092279 cycles:Pu: 
+	    57155437ed30 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0xd0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.265768:    4055590 cycles:Pu: 
+	    7ef6fbd8d5c0 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            390a [unknown] ([unknown])
+
+img   34541/34541    4541.266776:    4042355 cycles:Pu: 
+	    5715543881e5 img::png::deflate::lzss::encode_lzss_optimized+0x865 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.267777:    4056505 cycles:Pu: 
+	    7ef6fbe53f84 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	            41c7 [unknown] ([unknown])
+
+img   34541/34541    4541.268748:    4049474 cycles:Pu: 
+	    5715543732fb <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x28b (/home/guy/programs/rust/gimg/target/release/img)
+	            1ef6 [unknown] ([unknown])
+
+img   34541/34541    4541.269723:    4063616 cycles:Pu: 
+	    57155437ed28 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0xc8 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.270705:    4089396 cycles:Pu: 
+	    57155437ed56 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0xf6 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.271755:    4108037 cycles:Pu: 
+	    571554373248 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x1d8 (/home/guy/programs/rust/gimg/target/release/img)
+	            11e9 [unknown] ([unknown])
+
+img   34541/34541    4541.272766:    4091435 cycles:Pu: 
+	    5715543730a0 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x30 (/home/guy/programs/rust/gimg/target/release/img)
+	            7c6f [unknown] ([unknown])
+
+img   34541/34541    4541.273742:    4058840 cycles:Pu: 
+	    7ef6fbe53f91 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	             40d [unknown] ([unknown])
+
+img   34541/34541    4541.274726:    4076714 cycles:Pu: 
+	    57155437318e <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x11e (/home/guy/programs/rust/gimg/target/release/img)
+	            1bc7 [unknown] ([unknown])
+
+img   34541/34541    4541.275744:    4099656 cycles:Pu: 
+	    57155437ed2d <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0xcd (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.276776:    4096325 cycles:Pu: 
+	    7ef6fbd8f1d6 realloc+0xe6 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	             101 [unknown] ([unknown])
+
+img   34541/34541    4541.277817:    4062847 cycles:Pu: 
+	    57155437098c <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x8c (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.278899:    4042734 cycles:Pu: 
+	    7ef6fbd8f35c realloc+0x26c (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.279872:    3954403 cycles:Pu: 
+	    7ef6fbd8cfc8 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.280846:    3981013 cycles:Pu: 
+	    7ef6fbd8d03a [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.281828:    3994640 cycles:Pu: 
+	    7ef6fbd8d4f4 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554371941 <alloc::vec::Vec<T,A> as core::clone::Clone>::clone+0x151 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.282841:    4015582 cycles:Pu: 
+	    7ef6fbd8ed60 cfree+0x0 (/usr/lib/libc.so.6)
+
+img   34541/34541    4541.284094:    4011893 cycles:Pu: 
+	    7ef6fbe5412e [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.285098:    3808837 cycles:Pu: 
+	    5715543727cc <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x19c (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.286145:    3800253 cycles:Pu: 
+	    7ef6fbd8a7d1 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d280 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+	    571593080bd0 [unknown] ([unknown])
+
+img   34541/34541    4541.287144:    3779366 cycles:Pu: 
+	    57155438aec0 _RNvCs78KD1z0vSAp_7___rustc14___rust_dealloc+0x0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.288100:    3783069 cycles:Pu: 
+	    7ef6fbd8d845 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.289079:    3819994 cycles:Pu: 
+
+img   34541/34541    4541.290091:    3833025 cycles:Pu: 
+	    5715543849f1 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0x1b1 (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	5c002e3cff79ffff [unknown] ([unknown])
+
+img   34541/34541    4541.291064:    3831706 cycles:Pu: 
+	    571554376301 core::slice::sort::shared::smallsort::small_sort_general_with_scratch+0x471 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.292034:    3856198 cycles:Pu: 
+	    7ef6fbe53fc6 [unknown] (/usr/lib/libc.so.6)
+
+img   34541/34541    4541.292992:    3881260 cycles:Pu: 
+	    57155438aeb0 _RNvCs78KD1z0vSAp_7___rustc12___rust_alloc+0x0 (/home/guy/programs/rust/gimg/target/release/img)
+	    571593122d90 [unknown] ([unknown])
+	    7ef6fbeceb50 [unknown] ([unknown])
+
+img   34541/34541    4541.293982:    3914722 cycles:Pu: 
+
+img   34541/34541    4541.294963:    3913918 cycles:Pu: 
+	    571554376311 core::slice::sort::shared::smallsort::small_sort_general_with_scratch+0x481 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.295934:    3945058 cycles:Pu: 
+	    571554386f75 img::png::deflate::generate_prefix_codes_from_lzss_stream+0x2f5 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	67ffffff282043ff [unknown] ([unknown])
+
+img   34541/34541    4541.296916:    3973172 cycles:Pu: 
+	    571554376192 core::slice::sort::shared::smallsort::small_sort_general_with_scratch+0x302 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.297894:    3980036 cycles:Pu: 
+	    57155438a9dc img::png::deflate::bitstream::WriteBitStream::extend+0x1ac (/home/guy/programs/rust/gimg/target/release/img)
+	               1 [unknown] ([unknown])
+
+img   34541/34541    4541.298877:    4002506 cycles:Pu: 
+	    57155437610d core::slice::sort::shared::smallsort::small_sort_general_with_scratch+0x27d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.299922:    4019721 cycles:Pu: 
+	    7ef6fbd8e627 malloc+0x17 (/usr/lib/libc.so.6)
+	    571554372ba8 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x58 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.300902:    3989514 cycles:Pu: 
+	    7ef6fbd8ee60 cfree+0x100 (/usr/lib/libc.so.6)
+	    571554371d11 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x321 (/home/guy/programs/rust/gimg/target/release/img)
+	    5715930bb090 [unknown] ([unknown])
+	d9f28127da3bc950 [unknown] ([unknown])
+
+img   34541/34541    4541.301884:    4003239 cycles:Pu: 
+	    571554388c52 img::png::deflate::lzss::encode_lzss_to_bitstream+0x3d2 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.302867:    4016315 cycles:Pu: 
+	    7ef6fbd8a669 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d81d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.303854:    4025725 cycles:Pu: 
+	    57155438a336 <core::iter::adapters::map::Map<I,F> as core::iter::traits::iterator::Iterator>::fold+0x36 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.304846:    4041897 cycles:Pu: 
+	    571554384a15 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0x1d5 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	ff79ffffffff48ff [unknown] ([unknown])
+
+img   34541/34541    4541.305839:    4046668 cycles:Pu: 
+	    571554371d1f <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x32f (/home/guy/programs/rust/gimg/target/release/img)
+	    57159304ba70 [unknown] ([unknown])
+	d9f28127da3bc950 [unknown] ([unknown])
+
+img   34541/34541    4541.306835:    4058629 cycles:Pu: 
+	    571554372cc3 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x173 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.307832:    4063122 cycles:Pu: 
+	    571554388960 img::png::deflate::lzss::encode_lzss_to_bitstream+0xe0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.308830:    4062581 cycles:Pu: 
+	    571554388cd5 img::png::deflate::lzss::encode_lzss_to_bitstream+0x455 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.309828:    4065713 cycles:Pu: 
+	    571554388a71 img::png::deflate::lzss::encode_lzss_to_bitstream+0x1f1 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.310867:    4072448 cycles:Pu: 
+	    57155437f268 <alloc::vec::into_iter::IntoIter<T,A> as core::iter::traits::iterator::Iterator>::fold+0x108 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.311854:    4036538 cycles:Pu: 
+	    57155437ff11 hashbrown::map::HashMap<K,V,S,A>::insert+0x1 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.312846:    4043778 cycles:Pu: 
+	    571554386fdf img::png::deflate::generate_prefix_codes_from_lzss_stream+0x35f (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	49ff1e36ff62ffff [unknown] ([unknown])
+
+img   34541/34541    4541.313840:    4051208 cycles:Pu: 
+	    571554387022 img::png::deflate::generate_prefix_codes_from_lzss_stream+0x3a2 (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	3a3213ff613b5a61 [unknown] ([unknown])
+
+img   34541/34541    4541.314834:    4058503 cycles:Pu: 
+	    571554384935 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0xf5 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	ff1e4cffffff57ff [unknown] ([unknown])
+
+img   34541/34541    4541.315831:    4064297 cycles:Pu: 
+	    5715543ada90 _RNvCs78KD1z0vSAp_7___rustc11___rdl_alloc+0x0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.316859:    4068245 cycles:Pu: 
+	    7ef6fbd8a6b7 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d280 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.317864:    4056204 cycles:Pu: 
+	    7ef6fbe53fe6 [unknown] (/usr/lib/libc.so.6)
+
+img   34541/34541    4541.318829:    4045323 cycles:Pu: 
+	    7ef6fbd8cc64 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554371941 <alloc::vec::Vec<T,A> as core::clone::Clone>::clone+0x151 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.319803:    4063971 cycles:Pu: 
+	    57155437882d core::slice::sort::stable::quicksort::quicksort+0x4d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.320782:    4090290 cycles:Pu: 
+	    7ef6fbd8d859 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.321803:    4111528 cycles:Pu: 
+	    571554372d02 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x1b2 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.322843:    4109156 cycles:Pu: 
+	    571554371aba <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0xca (/home/guy/programs/rust/gimg/target/release/img)
+	    571593064290 [unknown] ([unknown])
+	    5715930bb060 [unknown] ([unknown])
+
+img   34541/34541    4541.323819:    4074264 cycles:Pu: 
+	    5715543826e9 img::png::deflate::huffman::package_merge::PackageMergeEncoder<T>::get_symbol_lengths+0x639 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.324796:    4079770 cycles:Pu: 
+	    57155437099b <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x9b (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.325779:    4103305 cycles:Pu: 
+	    7ef6fbd8bec0 [unknown] (/usr/lib/libc.so.6)
+	    571554371c3a <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x24a (/home/guy/programs/rust/gimg/target/release/img)
+	    571593065cc0 [unknown] ([unknown])
+	    57159308c690 [unknown] ([unknown])
+
+img   34541/34541    4541.326766:    4121195 cycles:Pu: 
+	    7ef6fbd8d232 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554371941 <alloc::vec::Vec<T,A> as core::clone::Clone>::clone+0x151 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.327821:    4139294 cycles:Pu: 
+	    571554383b48 core::hash::BuildHasher::hash_one+0xf8 (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	737f5a0cffffff1a [unknown] ([unknown])
+
+img   34541/34541    4541.328806:    4112934 cycles:Pu: 
+	    571554383a8e core::hash::BuildHasher::hash_one+0x3e (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	4fff5060ffff0858 [unknown] ([unknown])
+
+img   34541/34541    4541.329788:    4104024 cycles:Pu: 
+	    571554383b5a core::hash::BuildHasher::hash_one+0x10a (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	ff7fffff64032bff [unknown] ([unknown])
+
+img   34541/34541    4541.330774:    4117830 cycles:Pu: 
+	    571554380199 hashbrown::map::HashMap<K,V,S,A>::insert+0x109 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.331763:    4132699 cycles:Pu: 
+	    571554386000 img::png::deflate::encode_block_type_two+0x800 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.332794:    4148341 cycles:Pu: 
+	    7ef6fbd8d572 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554371941 <alloc::vec::Vec<T,A> as core::clone::Clone>::clone+0x151 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.333841:    4137020 cycles:Pu: 
+	    571554388e34 img::png::deflate::lzss::encode_lzss_to_bitstream+0x5b4 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.334879:    4097244 cycles:Pu: 
+	    571554384943 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0x103 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.335846:    4049646 cycles:Pu: 
+	    571554388aaf img::png::deflate::lzss::encode_lzss_to_bitstream+0x22f (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.336820:    4067773 cycles:Pu: 
+	    571554388db7 img::png::deflate::lzss::encode_lzss_to_bitstream+0x537 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.337800:    4093234 cycles:Pu: 
+	    7ef6fbd8bedb [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8ee52 cfree+0xf2 (/usr/lib/libc.so.6)
+	    571554371d11 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x321 (/home/guy/programs/rust/gimg/target/release/img)
+	    57159304fe90 [unknown] ([unknown])
+	d9f28127da3bc950 [unknown] ([unknown])
+
+img   34541/34541    4541.338887:    4117888 cycles:Pu: 
+	    5715543789c2 core::slice::sort::stable::quicksort::quicksort+0x1e2 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.339852:    4047565 cycles:Pu: 
+	    7ef6fbd8a67d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d81d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554371941 <alloc::vec::Vec<T,A> as core::clone::Clone>::clone+0x151 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.340826:    4065947 cycles:Pu: 
+	    5715543849d6 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0x196 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	672fffffffffffff [unknown] ([unknown])
+
+img   34541/34541    4541.341804:    4087596 cycles:Pu: 
+	    571554383291 img::png::deflate::huffman::package_merge::PackageMergeEncoder<T>::get_symbol_lengths+0x651 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.342790:    4114021 cycles:Pu: 
+
+img   34541/34541    4541.343840:    4129698 cycles:Pu: 
+	    571554383b3e core::hash::BuildHasher::hash_one+0xee (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.344852:    4110983 cycles:Pu: 
+	    571554388a4e img::png::deflate::lzss::encode_lzss_to_bitstream+0x1ce (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.345844:    4079794 cycles:Pu: 
+	    5715543843d2 alloc::raw_vec::RawVec<T,A>::grow_one+0x52 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.346836:    4082926 cycles:Pu: 
+	    7ef6fbd8a7d1 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d280 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8dea2 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8f341 realloc+0x251 (/usr/lib/libc.so.6)
+	    57155438433d _ZN5alloc7raw_vec11finish_grow17hc64bec5eed204f0cE.llvm.16612912500347138795+0x2d (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.347843:    4091254 cycles:Pu: 
+	    571554386f2e img::png::deflate::generate_prefix_codes_from_lzss_stream+0x2ae (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	26ffff48773c1d03 [unknown] ([unknown])
+
+img   34541/34541    4541.348823:    4096322 cycles:Pu: 
+	    571554376305 core::slice::sort::shared::smallsort::small_sort_general_with_scratch+0x475 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.349902:    4099371 cycles:Pu: 
+	    571554383b34 core::hash::BuildHasher::hash_one+0xe4 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.350870:    4038975 cycles:Pu: 
+	    571554388c52 img::png::deflate::lzss::encode_lzss_to_bitstream+0x3d2 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.351841:    4069605 cycles:Pu: 
+	    571554372cd1 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x181 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.352818:    4085577 cycles:Pu: 
+	    7ef6fbe54158 [unknown] (/usr/lib/libc.so.6)
+
+img   34541/34541    4541.353801:    4107555 cycles:Pu: 
+	    571554383af6 core::hash::BuildHasher::hash_one+0xa6 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	5356ff142476ffff [unknown] ([unknown])
+
+img   34541/34541    4541.354811:    4125216 cycles:Pu: 
+	    7ef6fbd8a669 [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8d81d [unknown] (/usr/lib/libc.so.6)
+	    7ef6fbd8e84f malloc+0x23f (/usr/lib/libc.so.6)
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.355843:    4130801 cycles:Pu: 
+	    571554383a84 core::hash::BuildHasher::hash_one+0x34 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.356853:    4109731 cycles:Pu: 
+	    571554372c1a <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0xca (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.357858:    4089765 cycles:Pu: 
+	    57155438af00 _RNvCs78KD1z0vSAp_7___rustc35___rust_no_alloc_shim_is_unstable_v2+0x0 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.358869:    4086066 cycles:Pu: 
+	    571554383adb core::hash::BuildHasher::hash_one+0x8b (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	5dff7d0a507c6642 [unknown] ([unknown])
+
+img   34541/34541    4541.359842:    4077370 cycles:Pu: 
+	    571554388c10 img::png::deflate::lzss::encode_lzss_to_bitstream+0x390 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.360874:    4092048 cycles:Pu: 
+	    571554383b6e core::hash::BuildHasher::hash_one+0x11e (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.361865:    4072346 cycles:Pu: 
+	    571554382583 img::png::deflate::huffman::package_merge::PackageMergeEncoder<T>::get_symbol_lengths+0x4d3 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.362869:    4082155 cycles:Pu: 
+	    571554386d75 img::png::deflate::generate_prefix_codes_from_lzss_stream+0xf5 (/home/guy/programs/rust/gimg/target/release/img)
+	              1f [unknown] ([unknown])
+	62363401601b3452 [unknown] ([unknown])
+
+img   34541/34541    4541.363842:    4079208 cycles:Pu: 
+	    571554370a05 <alloc::vec::Vec<T,A> as alloc::vec::spec_extend::SpecExtend<&T,I>>::spec_extend+0x105 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.364849:    4093677 cycles:Pu: 
+	    57155438a837 img::png::deflate::bitstream::WriteBitStream::extend+0x7 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.365882:    4099357 cycles:Pu: 
+	    571554372b81 <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x31 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.366961:    4068872 cycles:Pu: 
+	    571554384943 _ZN71_$LT$std..hash..random..DefaultHasher$u20$as$u20$core..hash..Hasher$GT$5write17h5a2c17fff102ca64E.llvm.16612912500347138795+0x103 (/home/guy/programs/rust/gimg/target/release/img)
+	              7f [unknown] ([unknown])
+	ffffff1affff6cff [unknown] ([unknown])
+
+img   34541/34541    4541.367946:    4008179 cycles:Pu: 
+	    7ef6fbd8ed60 cfree+0x0 (/usr/lib/libc.so.6)
+	    571593066640 [unknown] ([unknown])
+	               0 [unknown] ([unknown])
+
+img   34541/34541    4541.368935:    4022952 cycles:Pu: 
+	    571554388de8 img::png::deflate::lzss::encode_lzss_to_bitstream+0x568 (/home/guy/programs/rust/gimg/target/release/img)
+
+img   34541/34541    4541.369928:    4034203 cycles:Pu: 
+	    571554372c5d <alloc::vec::Vec<T> as alloc::vec::spec_from_iter::SpecFromIter<T,I>>::from_iter+0x10d (/home/guy/programs/rust/gimg/target/release/img)
+

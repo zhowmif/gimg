@@ -6,7 +6,7 @@ pub mod lzss;
 pub mod prefix_table;
 pub mod zlib;
 
-use std::{collections::HashMap, iter};
+use std::{collections::HashMap, iter, time::Instant};
 
 use bitstream::WriteBitStream;
 use consts::{
@@ -36,14 +36,14 @@ pub fn compress_scanlines(
     let mut encoder = ZlibEncoder::new(compression_level);
 
     for scanline in scanlines {
-        encoder.write_bytes(&scanline);
+        encoder.write_bytes(scanline);
     }
 
     encoder.flush()
 }
 
-pub fn uncompress_scanlines<'a>(
-    data: &'a [u8],
+pub fn uncompress_scanlines(
+    data: &[u8],
     height: usize,
     width: usize,
     bits_per_pixel: usize,
@@ -94,8 +94,7 @@ impl DeflateBlockType {
             2 => DeflateBlockType::DynamicHuffman,
             n => {
                 return Err(DeflateDecodeError(format!(
-                    "Unrecognized deflate block type - {}",
-                    n
+                    "Unrecognized deflate block type - {n}"
                 )))
             }
         })
@@ -123,7 +122,9 @@ impl DeflateEncoder {
         match self.compression_level {
             CompressionLevel::None => encode_block_type_zero(&self.bytes, 0, true).bitstream,
             CompressionLevel::Best => {
+                let start = Instant::now();
                 let lzss_symbols = encode_lzss_optimized(&self.bytes);
+                let after_lzss = Instant::now();
                 // println!("lzss symbols {:?}", lzss_symbols);
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
@@ -180,6 +181,9 @@ impl DeflateEncoder {
                 }
 
                 compressed.extend(&last_block.bitstream);
+                let after_encode = Instant::now();
+                println!("lzss time {:?}", after_lzss - start);
+                println!("encode time {:?}", after_encode - after_lzss);
 
                 compressed
             }
@@ -198,7 +202,7 @@ fn encode_block_type_zero(bytes: &[u8], start_index: usize, is_last: bool) -> En
         let is_last = is_last && block_index == bytes.len() / MAX_UNCOMPRESSED_BLOCK_SIZE as usize;
         push_is_last(&mut bitstream, is_last);
 
-        bitstream.push_u8_rtl(DeflateBlockType::None.to_number().into(), 2);
+        bitstream.push_u8_rtl(DeflateBlockType::None.to_number(), 2);
         //padding
         bitstream.push_u8_rtl(0, 5);
 
@@ -225,7 +229,7 @@ fn encode_block_type_one(
 ) -> EncodedBlock {
     let mut result = WriteBitStream::new();
     push_is_last(&mut result, is_last);
-    result.push_u8_rtl(DeflateBlockType::FixedHuffman.to_number().into(), 2);
+    result.push_u8_rtl(DeflateBlockType::FixedHuffman.to_number(), 2);
 
     let literal_length_table = generate_static_lit_len_table();
     let distance_table = generate_static_distance_table();
@@ -251,7 +255,7 @@ fn encode_block_type_two(
 ) -> EncodedBlock {
     let mut result = WriteBitStream::new();
     push_is_last(&mut result, is_last);
-    result.push_u8_rtl(DeflateBlockType::DynamicHuffman.to_number().into(), 2);
+    result.push_u8_rtl(DeflateBlockType::DynamicHuffman.to_number(), 2);
 
     let (ll_code_lengths, distance_code_lengths) =
         generate_prefix_codes_from_lzss_stream(append_end_of_block(lzss_stream));
@@ -290,11 +294,8 @@ fn encode_block_type_two(
     let hclen = cl_table_length - 4;
     result.push_u8_rtl(hclen as u8, 4);
 
-    for i in 0..cl_table_length {
-        let cl_code_length = cl_codes_lengths
-            .get(&CL_ALPHABET[i])
-            .map(|x| *x)
-            .unwrap_or(0);
+    for cl_code in CL_ALPHABET.iter().take(cl_table_length) {
+        let cl_code_length = cl_codes_lengths.get(cl_code).cloned().unwrap_or(0);
 
         result.push_u8_rtl(cl_code_length as u8, 3);
     }
