@@ -1,10 +1,13 @@
-use std::{collections::{HashMap, VecDeque}, iter};
+use std::collections::{HashMap, VecDeque};
 
-use crate::png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel};
+use crate::{
+    png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel},
+    simd_utils::number_of_matching_bytes,
+};
 
 #[derive(Clone)]
 pub struct LzssHashTable {
-    map: HashMap<u32, VecDeque<usize>>,
+    map: HashMap<u32, VecDeque<(usize, usize)>>,
     compression_level: CompressionLevel,
 }
 
@@ -24,11 +27,12 @@ impl LzssHashTable {
         cursor: usize,
         window_start_index: usize,
     ) -> Option<(u16, u16)> {
-        let chain = self.get_chain(&whole_input[cursor..])?;
+        let key = Self::get_key(whole_input, cursor)?;
+        let chain = self.map.get(&key)?;
         let (index, length) = chain
             .iter()
-            .filter(|idx| **idx < cursor && **idx >= window_start_index)
-            .map(|idx| {
+            .filter(|(idx, _)| *idx < cursor && *idx >= window_start_index)
+            .map(|(idx, _)| {
                 (
                     idx,
                     number_of_matching_bytes(
@@ -52,44 +56,37 @@ impl LzssHashTable {
         Some(backreference)
     }
 
-    fn get_chain(&self, byte_sequence: &[u8]) -> Option<&VecDeque<usize>> {
-        let key = Self::get_key(
-            *byte_sequence.first()?,
-            *byte_sequence.get(1)?,
-            *byte_sequence.get(2)?,
-        );
-
-        self.map.get(&key)
-    }
-
     #[inline(always)]
-    fn get_key(b1: u8, b2: u8, b3: u8) -> u32 {
-        ((b1 as u32) << 16) + ((b2 as u32) << 8) + (b3 as u32)
+    fn get_key(bytes: &[u8], cursor: usize) -> Option<u32> {
+        let b1 = *bytes.get(cursor)?;
+        let b2 = *bytes.get(cursor + 1)?;
+        let b3 = *bytes.get(cursor + 2)?;
+
+        Some(((b1 as u32) << 16) + ((b2 as u32) << 8) + (b3 as u32))
     }
 
     pub fn insert(
         &mut self,
         cursor: usize,
-        byte1: u8,
-        byte2: u8,
-        byte3: u8,
+        bytes: &[u8],
+        first_byte_repeat_count: usize,
         window_start: usize,
         window_end: usize,
     ) {
-        let key = Self::get_key(byte1, byte2, byte3);
+        let key = Self::get_key(bytes, cursor).expect("Must have at least 3 bytes to insert");
         let chain = self.map.get_mut(&key);
 
         match chain {
             None => {
-                let chain = VecDeque::from([cursor]);
+                let chain = VecDeque::from([(cursor, first_byte_repeat_count)]);
                 self.map.insert(key, chain);
             }
             Some(chain) => {
-                chain.push_back(cursor);
+                chain.push_back((cursor, first_byte_repeat_count));
 
                 match self.compression_level {
                     CompressionLevel::Best => {
-                        chain.retain(|idx| *idx >= window_start && *idx <= window_end)
+                        chain.retain(|(idx, _)| *idx >= window_start && *idx <= window_end)
                     }
                     _ => {
                         if chain.len() > MAX_SMALL_CHAIN_SIZE {
@@ -106,19 +103,29 @@ impl LzssHashTable {
         whole_input: &[u8],
         cursor: usize,
     ) -> Option<Vec<(u16, u16)>> {
+        let current_repeating_bytes = first_byte_repeat_count(&whole_input[cursor..]);
+
+        let max_match_end = (cursor + 258).min(whole_input.len());
         let window_start_index = cursor.max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE;
-        let chain = self.get_chain(&whole_input[cursor..])?;
+        let key = Self::get_key(whole_input, cursor)?;
+        let chain = self.map.get(&key)?;
         let backreferences: Vec<_> = chain
             .iter()
-            .filter(|idx| **idx < cursor && **idx >= window_start_index)
-            .map(|idx| {
-                (
-                    (cursor - *idx) as u16,
-                    number_of_matching_bytes(
-                        &whole_input[cursor..(cursor + 258).min(whole_input.len())],
-                        &whole_input[*idx..(cursor + 258).min(whole_input.len())],
-                    ) as u16,
-                )
+            .filter(|&(idx, _)| *idx < cursor && *idx >= window_start_index)
+            .map(|(idx, match_repeating_bytes)| {
+                let bf_lengths = match current_repeating_bytes.cmp(match_repeating_bytes) {
+                    std::cmp::Ordering::Less => current_repeating_bytes,
+                    std::cmp::Ordering::Equal => {
+                        current_repeating_bytes
+                            + number_of_matching_bytes(
+                                &whole_input[(cursor + current_repeating_bytes)..max_match_end],
+                                &whole_input[(*idx + current_repeating_bytes)..max_match_end],
+                            )
+                    }
+                    std::cmp::Ordering::Greater => *match_repeating_bytes,
+                } as u16;
+
+                ((cursor - *idx) as u16, bf_lengths)
             })
             .collect();
 
@@ -126,21 +133,8 @@ impl LzssHashTable {
     }
 }
 
-
-//this will hint to the compiler to use simd
-//https://users.rust-lang.org/t/how-to-find-common-prefix-of-two-byte-slices-effectively/25815/4
 #[inline(always)]
-pub fn number_of_matching_bytes(xs: &[u8], ys: &[u8]) -> usize {
-    chunked_number_of_matching_bytes::<128>(xs, ys)
-}
-
-#[inline(always)]
-fn chunked_number_of_matching_bytes<const N: usize>(xs: &[u8], ys: &[u8]) -> usize {
-    let off = iter::zip(xs.chunks_exact(N), ys.chunks_exact(N))
-        .take_while(|(x, y)| x == y)
-        .count()
-        * N;
-    off + iter::zip(&xs[off..], &ys[off..])
-        .take_while(|(x, y)| x == y)
-        .count()
+pub fn first_byte_repeat_count(bytes: &[u8]) -> usize {
+    let first = bytes[0];
+    bytes.iter().take(258).take_while(|&&b| b == first).count()
 }

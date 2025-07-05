@@ -107,3 +107,34 @@ fn paeth_predictor(a: u8, b: u8, c: u8) -> u8 {
         c as u8
     }
 }
+
+#[inline(always)]
+pub fn number_of_matching_bytes(lhs: &[u8], rhs: &[u8]) -> usize {
+    let end = lhs.len().min(rhs.len());
+    let chunk_size = u8x64::LEN;
+    let mut result = 0;
+    let mut i = 0;
+
+    while i + chunk_size < end {
+        let lhs_chunk = u8x64::from_slice(&lhs[i..(i + chunk_size)]);
+        let rhs_chunk = u8x64::from_slice(&rhs[i..(i + chunk_size)]);
+
+        if rhs_chunk == lhs_chunk {
+            result += chunk_size;
+        } else {
+            break;
+        }
+        i += chunk_size;
+    }
+
+    let non_chunked_start = result;
+    for i in non_chunked_start..end {
+        if lhs[i] == rhs[i] {
+            result += 1;
+        } else {
+            break;
+        }
+    }
+
+    result
+}

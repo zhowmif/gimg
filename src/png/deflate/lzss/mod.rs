@@ -1,5 +1,6 @@
 pub mod backreference;
 mod hash;
+use hash::first_byte_repeat_count;
 pub use hash::LzssHashTable;
 
 use std::{collections::HashMap, iter::repeat_n};
@@ -112,7 +113,13 @@ pub fn encode_lzss_iteration(
     let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
     let mut lzss_table = LzssHashTable::new(CompressionLevel::Best);
     for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
-        lzss_table.insert(i, bytes[i], bytes[i + 1], bytes[i + 2], 0, bytes.len());
+        lzss_table.insert(
+            i,
+            bytes,
+            first_byte_repeat_count(&bytes[i..]),
+            0,
+            bytes.len(),
+        );
     }
     let ll_default: u32 =
         ll_code_lengths.iter().flatten().sum::<u32>() / (ll_code_lengths.len() as u32);
@@ -169,9 +176,8 @@ pub fn encode_lzss_iteration(
             let first_byte_index_in_window = bytes_index - LZSS_WINDOW_SIZE;
             lzss_table.insert(
                 first_byte_index_in_window,
-                bytes[first_byte_index_in_window],
-                bytes[first_byte_index_in_window + 1],
-                bytes[first_byte_index_in_window + 2],
+                bytes,
+                first_byte_repeat_count(&bytes[first_byte_index_in_window..]),
                 first_byte_index_in_window,
                 bytes_index,
             );
@@ -194,18 +200,6 @@ pub fn encode_lzss_iteration(
             i -= jump;
         }
     }
-
-    // let mut i = 0;
-    // let best_symbols: Vec<_> = best_symbol_costs.into_iter().rev().collect();
-    //
-    // while i < bytes.len() {
-    //     let symbol = &best_symbols[i].1;
-    //     lzss_symbols.push(symbol.clone());
-    //     i += match symbol {
-    //         LzssSymbol::Backreference(_, len) => *len as usize,
-    //         _ => 1,
-    //     };
-    // }
 
     lzss_symbols
 }
@@ -239,9 +233,8 @@ fn find_backreference_with_table(
     if cursor + 2 < bytes.len() {
         table.insert(
             cursor,
-            bytes[cursor],
-            bytes[cursor + 1],
-            bytes[cursor + 2],
+            bytes,
+            first_byte_repeat_count(&bytes[cursor..]),
             cursor.saturating_sub(LZSS_WINDOW_SIZE),
             cursor,
         );
