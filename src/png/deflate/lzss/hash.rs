@@ -98,17 +98,8 @@ impl LzssHashTable {
         let max_match_end = (cursor + LZSS_MAX_LENGTH).min(whole_input.len());
         let key = Self::get_key(whole_input, cursor)?;
 
-        // unsafe {
-        //     TOTAL_ATTEMPS += 1;
-        //     if key == LAST_KEY {
-        //         LAST_KEY_HITS += 1;
-        //     } else {
-        //         LAST_KEY = key;
-        //     }
-        // }
-
         let chain = self.map.get_mut(&key)?;
-        let mut backreferences: Vec<(u16, u16)> = Vec::with_capacity(chain.len());
+        // println!("chain {:?}", chain);
 
         while let Some(elem) = chain.front() {
             if elem.0 >= cursor {
@@ -118,10 +109,15 @@ impl LzssHashTable {
             }
         }
 
+        let mut backreferences: Vec<(u16, u16)> = Vec::with_capacity(chain.len());
         for (idx, match_repeating_bytes) in chain {
             let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
                 std::cmp::Ordering::Less => current_repeating_bytes,
                 std::cmp::Ordering::Equal => {
+                    // println!(
+                    //     "doing the dirty work {current_repeating_bytes}, sending {:?}",
+                    //     &whole_input[(cursor + current_repeating_bytes)..max_match_end],
+                    // );
                     current_repeating_bytes
                         + number_of_matching_bytes(
                             &whole_input[(cursor + current_repeating_bytes)..max_match_end],
@@ -130,6 +126,7 @@ impl LzssHashTable {
                 }
                 std::cmp::Ordering::Greater => *match_repeating_bytes,
             } as u16;
+            // println!("{bf_length}");
 
             backreferences.push(((cursor - *idx) as u16, bf_length));
         }
@@ -137,10 +134,6 @@ impl LzssHashTable {
         Some(backreferences)
     }
 }
-
-// pub static mut LAST_KEY: u32 = 0;
-// pub static mut LAST_KEY_HITS: usize = 0;
-// pub static mut TOTAL_ATTEMPS: usize = 0;
 
 #[inline(always)]
 pub fn first_byte_repeat_count(bytes: &[u8]) -> usize {

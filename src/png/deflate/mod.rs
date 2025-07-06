@@ -125,7 +125,6 @@ impl DeflateEncoder {
                 let start = Instant::now();
                 let lzss_symbols = encode_lzss_optimized(&self.bytes);
                 let after_lzss = Instant::now();
-                // println!("lzss symbols {:?}", lzss_symbols);
                 let mut compressed = WriteBitStream::new();
                 let mut last_block = EncodedBlock {
                     start_index: 0,

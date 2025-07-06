@@ -14,7 +14,7 @@ use backreference::{
     LZSS_NUMBER_OF_LITERALS,
 };
 
-use crate::png::CompressionLevel;
+use crate::png::{deflate::encode_block_type_two, CompressionLevel};
 
 use super::{
     append_end_of_block,
@@ -60,13 +60,12 @@ pub fn encode_lzss_greedy(bytes: &[u8], compression_level: CompressionLevel) -> 
 
 pub fn encode_lzss_optimized(bytes: &[u8]) -> Vec<LzssSymbol> {
     let mut lzss_symbols = encode_lzss_greedy(bytes, CompressionLevel::Best);
-    // print!("Initial ");
-    // symbol_stats(&lzss_symbols);
+    print!("Initial ");
+    symbol_stats(&lzss_symbols);
     // println!("initial lzss symbols {:?}", lzss_symbols);
-    for _i in 0..1 {
+    for _i in 0..5 {
         let (ll_code_lengths, distance_code_lengths) =
             generate_prefix_codes_from_lzss_stream(append_end_of_block(&lzss_symbols));
-        // let compressed = encode_block_type_two(&lzss_symbols, 0, true);
         // println!(
         //     "len {} {} - {}",
         //     ll_code_lengths.len(),
@@ -82,8 +81,8 @@ pub fn encode_lzss_optimized(bytes: &[u8]) -> Vec<LzssSymbol> {
             lengths_encoding_costs,
             distance_encoding_costs,
         );
-        // print!("Round {_i} ");
-        // symbol_stats(&lzss_symbols);
+        print!("Round {_i} ");
+        symbol_stats(&lzss_symbols);
     }
 
     lzss_symbols
@@ -102,7 +101,9 @@ fn construct_literal_encoding_costs(
             number_of_literals_in_table += 1;
         }
     }
-    average_literal_size /= number_of_literals_in_table;
+    average_literal_size = average_literal_size
+        .checked_div(number_of_literals_in_table)
+        .unwrap_or(0);
 
     for literal in 0..LZSS_NUMBER_OF_LITERALS {
         let literal_encode_cost = ll_code_lengths
@@ -129,7 +130,9 @@ fn construct_length_encoding_costs(
         }
     }
 
-    average_code_size /= number_of_codes_in_table;
+    average_code_size = average_code_size
+        .checked_div(number_of_codes_in_table)
+        .unwrap_or(0);
 
     for length in 0..LZSS_NUMBER_OF_LENGHTS {
         let code = LENGTH_TO_CODE[length];
@@ -157,7 +160,9 @@ fn construct_distance_encoding_costs(
         }
     }
 
-    average_code_size /= number_of_codes_in_table;
+    average_code_size = average_code_size
+        .checked_div(number_of_codes_in_table)
+        .unwrap_or(0);
 
     let mut distance_encoding_costs = [0; LZSS_NUMBER_OF_DISTANCES];
     for distance in 0..LZSS_NUMBER_OF_DISTANCES {
@@ -186,6 +191,9 @@ fn table_to_vec(t: &HashMap<u16, u32>, size: usize) -> Vec<Option<u32>> {
 }
 
 pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
+    let compressed = encode_block_type_two(&lzss_symbols, 0, true)
+        .bitstream
+        .flush_to_bytes();
     let mut lits = 0;
     let mut bfs = 0;
     for sym in lzss_symbols {
@@ -195,7 +203,11 @@ pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
             LzssSymbol::EndOfBlock => {}
         }
     }
-    println!("total {} lits {lits}, bfs {bfs}", lzss_symbols.len());
+    println!(
+        "total len {},total symbols {} lits {lits}, bfs {bfs}",
+        compressed.len(),
+        lzss_symbols.len()
+    );
 }
 
 pub fn encode_lzss_iteration(
@@ -204,34 +216,50 @@ pub fn encode_lzss_iteration(
     lengths_encoding_costs: [u32; LZSS_NUMBER_OF_LENGHTS],
     distance_encoding_costs: [u32; LZSS_NUMBER_OF_DISTANCES],
 ) -> Vec<LzssSymbol> {
-    //this is in reverse order
-    let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
+    //this is in reverse order -
+    //index 0 represents the end of the bytestream (0 cost to encode, end of block symbol is just a
+    //placeholder, no symbol is encoded in practice)
+    //index 1 represents the last byte and how costly it will be to encode
+    //all other indices represent the best symbol at that point in the bytestream
+    //and how costly the bytestream is to encode from that point
+    let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = vec![(0, LzssSymbol::EndOfBlock)];
+
     let mut lzss_table = LzssHashTable::new(CompressionLevel::Best);
     for i in ((bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2)).rev() {
+        // println!("inserting {:?}", &bytes[i..]);
         lzss_table.insert(i, bytes, first_byte_repeat_count(&bytes[i..]));
     }
 
-    for cost_list_index in 0..bytes.len() {
-        let bytes_index = bytes.len() - cost_list_index - 1;
+    let mut total_cost = 0;
+    //the last two bytes cannot be a backreference since it must have at least length 3
+    for cost_list_index in 1..=2 {
+        let byte = &bytes[bytes.len() - cost_list_index];
+        total_cost += literal_encoding_costs[*byte as usize];
+        best_symbol_costs.push((total_cost, LzssSymbol::Literal(*byte)));
+    }
+
+    for cost_list_index in 3..=bytes.len() {
+        let bytes_index = bytes.len() - cost_list_index;
         let byte = &bytes[bytes_index];
 
-        let literal_cost = literal_encoding_costs[*byte as usize]
-            + cost_list_index
-                .checked_sub(1)
-                .map(|idx| best_symbol_costs[idx].0)
-                .unwrap_or(0);
+        let literal_cost =
+            literal_encoding_costs[*byte as usize] + best_symbol_costs[cost_list_index - 1].0;
 
+        // print!("looking for {:?}", &bytes[bytes_index..]);
         let backreferences: Vec<(u16, u16)> = lzss_table
             .get_all_backreferences(bytes, bytes_index)
             .unwrap_or_default();
+        // println!(" - found {}", backreferences.len());
 
         let mut best_bf = (0, 0);
         let mut best_bf_cost = literal_cost;
         for bf in backreferences {
-            let bf_end_cost = cost_list_index
-                .checked_sub(bf.1 as usize)
-                .map(|idx| best_symbol_costs[idx].0)
-                .unwrap_or(0);
+            // let bf_end_cost = cost_list_index
+            //     .checked_sub(bf.1 as usize)
+            //     .map(|idx| best_symbol_costs[idx].0)
+            //     .unwrap_or(0);
+            // println!("{previous_cost_list_index}, {}", bf.1);
+            let bf_end_cost = best_symbol_costs[cost_list_index - bf.1 as usize].0;
 
             if bf_end_cost > best_bf_cost {
                 continue;
@@ -266,6 +294,7 @@ pub fn encode_lzss_iteration(
     }
     let mut lzss_symbols: Vec<LzssSymbol> = Vec::new();
     let mut i = best_symbol_costs.len() - 1;
+    // println!("{:?}", best_symbol_costs);
 
     loop {
         let symbol = &best_symbol_costs[i].1;
@@ -275,16 +304,12 @@ pub fn encode_lzss_iteration(
             _ => 1,
         };
 
-        if jump > i {
+        i = i.saturating_sub(jump);
+        if i == 0 {
             break;
-        } else {
-            i -= jump;
         }
     }
-
-    // unsafe {
-    //     println!("LAST KEY HITS {LAST_KEY_HITS}, TOTAL {TOTAL_ATTEMPS}");
-    // }
+    // println!("final {:?}", lzss_symbols);
 
     lzss_symbols
 }

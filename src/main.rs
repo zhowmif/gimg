@@ -7,7 +7,7 @@ use colors::{Rgba, YCbCr};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
-use png::{decode_png, deflate::DeflateEncoder, encode_png, CompressionLevel, PartialPngConfig};
+use png::{decode_png, deflate::{decode::decode_deflate, DeflateEncoder}, encode_png, CompressionLevel, PartialPngConfig};
 use ppm::decode_ppm;
 // use simd_utils::{CALLS, MATCHING_BYTES};
 
@@ -40,11 +40,13 @@ fn main() {
 }
 
 fn deflate_test() {
-    let input = &fs::read("files/text.txt").unwrap();
-    // let input = b"it was, it was";
+    // let input = &fs::read("files/text.txt").unwrap();
+    let input = b"helhelaaaaaaaaaaa";
 
     // compress(input, CompressionLevel::Fast);
-    compress(input, CompressionLevel::Best);
+    let cmp = compress(input, CompressionLevel::Best);
+    let dec = String::from_utf8(decode_deflate(&cmp).unwrap()).unwrap();
+    println!("Decoded: {}", dec);
 
     // let decoded = String::from_utf8(decode_deflate(&out).unwrap()).expect("utf8 failed");
     // if decoded.len() < 100 {
@@ -54,13 +56,14 @@ fn deflate_test() {
     // }
 }
 
-fn compress(input: &[u8], compression_level: CompressionLevel) {
+fn compress(input: &[u8], compression_level: CompressionLevel) -> Vec<u8> {
     let start = Instant::now();
     let mut enc = DeflateEncoder::new(compression_level);
     enc.write_bytes(input);
-    let l = enc.finish().flush_to_bytes().len();
+    let bytes = enc.finish().flush_to_bytes();
     let end = Instant::now();
-    println!("{:?}, {l} {:?}", compression_level, end - start);
+    println!("{:?}, {} {:?}", compression_level, bytes.len(), end - start);
+    bytes
 }
 
 fn png_encode_test() {
@@ -77,8 +80,7 @@ fn png_encode_test() {
         })
         .collect();
 
-    let config = PartialPngConfig::new()
-        .compression_level(png::CompressionLevel::Best);
+    let config = PartialPngConfig::new().compression_level(png::CompressionLevel::Best);
     let png_bytes = encode_png(rgba_pixels, config);
     println!("Size {}", png_bytes.len());
     fs::write("files/mymountain.png", png_bytes).expect("Failed to write my png");
