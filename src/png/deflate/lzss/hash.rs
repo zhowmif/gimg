@@ -5,6 +5,8 @@ use crate::{
     simd_utils::number_of_matching_bytes,
 };
 
+use super::backreference::LZSS_MAX_LENGTH;
+
 #[derive(Clone)]
 pub struct LzssHashTable {
     map: HashMap<u32, VecDeque<(usize, usize)>>,
@@ -36,8 +38,8 @@ impl LzssHashTable {
                 (
                     idx,
                     number_of_matching_bytes(
-                        &whole_input[cursor..(cursor + 258).min(whole_input.len())],
-                        &whole_input[*idx..(cursor + 258).min(whole_input.len())],
+                        &whole_input[cursor..(cursor + LZSS_MAX_LENGTH).min(whole_input.len())],
+                        &whole_input[*idx..(cursor + LZSS_MAX_LENGTH).min(whole_input.len())],
                     ),
                 )
             })
@@ -108,7 +110,7 @@ impl LzssHashTable {
     ) -> Option<Vec<(u16, u16)>> {
         let current_repeating_bytes = first_byte_repeat_count(&whole_input[cursor..]);
 
-        let max_match_end = (cursor + 258).min(whole_input.len());
+        let max_match_end = (cursor + LZSS_MAX_LENGTH).min(whole_input.len());
         let window_start_index = cursor.max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE;
         let key = Self::get_key(whole_input, cursor)?;
         let chain = self.map.get(&key)?;
@@ -139,5 +141,9 @@ impl LzssHashTable {
 #[inline(always)]
 pub fn first_byte_repeat_count(bytes: &[u8]) -> usize {
     let first = bytes[0];
-    bytes.iter().take(258).take_while(|&&b| b == first).count()
+    bytes
+        .iter()
+        .take(LZSS_MAX_LENGTH)
+        .take_while(|&&b| b == first)
+        .count()
 }

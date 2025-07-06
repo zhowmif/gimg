@@ -6,8 +6,10 @@ pub use hash::LzssHashTable;
 use std::{collections::HashMap, iter::repeat_n};
 
 use backreference::{
-    DISTANCE_CODE_TO_EXTRA_BITS, DISTANCE_TABLE_SIZE, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS,
-    LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS, LL_TABLE_SIZE,
+    DISTANCE_CODE_TO_EXTRA_BITS, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS,
+    LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS, LZSS_DISTANCE_CODES,
+    LZSS_NUMBER_OF_DISTANCES, LZSS_NUMBER_OF_LENGHTS, LZSS_NUMBER_OF_LENGTH_CODES,
+    LZSS_NUMBER_OF_LITERALS,
 };
 
 use crate::png::CompressionLevel;
@@ -69,16 +71,106 @@ pub fn encode_lzss_optimized(bytes: &[u8]) -> Vec<LzssSymbol> {
         //     distance_code_lengths.len(),
         //     compressed.bitstream.len() / 8
         // );
+        let literal_encoding_costs = construct_literal_encoding_costs(&ll_code_lengths);
+        let lengths_encoding_costs = construct_length_encoding_costs(&ll_code_lengths);
+        let distance_encoding_costs = construct_distance_encoding_costs(&distance_code_lengths);
         lzss_symbols = encode_lzss_iteration(
             bytes,
-            table_to_vec(&ll_code_lengths, LL_TABLE_SIZE),
-            table_to_vec(&distance_code_lengths, DISTANCE_TABLE_SIZE),
+            literal_encoding_costs,
+            lengths_encoding_costs,
+            distance_encoding_costs,
         );
         // print!("Round {_i} ");
         // symbol_stats(&lzss_symbols);
     }
 
     lzss_symbols
+}
+
+fn construct_literal_encoding_costs(
+    ll_code_lengths: &HashMap<u16, u32>,
+) -> [u32; LZSS_NUMBER_OF_LITERALS] {
+    let mut literal_encode_costs = [0; LZSS_NUMBER_OF_LITERALS];
+    let mut average_literal_size: u32 = 0;
+    let mut number_of_literals_in_table = 0;
+
+    for literal in 0..LZSS_NUMBER_OF_LITERALS {
+        if let Some(literal_size) = ll_code_lengths.get(&(literal as u16)) {
+            average_literal_size += literal_size;
+            number_of_literals_in_table += 1;
+        }
+    }
+    average_literal_size /= number_of_literals_in_table;
+
+    for literal in 0..LZSS_NUMBER_OF_LITERALS {
+        let literal_encode_cost = ll_code_lengths
+            .get(&(literal as u16))
+            .unwrap_or(&average_literal_size);
+
+        literal_encode_costs[literal] = *literal_encode_cost;
+    }
+
+    literal_encode_costs
+}
+
+fn construct_length_encoding_costs(
+    ll_code_lengths: &HashMap<u16, u32>,
+) -> [u32; LZSS_NUMBER_OF_LENGHTS] {
+    let mut average_code_size: u32 = 0;
+    let mut number_of_codes_in_table = 0;
+    let mut lengths_encoding_costs = [0; LZSS_NUMBER_OF_LENGHTS];
+
+    for code in LZSS_NUMBER_OF_LITERALS..(LZSS_NUMBER_OF_LITERALS + LZSS_NUMBER_OF_LENGTH_CODES) {
+        if let Some(code_size) = ll_code_lengths.get(&(code as u16)) {
+            average_code_size += code_size;
+            number_of_codes_in_table += 1;
+        }
+    }
+
+    average_code_size /= number_of_codes_in_table;
+
+    for length in 0..LZSS_NUMBER_OF_LENGHTS {
+        let code = LENGTH_TO_CODE[length];
+        let code_encoding_cost = ll_code_lengths.get(&code).unwrap_or(&average_code_size);
+        let extra_bits = LENGTH_CODE_TO_EXTRA_BITS[code as usize];
+
+        let total_encode_cost = *code_encoding_cost + extra_bits as u32;
+
+        lengths_encoding_costs[length] = total_encode_cost;
+    }
+
+    lengths_encoding_costs
+}
+
+fn construct_distance_encoding_costs(
+    distance_code_lengths: &HashMap<u16, u32>,
+) -> [u32; LZSS_NUMBER_OF_DISTANCES] {
+    let mut average_code_size: u32 = 0;
+    let mut number_of_codes_in_table = 0;
+
+    for code in LZSS_DISTANCE_CODES {
+        if let Some(code_size) = distance_code_lengths.get(&(code as u16)) {
+            average_code_size += code_size;
+            number_of_codes_in_table += 1;
+        }
+    }
+
+    average_code_size /= number_of_codes_in_table;
+
+    let mut distance_encoding_costs = [0; LZSS_NUMBER_OF_DISTANCES];
+    for distance in 0..LZSS_NUMBER_OF_DISTANCES {
+        let code = DISTANCE_TO_CODE[distance as usize];
+        let code_encoding_cost = distance_code_lengths
+            .get(&code)
+            .unwrap_or(&average_code_size);
+        let extra_bits = DISTANCE_CODE_TO_EXTRA_BITS[code as usize];
+
+        let total_encode_cost = *code_encoding_cost + extra_bits as u32;
+
+        distance_encoding_costs[distance] = total_encode_cost;
+    }
+
+    distance_encoding_costs
 }
 
 fn table_to_vec(t: &HashMap<u16, u32>, size: usize) -> Vec<Option<u32>> {
@@ -106,8 +198,9 @@ pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
 
 pub fn encode_lzss_iteration(
     bytes: &[u8],
-    ll_code_lengths: Vec<Option<u32>>,
-    distance_code_lengths: Vec<Option<u32>>,
+    literal_encoding_costs: [u32; LZSS_NUMBER_OF_LITERALS],
+    lengths_encoding_costs: [u32; LZSS_NUMBER_OF_LENGHTS],
+    distance_encoding_costs: [u32; LZSS_NUMBER_OF_DISTANCES],
 ) -> Vec<LzssSymbol> {
     //this is in reverse order
     let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
@@ -115,21 +208,12 @@ pub fn encode_lzss_iteration(
     for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
         lzss_table.insert(i, bytes, first_byte_repeat_count(&bytes[i..]), bytes.len());
     }
-    let ll_default: u32 =
-        ll_code_lengths.iter().flatten().sum::<u32>() / (ll_code_lengths.len() as u32);
-    let distance_default: u32 = (distance_code_lengths
-        .iter()
-        .flatten()
-        .sum::<u32>()
-        .checked_div(distance_code_lengths.len() as u32)
-        .unwrap_or(0))
-        * 2;
 
     for cost_list_index in 0..bytes.len() {
         let bytes_index = bytes.len() - cost_list_index - 1;
         let byte = &bytes[bytes_index];
 
-        let literal_cost = ll_code_lengths[*byte as usize].unwrap_or(ll_default)
+        let literal_cost = literal_encoding_costs[*byte as usize]
             + cost_list_index
                 .checked_sub(1)
                 .map(|idx| best_symbol_costs[idx].0)
@@ -139,29 +223,32 @@ pub fn encode_lzss_iteration(
             .get_all_backreferences(bytes, bytes_index)
             .unwrap_or_default();
 
-        let (bf, bf_cost) = backreferences
-            .into_iter()
-            .map(|bf| {
-                let bf_encode_cost = cost_of_encoding_backreference(
-                    bf,
-                    &ll_code_lengths,
-                    &distance_code_lengths,
-                    ll_default,
-                    distance_default,
-                );
-                let bf_end_cost = cost_list_index
-                    .checked_sub(bf.1 as usize)
-                    .map(|idx| best_symbol_costs[idx].0)
-                    .unwrap_or(0);
+        let mut best_bf = (0, 0);
+        let mut best_bf_cost = literal_cost;
+        for bf in backreferences {
+            let bf_end_cost = cost_list_index
+                .checked_sub(bf.1 as usize)
+                .map(|idx| best_symbol_costs[idx].0)
+                .unwrap_or(0);
 
-                (bf, bf_encode_cost + bf_end_cost)
-            })
-            .min_by_key(|(_bf, cost)| *cost)
-            .unwrap_or(((0, 0), literal_cost));
+            if bf_end_cost > best_bf_cost {
+                continue;
+            }
 
-        if bf_cost < literal_cost {
-            let symbol = LzssSymbol::Backreference(bf.0, bf.1);
-            best_symbol_costs.push((bf_cost, symbol));
+            let bf_encode_cost =
+                cost_of_encoding_backreference(bf, lengths_encoding_costs, distance_encoding_costs);
+
+            let bf_cost = bf_end_cost + bf_encode_cost;
+
+            if bf_cost < best_bf_cost {
+                best_bf = bf;
+                best_bf_cost = bf_cost;
+            }
+        }
+
+        if best_bf_cost < literal_cost {
+            let symbol = LzssSymbol::Backreference(best_bf.0, best_bf.1);
+            best_symbol_costs.push((best_bf_cost, symbol));
         } else {
             best_symbol_costs.push((literal_cost, LzssSymbol::Literal(*byte)));
         }
@@ -197,22 +284,15 @@ pub fn encode_lzss_iteration(
     lzss_symbols
 }
 
-pub fn cost_of_encoding_backreference(
+fn cost_of_encoding_backreference(
     (distance, length): (u16, u16),
-    ll_code_lengths: &[Option<u32>],
-    distance_code_lengths: &[Option<u32>],
-    ll_default: u32,
-    distance_defualt: u32,
+    lengths_encoding_costs: [u32; LZSS_NUMBER_OF_LENGHTS],
+    distance_encoding_costs: [u32; LZSS_NUMBER_OF_DISTANCES],
 ) -> u32 {
-    let length_code = LENGTH_TO_CODE[length as usize];
-    let length_code_bits = ll_code_lengths[length_code as usize].unwrap_or(ll_default);
-    let length_extra_bits = LENGTH_TO_EXTRA_BITS[length as usize].1 as u32;
+    let length_cost = lengths_encoding_costs[length as usize];
+    let distance_cost = distance_encoding_costs[distance as usize];
 
-    let distance_code = DISTANCE_TO_CODE[distance as usize];
-    let dist_code_bits = distance_code_lengths[distance_code as usize].unwrap_or(distance_defualt);
-    let dist_extra_bits = DISTANCE_CODE_TO_EXTRA_BITS[distance_code as usize] as u32;
-
-    length_code_bits + length_extra_bits + dist_code_bits + dist_extra_bits
+    length_cost + distance_cost
 }
 
 fn find_backreference_with_table(

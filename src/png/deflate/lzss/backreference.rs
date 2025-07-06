@@ -1,3 +1,5 @@
+use crate::png::deflate::consts::{END_OF_BLOCK_MARKER_VALUE, LZSS_WINDOW_SIZE};
+
 const LENGTH_CODES: [u16; 29] = [
     257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275,
     276, 277, 278, 279, 280, 281, 282, 283, 284, 285,
@@ -39,8 +41,13 @@ pub const LENGTH_TO_EXTRA_BITS: [(u16, u8); 259] = [(0, 0), (0, 0), (0, 0), (0, 
 
 pub const LL_TABLE_SIZE: usize = 286;
 pub const DISTANCE_TABLE_SIZE: usize = 30;
+pub const LZSS_MAX_LENGTH: usize = 258;
+pub const LZSS_NUMBER_OF_LENGHTS: usize = LZSS_MAX_LENGTH + 1;
+pub const LZSS_NUMBER_OF_LITERALS: usize  = END_OF_BLOCK_MARKER_VALUE as usize + 1;
+pub const LZSS_NUMBER_OF_LENGTH_CODES: usize = LL_TABLE_SIZE - LZSS_NUMBER_OF_LITERALS;
+pub const LZSS_NUMBER_OF_DISTANCES: usize = LZSS_WINDOW_SIZE + 1;
 
-const DISTANCE_CODES: [u16; 30] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29];
+pub const LZSS_DISTANCE_CODES: [u16; 30] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29];
 
 const DISTANCE_EXTRA_BITS: [u16; 30] = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
 
