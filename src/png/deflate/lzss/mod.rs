@@ -244,27 +244,29 @@ pub fn encode_lzss_iteration(
         let literal_cost =
             literal_encoding_costs[*byte as usize] + best_symbol_costs[cost_list_index - 1].0;
 
-        let backreferences: Vec<(u16, u16)> = lzss_table
-            .get_all_backreferences(bytes, bytes_index)
-            .unwrap_or_default();
-
         let mut best_bf = (0, 0);
         let mut best_bf_cost = literal_cost;
-        for bf in backreferences {
-            let bf_end_cost = best_symbol_costs[cost_list_index - bf.1 as usize].0;
 
-            if bf_end_cost > best_bf_cost {
-                continue;
-            }
+        if let Some(backreferences) = lzss_table.get_all_backreferences(bytes, bytes_index) {
+            for bf in backreferences {
+                let bf_end_cost = best_symbol_costs[cost_list_index - bf.1 as usize].0;
 
-            let bf_encode_cost =
-                cost_of_encoding_backreference(bf, lengths_encoding_costs, distance_encoding_costs);
+                if bf_end_cost > best_bf_cost {
+                    continue;
+                }
 
-            let bf_cost = bf_end_cost + bf_encode_cost;
+                let bf_encode_cost = cost_of_encoding_backreference(
+                    bf,
+                    lengths_encoding_costs,
+                    distance_encoding_costs,
+                );
 
-            if bf_cost < best_bf_cost {
-                best_bf = bf;
-                best_bf_cost = bf_cost;
+                let bf_cost = bf_end_cost + bf_encode_cost;
+
+                if bf_cost < best_bf_cost {
+                    best_bf = bf;
+                    best_bf_cost = bf_cost;
+                }
             }
         }
 
