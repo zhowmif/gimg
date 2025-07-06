@@ -1,9 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::{
-    png::{deflate::consts::LZSS_WINDOW_SIZE, CompressionLevel},
-    simd_utils::number_of_matching_bytes,
-};
+use crate::{png::CompressionLevel, simd_utils::number_of_matching_bytes};
 
 use super::backreference::LZSS_MAX_LENGTH;
 
@@ -67,13 +64,7 @@ impl LzssHashTable {
         Some(((b1 as u32) << 16) + ((b2 as u32) << 8) + (b3 as u32))
     }
 
-    pub fn insert(
-        &mut self,
-        cursor: usize,
-        bytes: &[u8],
-        first_byte_repeat_count: usize,
-        window_end: usize,
-    ) {
+    pub fn insert(&mut self, cursor: usize, bytes: &[u8], first_byte_repeat_count: usize) {
         let key = Self::get_key(bytes, cursor).expect("Must have at least 3 bytes to insert");
         let chain = self.map.get_mut(&key);
 
@@ -86,13 +77,7 @@ impl LzssHashTable {
                 chain.push_back((cursor, first_byte_repeat_count));
 
                 match self.compression_level {
-                    CompressionLevel::Best => {
-                        if let Some(elem) = chain.front() {
-                            if elem.0 > window_end {
-                                chain.pop_front();
-                            }
-                        }
-                    }
+                    CompressionLevel::Best => {}
                     _ => {
                         if chain.len() > MAX_SMALL_CHAIN_SIZE {
                             chain.pop_front();
@@ -104,39 +89,58 @@ impl LzssHashTable {
     }
 
     pub fn get_all_backreferences(
-        &self,
+        &mut self,
         whole_input: &[u8],
         cursor: usize,
     ) -> Option<Vec<(u16, u16)>> {
         let current_repeating_bytes = first_byte_repeat_count(&whole_input[cursor..]);
 
         let max_match_end = (cursor + LZSS_MAX_LENGTH).min(whole_input.len());
-        let window_start_index = cursor.max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE;
         let key = Self::get_key(whole_input, cursor)?;
-        let chain = self.map.get(&key)?;
-        let backreferences: Vec<_> = chain
-            .iter()
-            .filter(|&(idx, _)| *idx < cursor && *idx >= window_start_index)
-            .map(|(idx, match_repeating_bytes)| {
-                let bf_lengths = match current_repeating_bytes.cmp(match_repeating_bytes) {
-                    std::cmp::Ordering::Less => current_repeating_bytes,
-                    std::cmp::Ordering::Equal => {
-                        current_repeating_bytes
-                            + number_of_matching_bytes(
-                                &whole_input[(cursor + current_repeating_bytes)..max_match_end],
-                                &whole_input[(*idx + current_repeating_bytes)..max_match_end],
-                            )
-                    }
-                    std::cmp::Ordering::Greater => *match_repeating_bytes,
-                } as u16;
 
-                ((cursor - *idx) as u16, bf_lengths)
-            })
-            .collect();
+        // unsafe {
+        //     TOTAL_ATTEMPS += 1;
+        //     if key == LAST_KEY {
+        //         LAST_KEY_HITS += 1;
+        //     } else {
+        //         LAST_KEY = key;
+        //     }
+        // }
+
+        let chain = self.map.get_mut(&key)?;
+        let mut backreferences: Vec<(u16, u16)> = Vec::with_capacity(chain.len());
+
+        while let Some(elem) = chain.front() {
+            if elem.0 >= cursor {
+                chain.pop_front();
+            } else {
+                break;
+            }
+        }
+
+        for (idx, match_repeating_bytes) in chain {
+            let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
+                std::cmp::Ordering::Less => current_repeating_bytes,
+                std::cmp::Ordering::Equal => {
+                    current_repeating_bytes
+                        + number_of_matching_bytes(
+                            &whole_input[(cursor + current_repeating_bytes)..max_match_end],
+                            &whole_input[(*idx + current_repeating_bytes)..max_match_end],
+                        )
+                }
+                std::cmp::Ordering::Greater => *match_repeating_bytes,
+            } as u16;
+
+            backreferences.push(((cursor - *idx) as u16, bf_length));
+        }
 
         Some(backreferences)
     }
 }
+
+// pub static mut LAST_KEY: u32 = 0;
+// pub static mut LAST_KEY_HITS: usize = 0;
+// pub static mut TOTAL_ATTEMPS: usize = 0;
 
 #[inline(always)]
 pub fn first_byte_repeat_count(bytes: &[u8]) -> usize {

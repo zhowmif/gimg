@@ -1,5 +1,7 @@
 pub mod backreference;
 mod hash;
+// use crate::png::deflate::lzss::hash::LAST_KEY_HITS;
+// use crate::png::deflate::lzss::hash::TOTAL_ATTEMPS;
 use hash::first_byte_repeat_count;
 pub use hash::LzssHashTable;
 
@@ -149,7 +151,7 @@ fn construct_distance_encoding_costs(
     let mut number_of_codes_in_table = 0;
 
     for code in LZSS_DISTANCE_CODES {
-        if let Some(code_size) = distance_code_lengths.get(&(code as u16)) {
+        if let Some(code_size) = distance_code_lengths.get(&code) {
             average_code_size += code_size;
             number_of_codes_in_table += 1;
         }
@@ -159,7 +161,7 @@ fn construct_distance_encoding_costs(
 
     let mut distance_encoding_costs = [0; LZSS_NUMBER_OF_DISTANCES];
     for distance in 0..LZSS_NUMBER_OF_DISTANCES {
-        let code = DISTANCE_TO_CODE[distance as usize];
+        let code = DISTANCE_TO_CODE[distance];
         let code_encoding_cost = distance_code_lengths
             .get(&code)
             .unwrap_or(&average_code_size);
@@ -205,8 +207,8 @@ pub fn encode_lzss_iteration(
     //this is in reverse order
     let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
     let mut lzss_table = LzssHashTable::new(CompressionLevel::Best);
-    for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
-        lzss_table.insert(i, bytes, first_byte_repeat_count(&bytes[i..]), bytes.len());
+    for i in ((bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2)).rev() {
+        lzss_table.insert(i, bytes, first_byte_repeat_count(&bytes[i..]));
     }
 
     for cost_list_index in 0..bytes.len() {
@@ -259,7 +261,6 @@ pub fn encode_lzss_iteration(
                 first_byte_index_in_window,
                 bytes,
                 first_byte_repeat_count(&bytes[first_byte_index_in_window..]),
-                bytes_index,
             );
         }
     }
@@ -280,6 +281,10 @@ pub fn encode_lzss_iteration(
             i -= jump;
         }
     }
+
+    // unsafe {
+    //     println!("LAST KEY HITS {LAST_KEY_HITS}, TOTAL {TOTAL_ATTEMPS}");
+    // }
 
     lzss_symbols
 }
@@ -304,12 +309,7 @@ fn find_backreference_with_table(
     let best_match = table.search(bytes, cursor, cursor.max(window_size) - window_size);
 
     if cursor + 2 < bytes.len() {
-        table.insert(
-            cursor,
-            bytes,
-            first_byte_repeat_count(&bytes[cursor..]),
-            cursor,
-        );
+        table.insert(cursor, bytes, first_byte_repeat_count(&bytes[cursor..]));
     }
 
     best_match
