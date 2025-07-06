@@ -70,7 +70,6 @@ impl LzssHashTable {
         cursor: usize,
         bytes: &[u8],
         first_byte_repeat_count: usize,
-        window_start: usize,
         window_end: usize,
     ) {
         let key = Self::get_key(bytes, cursor).expect("Must have at least 3 bytes to insert");
@@ -86,7 +85,11 @@ impl LzssHashTable {
 
                 match self.compression_level {
                     CompressionLevel::Best => {
-                        chain.retain(|(idx, _)| *idx >= window_start && *idx <= window_end)
+                        if let Some(elem) = chain.front() {
+                            if elem.0 > window_end {
+                                chain.pop_front();
+                            }
+                        }
                     }
                     _ => {
                         if chain.len() > MAX_SMALL_CHAIN_SIZE {

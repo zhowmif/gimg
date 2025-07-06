@@ -6,8 +6,8 @@ pub use hash::LzssHashTable;
 use std::{collections::HashMap, iter::repeat_n};
 
 use backreference::{
-    DISTANCE_TABLE_SIZE, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS, LENGTH_TO_CODE,
-    LENGTH_TO_EXTRA_BITS, LL_TABLE_SIZE,
+    DISTANCE_CODE_TO_EXTRA_BITS, DISTANCE_TABLE_SIZE, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS,
+    LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS, LL_TABLE_SIZE,
 };
 
 use crate::png::CompressionLevel;
@@ -113,13 +113,7 @@ pub fn encode_lzss_iteration(
     let mut best_symbol_costs: Vec<(u32, LzssSymbol)> = Vec::new();
     let mut lzss_table = LzssHashTable::new(CompressionLevel::Best);
     for i in (bytes.len().max(LZSS_WINDOW_SIZE) - LZSS_WINDOW_SIZE)..(bytes.len() - 2) {
-        lzss_table.insert(
-            i,
-            bytes,
-            first_byte_repeat_count(&bytes[i..]),
-            0,
-            bytes.len(),
-        );
+        lzss_table.insert(i, bytes, first_byte_repeat_count(&bytes[i..]), bytes.len());
     }
     let ll_default: u32 =
         ll_code_lengths.iter().flatten().sum::<u32>() / (ll_code_lengths.len() as u32);
@@ -178,7 +172,6 @@ pub fn encode_lzss_iteration(
                 first_byte_index_in_window,
                 bytes,
                 first_byte_repeat_count(&bytes[first_byte_index_in_window..]),
-                first_byte_index_in_window,
                 bytes_index,
             );
         }
@@ -217,7 +210,7 @@ pub fn cost_of_encoding_backreference(
 
     let distance_code = DISTANCE_TO_CODE[distance as usize];
     let dist_code_bits = distance_code_lengths[distance_code as usize].unwrap_or(distance_defualt);
-    let dist_extra_bits = DISTANCE_TO_EXTRA_BITS[distance as usize].1 as u32;
+    let dist_extra_bits = DISTANCE_CODE_TO_EXTRA_BITS[distance_code as usize] as u32;
 
     length_code_bits + length_extra_bits + dist_code_bits + dist_extra_bits
 }
@@ -235,7 +228,6 @@ fn find_backreference_with_table(
             cursor,
             bytes,
             first_byte_repeat_count(&bytes[cursor..]),
-            cursor.saturating_sub(LZSS_WINDOW_SIZE),
             cursor,
         );
     }
