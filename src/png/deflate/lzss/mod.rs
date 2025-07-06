@@ -5,16 +5,19 @@ mod hash;
 use hash::first_byte_repeat_count;
 pub use hash::LzssHashTable;
 
-use std::{collections::HashMap, iter::repeat_n};
+use std::{collections::HashMap, iter::repeat_n, u16};
 
 use backreference::{
     DISTANCE_CODE_TO_EXTRA_BITS, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS,
     LENGTH_CODE_TO_EXTRA_BITS, LENGTH_TO_CODE, LENGTH_TO_EXTRA_BITS, LZSS_DISTANCE_CODES,
-    LZSS_NUMBER_OF_DISTANCES, LZSS_NUMBER_OF_LENGHTS, LZSS_NUMBER_OF_LENGTH_CODES,
+    LZSS_MAX_LENGTH, LZSS_NUMBER_OF_DISTANCES, LZSS_NUMBER_OF_LENGHTS, LZSS_NUMBER_OF_LENGTH_CODES,
     LZSS_NUMBER_OF_LITERALS,
 };
 
-use crate::png::{deflate::encode_block_type_two, CompressionLevel};
+use crate::{
+    png::{deflate::encode_block_type_two, CompressionLevel},
+    simd_utils::number_of_matching_bytes,
+};
 
 use super::{
     append_end_of_block,
@@ -246,17 +249,42 @@ pub fn encode_lzss_iteration(
 
         let mut best_bf = (0, 0);
         let mut best_bf_cost = literal_cost;
+        let mut last_idx = usize::MAX;
+        let mut current_bf = (0, 0);
 
-        if let Some(backreferences) = lzss_table.get_all_backreferences(bytes, bytes_index) {
-            for bf in backreferences {
-                let bf_end_cost = best_symbol_costs[cost_list_index - bf.1 as usize].0;
+        if let Some(chain) = lzss_table.get_all_backreferences(bytes, bytes_index) {
+            let max_match_end = (bytes_index + LZSS_MAX_LENGTH).min(bytes.len());
+            let to_end = &bytes[..max_match_end];
+            let cursor_slice = &to_end[bytes_index..max_match_end];
+            let current_repeating_bytes = first_byte_repeat_count(cursor_slice);
+
+            for (idx, match_repeating_bytes) in chain {
+                if *idx + 1 == last_idx {
+                    current_bf.0 += 1;
+                } else {
+                    let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
+                        std::cmp::Ordering::Less => current_repeating_bytes,
+                        std::cmp::Ordering::Equal => {
+                            current_repeating_bytes
+                                + number_of_matching_bytes(
+                                    &cursor_slice[current_repeating_bytes..],
+                                    &to_end[(*idx + current_repeating_bytes)..max_match_end],
+                                )
+                        }
+                        std::cmp::Ordering::Greater => *match_repeating_bytes,
+                    };
+                    current_bf = ((bytes_index - *idx) as u16, bf_length as u16)
+                };
+                last_idx = *idx;
+
+                let bf_end_cost: u32 = best_symbol_costs[cost_list_index - current_bf.1 as usize].0;
 
                 if bf_end_cost > best_bf_cost {
                     continue;
                 }
 
                 let bf_encode_cost = cost_of_encoding_backreference(
-                    bf,
+                    current_bf,
                     lengths_encoding_costs,
                     distance_encoding_costs,
                 );
@@ -264,7 +292,7 @@ pub fn encode_lzss_iteration(
                 let bf_cost = bf_end_cost + bf_encode_cost;
 
                 if bf_cost < best_bf_cost {
-                    best_bf = bf;
+                    best_bf = current_bf;
                     best_bf_cost = bf_cost;
                 }
             }

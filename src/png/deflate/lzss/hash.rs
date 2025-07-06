@@ -90,13 +90,9 @@ impl LzssHashTable {
 
     pub fn get_all_backreferences<'a>(
         &'a mut self,
-        whole_input: &'a [u8],
+        whole_input: &[u8],
         cursor: usize,
-    ) -> Option<impl Iterator<Item = (u16, u16)> + use<'a>> {
-        let max_match_end = (cursor + LZSS_MAX_LENGTH).min(whole_input.len());
-        let to_end = &whole_input[..max_match_end];
-        let cursor_slice = &to_end[cursor..max_match_end];
-        let current_repeating_bytes = first_byte_repeat_count(cursor_slice);
+    ) -> Option<&'a VecDeque<(usize, usize)>> {
         let key = Self::get_key(whole_input, cursor)?;
 
         let chain = self.map.get_mut(&key)?;
@@ -109,38 +105,7 @@ impl LzssHashTable {
             }
         }
 
-        Some(chain.iter().map(move |(idx, match_repeating_bytes)| {
-            let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
-                std::cmp::Ordering::Less => current_repeating_bytes,
-                std::cmp::Ordering::Equal => {
-                    current_repeating_bytes
-                        + number_of_matching_bytes(
-                            &cursor_slice[current_repeating_bytes..],
-                            &to_end[(*idx + current_repeating_bytes)..max_match_end],
-                        )
-                }
-                std::cmp::Ordering::Greater => *match_repeating_bytes,
-            } as u16;
-
-            ((cursor - *idx) as u16, bf_length)
-        }))
-        // for (idx, match_repeating_bytes) in chain {
-        //     let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
-        //         std::cmp::Ordering::Less => current_repeating_bytes,
-        //         std::cmp::Ordering::Equal => {
-        //             current_repeating_bytes
-        //                 + number_of_matching_bytes(
-        //                     &cursor_slice[current_repeating_bytes..],
-        //                     &to_end[(*idx + current_repeating_bytes)..max_match_end],
-        //                 )
-        //         }
-        //         std::cmp::Ordering::Greater => *match_repeating_bytes,
-        //     } as u16;
-        //
-        //     backreferences.push(((cursor - *idx) as u16, bf_length));
-        // }
-        //
-        // Some(backreferences)
+        Some(chain)
     }
 }
 
