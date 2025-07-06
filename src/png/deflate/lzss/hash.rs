@@ -93,13 +93,13 @@ impl LzssHashTable {
         whole_input: &[u8],
         cursor: usize,
     ) -> Option<Vec<(u16, u16)>> {
-        let current_repeating_bytes = first_byte_repeat_count(&whole_input[cursor..]);
-
         let max_match_end = (cursor + LZSS_MAX_LENGTH).min(whole_input.len());
+        let to_end = &whole_input[..max_match_end];
+        let cursor_slice = &to_end[cursor..max_match_end];
+        let current_repeating_bytes = first_byte_repeat_count(cursor_slice);
         let key = Self::get_key(whole_input, cursor)?;
 
         let chain = self.map.get_mut(&key)?;
-        // println!("chain {:?}", chain);
 
         while let Some(elem) = chain.front() {
             if elem.0 >= cursor {
@@ -114,19 +114,14 @@ impl LzssHashTable {
             let bf_length = match current_repeating_bytes.cmp(match_repeating_bytes) {
                 std::cmp::Ordering::Less => current_repeating_bytes,
                 std::cmp::Ordering::Equal => {
-                    // println!(
-                    //     "doing the dirty work {current_repeating_bytes}, sending {:?}",
-                    //     &whole_input[(cursor + current_repeating_bytes)..max_match_end],
-                    // );
                     current_repeating_bytes
                         + number_of_matching_bytes(
-                            &whole_input[(cursor + current_repeating_bytes)..max_match_end],
-                            &whole_input[(*idx + current_repeating_bytes)..max_match_end],
+                            &cursor_slice[current_repeating_bytes..],
+                            &to_end[(*idx + current_repeating_bytes)..],
                         )
                 }
                 std::cmp::Ordering::Greater => *match_repeating_bytes,
             } as u16;
-            // println!("{bf_length}");
 
             backreferences.push(((cursor - *idx) as u16, bf_length));
         }
