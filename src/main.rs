@@ -50,7 +50,7 @@ fn deflate_test() {
     // compress(input, CompressionLevel::Fast);
     let cmp = compress(input, CompressionLevel::Best);
     let dec = String::from_utf8(decode_deflate(&cmp).unwrap()).unwrap();
-    println!("Decoded: {}", dec);
+    println!("Decoded: {dec}");
 
     // let decoded = String::from_utf8(decode_deflate(&out).unwrap()).expect("utf8 failed");
     // if decoded.len() < 100 {

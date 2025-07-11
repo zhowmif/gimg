@@ -1,4 +1,8 @@
-use std::{collections::HashMap, env::Args};
+use std::{collections::HashMap, env::Args, fs};
+
+use format::{FileFormat, SUPPORTED_FORMATS};
+
+mod format;
 
 #[derive(Clone, Debug)]
 struct ArgumentParseError(String);
@@ -11,10 +15,15 @@ pub fn parse_args() {
         GimgArguments::Help(subject) => print_help(subject),
         GimgArguments::Version => print_version(),
         GimgArguments::Command {
-            input_file: _,
-            output_file: _,
+            input_file,
+            output_file,
             keyword_args: _,
-        } => todo!(),
+        } => {
+            let input_format = determine_file_format_by_name(&input_file)
+                .unwrap_or_else(|| panic!("Unrecognized input file format {input_file}"));
+            let output_format = determine_file_format_by_name(&output_file)
+                .unwrap_or_else(|| panic!("Unrecognized input file format {input_file}"));
+        }
     }
 }
 
@@ -93,6 +102,26 @@ fn print_version() {
     println!("0.0.1");
 }
 
+fn determine_file_format_by_name(filename: &str) -> Option<FileFormat> {
+    match fs::read(filename) {
+        Ok(file_bytes) => {
+            for format in SUPPORTED_FORMATS {
+                if format.is_format_by_signature(&file_bytes) {
+                    return Some(format);
+                }
+            }
+
+            for format in SUPPORTED_FORMATS {
+                if format.is_format_by_extension(filename) {
+                    return Some(format);
+                }
+            }
+
+            None
+        }
+        Err(e) => panic!("error reading input file {filename}: {e}"),
+    }
+}
 
 #[derive(Debug)]
 enum GimgArguments {

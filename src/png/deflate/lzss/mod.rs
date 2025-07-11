@@ -5,7 +5,7 @@ mod hash;
 use hash::first_byte_repeat_count;
 pub use hash::LzssHashTable;
 
-use std::{collections::HashMap, iter::repeat_n, u16};
+use std::{collections::HashMap, iter::repeat_n};
 
 use backreference::{
     DISTANCE_CODE_TO_EXTRA_BITS, DISTANCE_TO_CODE, DISTANCE_TO_EXTRA_BITS,
@@ -108,6 +108,7 @@ fn construct_literal_encoding_costs(
         .checked_div(number_of_literals_in_table)
         .unwrap_or(0);
 
+    #[allow(clippy::needless_range_loop)]
     for literal in 0..LZSS_NUMBER_OF_LITERALS {
         let literal_encode_cost = ll_code_lengths
             .get(&(literal as u16))
@@ -194,7 +195,7 @@ fn table_to_vec(t: &HashMap<u16, u32>, size: usize) -> Vec<Option<u32>> {
 }
 
 pub fn symbol_stats(lzss_symbols: &[LzssSymbol]) {
-    let compressed = encode_block_type_two(&lzss_symbols, 0, true)
+    let compressed = encode_block_type_two(lzss_symbols, 0, true)
         .bitstream
         .flush_to_bytes();
     let mut lits = 0;

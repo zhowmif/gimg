@@ -17,6 +17,14 @@ macro_rules! ppm_read_bytes {
     };
 }
 
+pub fn is_ppm_by_signature(file: &[u8]) -> bool {
+    file.starts_with(PPM_SIGNATURE)
+}
+
+pub fn is_ppm_by_extension(filename: &str) -> bool {
+    filename.ends_with("ppm")
+}
+
 const PPM_SIGNATURE: &[u8] = &[80, 54];
 const LINE_FEED: u8 = 10;
 
