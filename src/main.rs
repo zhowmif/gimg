@@ -5,9 +5,7 @@ use std::{fs, time::Instant};
 
 use cli::parse_args;
 use colors::{Rgba, YCbCr};
-use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
-use muxers::{show_muxer::ShowMuxer, Muxer};
 use png::{
     decode_png,
     deflate::{decode::decode_deflate, DeflateEncoder},
@@ -19,21 +17,13 @@ use ppm::decode_ppm;
 mod algebra;
 mod binary;
 mod cli;
-mod codec;
 mod colors;
-mod dct;
-mod demuxers;
-mod filters;
-mod guy_format;
 mod image;
-mod muxers;
 mod pixel_formats;
 mod png;
 mod ppm;
-mod quantization;
 mod queue;
 mod simd_utils;
-mod stream;
 
 fn main() {
     parse_args();
@@ -99,7 +89,4 @@ fn png_decode_test() {
         .collect();
 
     let img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
-    let dx = RawImageDemuxer::new(img);
-    let show = ShowMuxer::new("rgb24");
-    show.consume_stream(dx);
 }
