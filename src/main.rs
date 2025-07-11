@@ -3,16 +3,22 @@
 
 use std::{fs, time::Instant};
 
+use cli::parse_args;
 use colors::{Rgba, YCbCr};
 use demuxers::raw_image_demuxer::RawImageDemuxer;
 use image::{Image, Resolution};
 use muxers::{show_muxer::ShowMuxer, Muxer};
-use png::{decode_png, deflate::{decode::decode_deflate, DeflateEncoder}, encode_png, CompressionLevel, PartialPngConfig};
+use png::{
+    decode_png,
+    deflate::{decode::decode_deflate, DeflateEncoder},
+    encode_png, CompressionLevel, PartialPngConfig,
+};
 use ppm::decode_ppm;
 // use simd_utils::{CALLS, MATCHING_BYTES};
 
 mod algebra;
 mod binary;
+mod cli;
 mod codec;
 mod colors;
 mod dct;
@@ -30,11 +36,9 @@ mod simd_utils;
 mod stream;
 
 fn main() {
-    // let g = first_byte_repeat_count();
-    // println!("{:?}",  );
-    png_encode_test();
-    // unsafe { println!("matching bytes {MATCHING_BYTES}") }
-    // unsafe { println!("calls {CALLS}") }
+    parse_args();
+
+    // png_encode_test();
     // png_decode_test();
     // deflate_test();
 }
