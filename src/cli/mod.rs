@@ -19,9 +19,9 @@ pub fn parse_args() {
             output_file,
             keyword_args: _,
         } => {
-            let input_format = determine_file_format_by_name(&input_file)
+            let _input_format = determine_file_format_by_name(&input_file)
                 .unwrap_or_else(|| panic!("Unrecognized input file format {input_file}"));
-            let output_format = determine_file_format_by_name(&output_file)
+            let _output_format = determine_file_format_by_name(&output_file)
                 .unwrap_or_else(|| panic!("Unrecognized input file format {input_file}"));
         }
     }

@@ -12,7 +12,6 @@ use png::{
     encode_png, CompressionLevel, PartialPngConfig,
 };
 use ppm::decode_ppm;
-// use simd_utils::{CALLS, MATCHING_BYTES};
 
 mod algebra;
 mod binary;
@@ -88,5 +87,5 @@ fn png_decode_test() {
         .map(|row| row.into_iter().map(YCbCr::from).collect())
         .collect();
 
-    let img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
+    let _img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
 }

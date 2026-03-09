@@ -88,10 +88,10 @@ impl PngConfig {
         let number_of_unique_colors = unique_colors.len();
         let should_colors_be_indexed = number_of_unique_colors <= u8::MAX.into();
         let has_alpha = unique_colors.iter().any(|color| !color.is_opaque());
-        let is_grayscale = unique_colors.iter().all(|color| color.is_greyscale());
+        let is_greyscale = unique_colors.iter().all(|color| color.is_greyscale());
 
         let color_type: ColorType = partial_config.color_type.unwrap_or({
-            if is_grayscale {
+            if is_greyscale {
                 if has_alpha {
                     ColorType::GreyscaleAlpha
                 } else {
