@@ -11,7 +11,7 @@ use crate::{
 mod adaptation_field;
 mod pcr;
 
-struct MpegtsPacket<'a> {
+pub struct MpegtsPacket<'a> {
     pid: u16,
     continuity_counter: u8,
     transport_scrambling_control: u8,

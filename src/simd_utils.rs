@@ -1,4 +1,4 @@
-use std::simd::{cmp::SimdPartialOrd, i16x64, num::SimdInt, u8x64};
+use std::simd::{Select, cmp::SimdPartialOrd, i16x64, num::SimdInt, u8x64};
 
 pub fn subtract_simd(lhs: &[u8], rhs: &[u8]) -> Vec<u8> {
     let chunk_size = u8x64::LEN;
