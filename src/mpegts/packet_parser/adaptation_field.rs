@@ -1,4 +1,12 @@
-use crate::{binary::byte_reader::ByteReader, extract_bits, mpegts::{packet_parser::pcr::{PCR_BYTE_LENGTH, Pcr}, utils::read_marker_bit_seperated_33_bit_uint}, read_flag_bit};
+use crate::{
+    binary::byte_reader::ByteReader,
+    extract_bits,
+    mpegts::{
+        packet_parser::pcr::{Pcr, PCR_BYTE_LENGTH},
+        utils::read_marker_bit_seperated_33_bit_uint,
+    },
+    read_flag_bit,
+};
 
 #[derive(Default)]
 pub struct AdaptationField<'a> {
@@ -67,6 +75,7 @@ pub fn read_adaptation_field<'a>(reader: &mut ByteReader<'a>) -> AdaptationField
     }
 }
 
+#[derive(Default)]
 struct AdaptationFieldExtension {
     lwt_offset: Option<u16>,
     piecewise_rate: Option<u32>,
@@ -88,6 +97,11 @@ extract_bits!(read_splice_type, u8, 0, 4);
 
 fn read_adaptation_field_extension(reader: &mut ByteReader) -> AdaptationFieldExtension {
     let extension_length = reader.read_byte().unwrap();
+
+    if extension_length == 0 {
+        return AdaptationFieldExtension::default();
+    }
+
     let extension_end_offset = reader.offset + extension_length as usize;
     let flags_byte = reader.read_byte().unwrap();
     let lwt_flag = read_lwt_flag(flags_byte);
@@ -132,4 +146,3 @@ fn read_adaptation_field_extension(reader: &mut ByteReader) -> AdaptationFieldEx
         splice_info,
     }
 }
-
