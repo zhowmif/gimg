@@ -20,13 +20,13 @@ impl PixelFormat for RGB24P {}
 pub struct YCbCr420p {}
 
 impl From<RGB24P> for YCbCr420p {
-    fn from(value: RGB24P) -> Self {
+    fn from(_value: RGB24P) -> Self {
         todo!()
     }
 }
 
 impl From<YCbCr420p> for RGB24P {
-    fn from(value: YCbCr420p) -> Self {
+    fn from(_value: YCbCr420p) -> Self {
         todo!()
     }
 }

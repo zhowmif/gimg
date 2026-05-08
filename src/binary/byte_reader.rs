@@ -16,6 +16,13 @@ impl<'a> ByteReader<'a> {
         self.number_of_bytes_left() == 0
     }
 
+    pub fn read_to_end(&mut self) -> &'a [u8] {
+        let bytes = &self.bytes[self.offset..];
+        self.offset = self.bytes.len();
+
+        return bytes;
+    }
+
     pub fn read_byte(&mut self) -> Option<u8> {
         let byte = self.bytes.get(self.offset);
         self.offset += 1;
@@ -32,6 +39,20 @@ impl<'a> ByteReader<'a> {
         self.offset += size;
 
         Some(result)
+    }
+
+    pub fn read_array<const N: usize>(&mut self) -> Option<[u8; N]> {
+        let slice = self.read_bytes(N)?;
+        let mut arr = [0u8; N];
+        arr.copy_from_slice(slice);
+
+        Some(arr)
+    }
+
+    pub fn read_u16_be(&mut self) -> Option<u16> {
+        let bytes = self.read_bytes(2)?;
+
+        Some(u16::from_be_bytes(bytes.try_into().unwrap()))
     }
 
     pub fn read_u32_be(&mut self) -> Option<u32> {

@@ -3,8 +3,8 @@
 
 use std::{fs, time::Instant};
 
-use cli::parse_args;
 use colors::{Rgba, YCbCr};
+use gif::decode_gif;
 use image::{Image, Resolution};
 use png::{
     decode_png,
@@ -20,12 +20,15 @@ mod colors;
 mod image;
 mod pixel_formats;
 mod png;
+mod gif;
 mod ppm;
 mod queue;
 mod simd_utils;
+mod mpegts;
 
 fn main() {
-    parse_args();
+    gif_decode_test();
+    // parse_args();
 
     // png_encode_test();
     // png_decode_test();
@@ -88,4 +91,12 @@ fn png_decode_test() {
         .collect();
 
     let _img = Image::new(Resolution::from_vec(&ycbcr_pixels), ycbcr_pixels);
+}
+
+fn gif_decode_test() {
+    // let file = fs::read("files/example.gif").unwrap();
+    let file = fs::read("files/mountain.png").unwrap();
+    let res = decode_gif(&file);
+
+    println!("result {:?}", res);
 }

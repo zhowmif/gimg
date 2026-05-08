@@ -1,7 +1,4 @@
-use crate::{
-    pixel_formats::PixelFormat,
-    ppm::{is_ppm_by_extension, is_ppm_by_signature},
-};
+use crate::ppm::{is_ppm_by_extension, is_ppm_by_signature};
 
 pub enum FileFormat {
     Ppm,
