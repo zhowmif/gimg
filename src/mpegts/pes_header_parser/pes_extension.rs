@@ -5,8 +5,9 @@ use crate::{
     read_flag_bit,
 };
 
-pub struct PesExtension<'a> {
-    private_data: Option<&'a [u8]>,
+#[derive(Debug)]
+pub struct PesExtension<> {
+    private_data: Option<[u8; 128]>,
     pack_header: Option<PackHeader>,
     program_packet_sequence: Option<ProgramPacketSequence>,
     p_std_total_buffer_size: Option<u32>,
@@ -20,7 +21,7 @@ read_flag_bit!(read_pes_extension_flag_2, 7);
 
 const PES_PRIVATE_DATA_LENGTH: usize = 128;
 
-pub fn read_pes_extension<'a>(reader: &'a mut ByteReader) -> PesExtension<'a> {
+pub fn read_pes_extension(reader: &mut ByteReader) -> PesExtension {
     let flags_byte = reader.read_byte().unwrap();
     let pes_private_data_flag = read_pes_private_data_flag(flags_byte);
     let pack_header_field_flag = read_pack_header_field_flag(flags_byte);
@@ -30,7 +31,7 @@ pub fn read_pes_extension<'a>(reader: &'a mut ByteReader) -> PesExtension<'a> {
     let pes_extension_flag_2 = read_pes_extension_flag_2(flags_byte);
 
     let private_data =
-        pes_private_data_flag.then(|| reader.read_bytes(PES_PRIVATE_DATA_LENGTH).unwrap());
+        pes_private_data_flag.then(|| reader.read_array::<PES_PRIVATE_DATA_LENGTH>().unwrap());
     let pack_header = pack_header_field_flag.then(|| read_pack_header(reader));
     let program_packet_sequence =
         program_packet_sequence_counter_flag.then(|| read_program_packet_sequence(reader));
@@ -59,6 +60,7 @@ fn read_p_std_total_buffer_size(reader: &mut ByteReader) -> u32 {
     size * if scale == 0 { 128 } else { 1024 }
 }
 
+#[derive(Debug)]
 struct PackHeader {
     system_clock_reference: u64,
     program_mux_rate: u32,
@@ -93,6 +95,7 @@ pub fn read_pack_header(reader: &mut ByteReader) -> PackHeader {
 
 const SYSTEM_HEADER_START_CODE: &[u8] = &[0, 0, 1, 0xbb];
 
+#[derive(Debug)]
 struct SystemHeader {
     rate_bound: u32,
     audio_bound: u8,
@@ -160,6 +163,7 @@ fn read_system_header(reader: &mut ByteReader) -> SystemHeader {
     }
 }
 
+#[derive(Debug)]
 struct PesStream {
     stream_id: PesStreamId,
     p_std_total_buffer_size: u32,
@@ -174,6 +178,7 @@ impl PesStream {
     }
 }
 
+#[derive(Debug)]
 struct ProgramPacketSequence {
     counter: u8,
     mpeg1_mpeg2_identifier: bool,

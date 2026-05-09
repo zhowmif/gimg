@@ -11,15 +11,16 @@ use crate::{
 mod adaptation_field;
 mod pcr;
 
+#[derive(Debug)]
 pub struct MpegtsPacket<'a> {
-    pid: u16,
-    continuity_counter: u8,
-    transport_scrambling_control: u8,
-    transport_error_indicator: bool,
-    payload_unit_start_indicator: bool,
-    transport_priority: bool,
-    adaptation_field: Option<AdaptationField<'a>>,
-    payload: Option<&'a [u8]>,
+    pub pid: u16,
+    pub continuity_counter: u8,
+    pub transport_scrambling_control: u8,
+    pub transport_error_indicator: bool,
+    pub payload_unit_start_indicator: bool,
+    pub transport_priority: bool,
+    pub adaptation_field: Option<AdaptationField<'a>>,
+    pub payload: Option<&'a [u8]>,
 }
 
 const MPEGTS_PACKET_LENGTH: usize = 188;

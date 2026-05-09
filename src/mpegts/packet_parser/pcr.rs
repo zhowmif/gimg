@@ -3,6 +3,7 @@ use crate::extract_bits;
 pub const PCR_BYTE_LENGTH: usize = 6;
 
 //value is saved in 27MHz ticks
+#[derive(Debug)]
 pub(crate) struct Pcr(u64);
 
 extract_bits!(read_pcr_base, u64, 16, 33);

@@ -3,10 +3,13 @@ use crate::{
     extract_bits,
     mpegts::{
         pes_header_parser::{
-            pes_extension::{PesExtension, read_pes_extension},
+            pes_extension::{read_pes_extension, PesExtension},
             trick_mode::PesTrickMode,
         },
-        utils::{MpegtsParseError, read_33_bit_uint_with_extension, read_marker_bit_seperated_33_bit_uint},
+        utils::{
+            read_33_bit_uint_with_extension, read_marker_bit_seperated_33_bit_uint,
+            MpegtsParseError,
+        },
     },
     read_flag_bit,
 };
@@ -26,24 +29,25 @@ read_flag_bit!(read_pes_extension_flag, 7);
 
 extract_bits!(read_es_rate, u32, 1, 22);
 
-struct MediaPesData<'a> {
-    pes_scrambling_control: u8,
-    pes_priority: bool,
-    data_alignment_indicator: bool,
-    copyright: bool,
-    original_or_copy: bool,
-    pts: Option<u64>,
-    dts: Option<u64>,
-    escr: Option<u64>,
-    es_rate: Option<u32>,
-    trick_mode: Option<PesTrickMode>,
-    additional_copy_info: Option<u8>,
-    previous_pes_packet_crc: Option<u16>,
-    extension: Option<PesExtension>,
-    payload: &'a [u8],
+#[derive(Debug)]
+pub struct MediaPesData<'a> {
+    pub pes_scrambling_control: u8,
+    pub pes_priority: bool,
+    pub data_alignment_indicator: bool,
+    pub copyright: bool,
+    pub original_or_copy: bool,
+    pub pts: Option<u64>,
+    pub dts: Option<u64>,
+    pub escr: Option<u64>,
+    pub es_rate: Option<u32>,
+    pub trick_mode: Option<PesTrickMode>,
+    pub additional_copy_info: Option<u8>,
+    pub previous_pes_packet_crc: Option<u16>,
+    pub extension: Option<PesExtension>,
+    pub payload: &'a [u8],
 }
 
-fn handle_media_pes<'a>(reader: &mut ByteReader<'a>) -> Result<MediaPesData<'a>, MpegtsParseError> {
+pub fn parse_media_pes<'a>(reader: &mut ByteReader<'a>) -> Result<MediaPesData<'a>, MpegtsParseError> {
     let first_flag_byte = reader.read_byte().unwrap();
     let pes_scrambling_control = read_pes_scrambling_control(first_flag_byte);
     let pes_priority = read_pes_priority(first_flag_byte);
@@ -75,7 +79,8 @@ fn handle_media_pes<'a>(reader: &mut ByteReader<'a>) -> Result<MediaPesData<'a>,
 
         read_marker_bit_seperated_33_bit_uint(&dts_bytes)
     });
-    let escr = escr_flag.then(|| read_33_bit_uint_with_extension(&reader.read_array::<6>().unwrap()));
+    let escr =
+        escr_flag.then(|| read_33_bit_uint_with_extension(&reader.read_array::<6>().unwrap()));
     let es_rate = es_rate_flag.then(|| {
         let es_rate_bytes = reader.read_array::<3>().unwrap();
         let as_num = u32::from_be_bytes([0, es_rate_bytes[0], es_rate_bytes[1], es_rate_bytes[2]]);

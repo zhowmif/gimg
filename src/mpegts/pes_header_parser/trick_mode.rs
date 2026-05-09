@@ -1,5 +1,6 @@
 use crate::{extract_bits, read_flag_bit};
 
+#[derive(Debug)]
 pub enum PesTrickMode {
     FastForward {
         field_id: u8,

@@ -3,7 +3,7 @@ use crate::{
     mpegts::{packet_parser::pcr::{PCR_BYTE_LENGTH, Pcr}, utils::read_marker_bit_seperated_33_bit_uint}, read_flag_bit,
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AdaptationField<'a> {
     pcr: Option<Pcr>,
     opcr: Option<Pcr>,
@@ -70,13 +70,14 @@ pub fn read_adaptation_field<'a>(reader: &mut ByteReader<'a>) -> AdaptationField
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct AdaptationFieldExtension {
     lwt_offset: Option<u16>,
     piecewise_rate: Option<u32>,
     splice_info: Option<SpliceInfo>,
 }
 
+#[derive(Debug)]
 struct SpliceInfo {
     splice_type: u8,
     dts_next_au: u64,

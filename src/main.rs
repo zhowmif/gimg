@@ -13,6 +13,8 @@ use png::{
 };
 use ppm::decode_ppm;
 
+use crate::mpegts::test_vid;
+
 mod algebra;
 mod binary;
 mod cli;
@@ -27,7 +29,8 @@ mod simd_utils;
 mod mpegts;
 
 fn main() {
-    gif_decode_test();
+    test_vid();
+    // gif_decode_test();
     // parse_args();
 
     // png_encode_test();
