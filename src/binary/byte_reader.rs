@@ -23,11 +23,23 @@ impl<'a> ByteReader<'a> {
         return bytes;
     }
 
+    pub fn peek_bytes(&self, size: usize) -> Option<&'a [u8]> {
+        if self.offset + size > self.bytes.len() {
+            return None;
+        }
+
+        Some(&self.bytes[self.offset..self.offset + size])
+    }
+
     pub fn read_byte(&mut self) -> Option<u8> {
         let byte = self.bytes.get(self.offset);
         self.offset += 1;
 
         byte.copied()
+    }
+
+    pub fn skip_bytes(&mut self, size: usize) {
+        self.offset += size;
     }
 
     pub fn read_bytes(&mut self, size: usize) -> Option<&'a [u8]> {

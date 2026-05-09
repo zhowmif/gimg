@@ -1,11 +1,6 @@
 use crate::{
-    binary::byte_reader::ByteReader,
-    extract_bits,
-    mpegts::{
-        packet_parser::pcr::{Pcr, PCR_BYTE_LENGTH},
-        utils::read_marker_bit_seperated_33_bit_uint,
-    },
-    read_flag_bit,
+    binary::byte_reader::ByteReader, extract_bits,
+    mpegts::{packet_parser::pcr::{PCR_BYTE_LENGTH, Pcr}, utils::read_marker_bit_seperated_33_bit_uint}, read_flag_bit,
 };
 
 #[derive(Default)]
@@ -61,7 +56,7 @@ pub fn read_adaptation_field<'a>(reader: &mut ByteReader<'a>) -> AdaptationField
         .flatten();
     let adaptation_field_extension =
         adaptation_field_extension_flag.then(|| read_adaptation_field_extension(reader));
-    let _stuffing_bytes = reader.read_bytes(adaptation_field_end_offset - reader.offset);
+    reader.skip_bytes(adaptation_field_end_offset - reader.offset);
 
     AdaptationField {
         pcr,
@@ -138,7 +133,7 @@ fn read_adaptation_field_extension(reader: &mut ByteReader) -> AdaptationFieldEx
             dts_next_au,
         }
     });
-    let _stuffing_bytes = reader.read_bytes(extension_end_offset - reader.offset);
+    reader.skip_bytes(extension_end_offset - reader.offset);
 
     AdaptationFieldExtension {
         lwt_offset,

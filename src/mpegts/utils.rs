@@ -42,3 +42,21 @@ pub fn read_marker_bit_seperated_33_bit_uint(bytes: &[u8; 5]) -> u64 {
 
     (first << 30) | (second << 15) | third
 }
+
+extract_bits!(read_base_first_part, u64, 18, 3);
+extract_bits!(read_base_second_part, u64, 22, 15);
+extract_bits!(read_base_third_part, u64, 38, 15);
+extract_bits!(read_extension, u64, 54, 9);
+
+pub fn read_33_bit_uint_with_extension(bytes: &[u8; 6]) -> u64 {
+    let bytes_as_int = u64::from_be_bytes([
+        0, 0, bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5],
+    ]);
+    let first = read_base_first_part(bytes_as_int);
+    let second = read_base_second_part(bytes_as_int);
+    let third = read_base_third_part(bytes_as_int);
+    let base = (first << 30) | (second << 15) | third;
+    let extension = read_extension(bytes_as_int);
+
+    base * 300 + extension
+}

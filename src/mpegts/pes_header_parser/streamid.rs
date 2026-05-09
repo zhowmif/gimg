@@ -18,3 +18,9 @@ impl From<u8> for PesStreamId {
         }
     }
 }
+
+impl Default for PesStreamId {
+    fn default() -> Self {
+        Self::Unknown(0)
+    }
+}
